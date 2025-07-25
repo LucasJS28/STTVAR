@@ -1,34 +1,40 @@
+import subprocess
+import os
+import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
     QListWidget, QListWidgetItem, QPushButton, QMessageBox,
     QApplication, QLabel, QComboBox, QFileDialog, QLineEdit
 )
 from PyQt5.QtCore import Qt
-import os
-import sys
 
 class NuevaVentana(QWidget):
     def __init__(self):
         super().__init__()
+        self.setObjectName("MainWindow")  # Para estilo de ventana principal
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
         self.folder_path = "stt_guardados"
         self.current_file = None
 
         self.setStyleSheet("""
+            QWidget#MainWindow {
+                border-radius: 15px;
+                background-color: #ffffff;
+            }
             QWidget {
                 font-family: 'Segoe UI', sans-serif;
                 color: #333;
             }
             QTextEdit {
                 border: 1px solid #ccc;
-                border-radius: 8px;
+                border-radius: 12px;
                 padding: 12px;
                 font-size: 14px;
             }
             QListWidget {
                 border: 1px solid #ccc;
-                border-radius: 8px;
+                border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
             }
@@ -38,13 +44,13 @@ class NuevaVentana(QWidget):
             QListWidget::item:selected {
                 background-color: #007bff;
                 color: #ffffff;
-                border-radius: 4px;
+                border-radius: 8px;
             }
             QPushButton {
                 background-color: #4a90e2;
                 color: white;
                 border: none;
-                border-radius: 6px;
+                border-radius: 12px;
                 padding: 10px 15px;
                 font-size: 14px;
                 margin-top: 10px;
@@ -57,7 +63,7 @@ class NuevaVentana(QWidget):
             }
             QComboBox {
                 padding: 6px;
-                border-radius: 5px;
+                border-radius: 12px;
                 border: 1px solid #aaa;
                 font-size: 13px;
                 background-color: white;
@@ -69,7 +75,7 @@ class NuevaVentana(QWidget):
             }
             #exportContainer, #iaQueryContainer {
                 border: 1px solid #c0c0c0;
-                border-radius: 8px;
+                border-radius: 12px;
                 margin-top: 10px;
                 padding: 10px;
                 background-color: #f4f7fa;
@@ -77,7 +83,7 @@ class NuevaVentana(QWidget):
             QLineEdit {
                 padding: 8px;
                 font-size: 13px;
-                border-radius: 5px;
+                border-radius: 12px;
                 border: 1px solid #aaa;
             }
         """)
@@ -92,11 +98,10 @@ class NuevaVentana(QWidget):
         self.textbox.setPlaceholderText("Selecciona un archivo para editarlo...")
         left_layout.addWidget(self.textbox)
 
-        # Caja para mostrar respuesta de IA (oculta al inicio)
         self.ia_response_box = QTextEdit()
         self.ia_response_box.setReadOnly(True)
         self.ia_response_box.setPlaceholderText("Respuesta de IA aparecerá aquí...")
-        self.ia_response_box.hide()  # Oculta por defecto
+        self.ia_response_box.hide()
         left_layout.addWidget(self.ia_response_box)
 
         self.save_button = QPushButton("💾 Guardar cambios")
@@ -147,17 +152,54 @@ class NuevaVentana(QWidget):
 
         self.load_file_list()
 
+    def consultar_ollama(self, prompt: str) -> str:
+        ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
+        if not os.path.exists(ruta_ollama):
+            return "Error: No se encontró el ejecutable de Ollama."
+
+        try:
+            process = subprocess.Popen(
+                [ruta_ollama, 'run', 'mistral:7b-instruct-q4_K_M'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8'
+            )
+            stdout, stderr = process.communicate(prompt + "\n", timeout=60)
+            if process.returncode != 0:
+                return f"Error al ejecutar Ollama: {stderr.strip()}"
+            return stdout.strip()
+        except subprocess.TimeoutExpired:
+            return "Error: La consulta a Ollama excedió el tiempo límite."
+        except Exception as e:
+            return f"Error inesperado: {str(e)}"
+
     def handle_ia_query(self):
         pregunta = self.ia_query_input.text().strip()
         if not pregunta:
             QMessageBox.warning(self, "Advertencia", "Debes escribir una pregunta para consultar.")
             return
 
-        # Simulación de respuesta (puedes conectar a FastAPI aquí)
-        respuesta = f"Respuesta generada para: {pregunta}"
+        contenido = self.textbox.toPlainText().strip()
+        if not contenido:
+            QMessageBox.warning(self, "Advertencia", "El archivo está vacío, no hay contexto para la IA.")
+            return
 
-        self.ia_response_box.setPlainText(respuesta)
+        prompt = (
+            "Eres un asistente que responde en español de forma clara y concreta, "
+            "usando el siguiente texto como referencia:\n\n"
+            f"{contenido}\n\n"
+            f"Pregunta: {pregunta}\n"
+            "Respuesta:"
+        )
+
+        self.ia_response_box.setPlainText("Consultando a la IA, por favor espera...")
         self.ia_response_box.show()
+        QApplication.processEvents()  # Actualiza UI
+
+        respuesta = self.consultar_ollama(prompt)
+        self.ia_response_box.setPlainText(respuesta)
         self.ia_query_input.clear()
 
     def load_file_list(self):
@@ -179,9 +221,17 @@ class NuevaVentana(QWidget):
                 content = file.read()
                 self.textbox.setPlainText(content)
                 self.current_file = filepath
+            # Limpia y oculta la respuesta IA al cambiar de archivo
+            self.ia_response_box.clear()
+            self.ia_response_box.hide()
+            # Limpia la pregunta
+            self.ia_query_input.clear()
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
             self.current_file = None
+            self.ia_response_box.clear()
+            self.ia_response_box.hide()
+            self.ia_query_input.clear()
 
     def save_file(self):
         if not self.current_file:
@@ -270,9 +320,6 @@ class NuevaVentana(QWidget):
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
     def closeEvent(self, event):
-        from interfaz.grabadora import TranscriptionWindow
-        self.main_window = TranscriptionWindow()
-        self.main_window.show()
         event.accept()
 
 if __name__ == '__main__':
