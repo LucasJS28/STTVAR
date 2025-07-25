@@ -4,9 +4,9 @@ import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
     QListWidget, QListWidgetItem, QPushButton, QMessageBox,
-    QApplication, QLabel, QComboBox, QFileDialog, QLineEdit, QInputDialog
+    QApplication, QLabel, QComboBox, QFileDialog, QLineEdit, QInputDialog, QMenu
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPoint
 
 class NuevaVentana(QWidget):
     def __init__(self):
@@ -159,6 +159,10 @@ class NuevaVentana(QWidget):
         self.file_list.itemClicked.connect(self.load_file_content)
         self.file_list.itemDoubleClicked.connect(self.rename_file)
 
+        # Habilitar menú contextual personalizado para eliminar archivos
+        self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+
         right_container = QVBoxLayout()
         right_container.addWidget(self.search_bar)
         right_container.addWidget(self.sort_combo)
@@ -166,6 +170,47 @@ class NuevaVentana(QWidget):
         layout.addLayout(right_container, 1)
 
         self.load_file_list()
+
+    def show_context_menu(self, position: QPoint):
+        item = self.file_list.itemAt(position)
+        if item is None:
+            return
+
+        menu = QMenu()
+        eliminar_action = menu.addAction("Eliminar archivo")
+        action = menu.exec_(self.file_list.viewport().mapToGlobal(position))
+
+        if action == eliminar_action:
+            self.delete_file(item)
+
+    def delete_file(self, item: QListWidgetItem):
+        filename = item.text()
+        filepath = os.path.join(self.folder_path, filename)
+
+        if filename == "⚠️ No se encontraron archivos.":
+            return  # No hacer nada si no hay archivos reales
+
+        reply = QMessageBox.question(
+            self, "Confirmar eliminación",
+            f"¿Estás seguro de que quieres eliminar el archivo:\n{filename}?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+
+        if reply == QMessageBox.Yes:
+            try:
+                os.remove(filepath)
+                if self.current_file == filepath:
+                    self.current_file = None
+                    self.textbox.clear()
+                    self.ia_response_box.clear()
+                    self.ia_response_box.hide()
+                    self.ia_query_input.clear()
+                self.load_file_list()
+                QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' ha sido eliminado.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"No se pudo eliminar el archivo:\n{e}")
+
+    # --- El resto del código igual ---
 
     def consultar_ollama(self, prompt: str) -> str:
         ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
