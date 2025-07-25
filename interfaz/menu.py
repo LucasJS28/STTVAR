@@ -4,14 +4,14 @@ import sys
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
     QListWidget, QListWidgetItem, QPushButton, QMessageBox,
-    QApplication, QLabel, QComboBox, QFileDialog, QLineEdit
+    QApplication, QLabel, QComboBox, QFileDialog, QLineEdit, QInputDialog
 )
 from PyQt5.QtCore import Qt
 
 class NuevaVentana(QWidget):
     def __init__(self):
         super().__init__()
-        self.setObjectName("MainWindow")  # Para estilo de ventana principal
+        self.setObjectName("MainWindow")
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
         self.folder_path = "stt_guardados"
@@ -146,9 +146,24 @@ class NuevaVentana(QWidget):
         ia_query_layout.setContentsMargins(10, 5, 10, 5)
         left_layout.addWidget(ia_query_container)
 
+        # 🔍 Buscador y orden
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("🔍 Buscar por nombre de archivo...")
+        self.search_bar.textChanged.connect(self.load_file_list)
+
+        self.sort_combo = QComboBox()
+        self.sort_combo.addItems(["Ordenar: Nombre (A-Z)", "Nombre (Z-A)", "Fecha reciente", "Fecha antigua"])
+        self.sort_combo.currentIndexChanged.connect(self.load_file_list)
+
         self.file_list = QListWidget()
         self.file_list.itemClicked.connect(self.load_file_content)
-        layout.addWidget(self.file_list, 1)
+        self.file_list.itemDoubleClicked.connect(self.rename_file)
+
+        right_container = QVBoxLayout()
+        right_container.addWidget(self.search_bar)
+        right_container.addWidget(self.sort_combo)
+        right_container.addWidget(self.file_list)
+        layout.addLayout(right_container, 1)
 
         self.load_file_list()
 
@@ -196,7 +211,7 @@ class NuevaVentana(QWidget):
 
         self.ia_response_box.setPlainText("Consultando a la IA, por favor espera...")
         self.ia_response_box.show()
-        QApplication.processEvents()  # Actualiza UI
+        QApplication.processEvents()
 
         respuesta = self.consultar_ollama(prompt)
         self.ia_response_box.setPlainText(respuesta)
@@ -206,12 +221,29 @@ class NuevaVentana(QWidget):
         self.file_list.clear()
         if not os.path.exists(self.folder_path):
             os.makedirs(self.folder_path)
-        for filename in os.listdir(self.folder_path):
-            if filename.endswith(".txt"):
-                item = QListWidgetItem(filename)
-                self.file_list.addItem(item)
-        if self.file_list.count() == 0:
-            QMessageBox.information(self, "Información", "No se encontraron archivos .txt en la carpeta 'stt_guardados'.")
+
+        files = [f for f in os.listdir(self.folder_path) if f.endswith(".txt")]
+
+        search_term = self.search_bar.text().lower()
+        if search_term:
+            files = [f for f in files if search_term in f.lower()]
+
+        sort_option = self.sort_combo.currentText()
+        if "Nombre (A-Z)" in sort_option:
+            files.sort()
+        elif "Nombre (Z-A)" in sort_option:
+            files.sort(reverse=True)
+        elif "Fecha reciente" in sort_option or "Fecha antigua" in sort_option:
+            files.sort(
+                key=lambda f: os.path.getmtime(os.path.join(self.folder_path, f)),
+                reverse="Fecha reciente" in sort_option
+            )
+
+        for filename in files:
+            self.file_list.addItem(QListWidgetItem(filename))
+
+        if not files:
+            self.file_list.addItem(QListWidgetItem("⚠️ No se encontraron archivos."))
 
     def load_file_content(self, item: QListWidgetItem):
         filename = item.text()
@@ -221,10 +253,8 @@ class NuevaVentana(QWidget):
                 content = file.read()
                 self.textbox.setPlainText(content)
                 self.current_file = filepath
-            # Limpia y oculta la respuesta IA al cambiar de archivo
             self.ia_response_box.clear()
             self.ia_response_box.hide()
-            # Limpia la pregunta
             self.ia_query_input.clear()
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
@@ -319,11 +349,38 @@ class NuevaVentana(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
+    def rename_file(self, item: QListWidgetItem):
+        old_name = item.text()
+        old_path = os.path.join(self.folder_path, old_name)
+
+        new_name, ok = QInputDialog.getText(
+            self, "Renombrar archivo", "Nuevo nombre del archivo:", text=old_name
+        )
+
+        if ok and new_name:
+            if not new_name.endswith(".txt"):
+                new_name += ".txt"
+            new_path = os.path.join(self.folder_path, new_name)
+
+            if os.path.exists(new_path):
+                QMessageBox.warning(self, "Error", "Ya existe un archivo con ese nombre.")
+                return
+
+            try:
+                os.rename(old_path, new_path)
+                if self.current_file == old_path:
+                    self.current_file = new_path
+                self.load_file_list()
+                QMessageBox.information(self, "Renombrado", f"Archivo renombrado a:\n{new_name}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
+
     def closeEvent(self, event):
         from interfaz.grabadora import TranscriptionWindow
         self.main_window = TranscriptionWindow()
         self.main_window.show()
         event.accept()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

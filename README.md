@@ -1,80 +1,136 @@
-🧠 Proyecto Transcripción en Tiempo Real con IA (Vosk + Python + Ollama) 🧠
-Este proyecto integra tres poderosas tecnologías para ofrecer una experiencia completa de transcripción y análisis de voz en español:
+Aquí tienes una versión optimizada y visualmente atractiva del `README.md` para que se vea bien en GitHub, manteniendo el contenido original pero con un formato más limpio, organizado y con emojis que aprovechan el estilo de Markdown de GitHub:
 
-🎤 Transcripción de voz en tiempo real usando Vosk + Python + PyQt5
-🖥️ Interfaz gráfica intuitiva para explorar, editar y exportar transcripciones
-🤖 Consultas inteligentes a un modelo local de IA (Ollama mistral:7b-instruct-q4_K_M) para analizar el texto transcrito
+```markdown
+# 🧠 Proyecto Transcripción en Tiempo Real con IA (Vosk + Python + Ollama)
 
-📥 Descarga del Modelo Vosk en Español
-Para que la transcripción funcione correctamente, descarga el modelo de reconocimiento de voz en español desde:
-Modelo recomendado: vosk-model-small-es-0.42
-Una vez descargado, descomprime la carpeta dentro del directorio raíz del proyecto y renómbrala como:
-vosk-model-es-0.42
+¡Bienvenido a **STTVAR**! Este proyecto combina tecnologías de vanguardia para ofrecer una solución completa de **transcripción de voz en tiempo real** y análisis de texto en español, con una interfaz gráfica intuitiva y capacidades de inteligencia artificial.
 
+## ✨ Características Principales
 
-📁 Estructura del Proyecto
-yaml
-Copiar
-Editar
+- 🎤 **Transcripción en tiempo real**: Usa **Vosk** para convertir voz en texto al instante.
+- 🖥️ **Interfaz gráfica**: Desarrollada con **PyQt5**, permite explorar, editar y exportar transcripciones.
+- 🤖 **Análisis con IA**: Integra **Ollama** (modelo `mistral:7b-instruct-q4_K_M`) para consultas inteligentes basadas en el texto transcrito.
+
+---
+
+## 📥 Configuración del Modelo Vosk
+
+Para que la transcripción funcione correctamente, sigue estos pasos:
+
+1. Descarga el modelo de reconocimiento de voz en español desde:  
+   🔗 [Vosk Model Small ES](https://alphacephei.com/vosk/models) (Recomendado: `vosk-model-small-es-0.42`).
+2. Descomprime el archivo en el directorio raíz del proyecto.
+3. Renombra la carpeta a `vosk-model-es-0.42`.
+
+---
+
+## 📁 Estructura del Proyecto
+
+```plaintext
 STTVAR/
 ├── interfaz/
-│   ├── grabadora.py         # UI de grabación, control de mute y STT en vivo
-│   └── menu.py              # Ventana de menú para abrir explorador y consultas IA
-├── stt_guardados/           # Carpeta con transcripciones guardadas automáticamente
-│   ├── 2025-07-24_19-52-37.txt
-│   └── 2025-07-24_19-58-06.txt
+│   ├── grabadora.py         # UI para grabación, control de mute y STT en vivo
+│   └── menu.py              # Menú para explorar transcripciones y consultas IA
+├── stt_guardados/           # Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
 ├── transcripcion/
-│   ├── transcriber.py       # Thread que ejecuta Vosk para STT en tiempo real
-│   └── vosk_utils.py        # Funciones auxiliares para cargar y configurar Vosk
-├── vosk-model-es-0.42/      # Modelo Vosk descargado y renombrado
-├── main.py                  # Punto de entrada: inicia ventana principal de transcripción
-├── README.md                # Documentación del proyecto (este archivo)
-├── STTVAR.bat               # Script para ejecutar main.py sin mostrar consola
-├── vocabulariocl.py         # (Opcional) Glosario/modismos chilenos para mejorar precisión
-└── .gitignore               # Archivos y carpetas ignorados por Git
+│   ├── transcriber.py       # Hilo para ejecutar Vosk en tiempo real
+│   └── vosk_utils.py        # Funciones auxiliares para Vosk
+├── vosk-model-es-0.42/      # Modelo Vosk renombrado
+├── main.py                  # Punto de entrada de la aplicación
+├── README.md                # Documentación del proyecto
+├── STTVAR.bat               # Script para ejecutar main.py sin consola
+├── vocabulariocl.py         # (Opcional) Glosario para español chileno
+└── .gitignore               # Archivos ignorados por Git
+```
 
+---
 
-🛠️ Instalación y Preparación
-1. Instala dependencias Python
-    pip install -r requirements.txt
-    Contenido mínimo de requirements.txt:
+## 🛠️ Instalación y Configuración
 
-2. Configura Ollama y descarga modelo IA
-Sigue las instrucciones oficiales en https://ollama.com/
-Descarga el modelo ejecutando: ollama pull mistral:7b-instruct-q4_K_M
-Asegúrate de que la ruta al ejecutable ollama.exe esté correcta en interfaz/menu.py
+### 1. Instala las dependencias de Python
+```bash
+pip install -r requirements.txt
+```
 
-▶️ Cómo Ejecutar
-Con micrófono conectado y configurado, ejecuta: python main.py
+Contenido mínimo de `requirements.txt`:
+```
+PyQt5
+vosk
+sounddevice
+numpy
+reportlab
+python-docx
+ollama
+```
 
-Se abrirá la ventana 🎙 Transcriptor en Tiempo Real
-Selecciona tu dispositivo de entrada (micrófono) desde el combo box
-Presiona 🔴 Iniciar Grabación para comenzar la transcripción
-Durante la grabación puedes usar el botón 🔇/🎙️ para silenciar o reactivar el micrófono
-Cuando termines, presiona ■ Detener Grabación para guardar la transcripción automáticamente en: stt_guardados/YYYY-MM-DD_HH-MM-SS.txt
-Al detener, el sistema te permitirá guardar o descartar la transcripción
+### 2. Configura Ollama
+- Sigue las instrucciones en [ollama.com](https://ollama.com/).
+- Descarga el modelo ejecutando:
+  ```bash
+  ollama pull mistral:7b-instruct-q4_K_M
+  ```
+- Asegúrate de que la ruta al ejecutable `ollama.exe` esté correcta en `interfaz/menu.py`.
 
-Desde la ventana de menú (⚙️), abre el Explorador de Transcripciones para:
+---
 
-Listar y seleccionar archivos .txt guardados
-Editar el texto en un editor con bordes redondeados y estilos agradables
-Guardar cambios y exportar en formatos PDF, Word o Markdown
-Realizar consultas con IA enviando el texto visible como contexto a Ollama, con respuesta en la interfaz
-Nota: Al cambiar de archivo, el campo de pregunta y respuesta IA se limpia automáticamente para evitar confusiones.
+## ▶️ Cómo Usar
 
-⚠️ Consideraciones y Personalizaciones
-Puedes mejorar el reconocimiento del español chileno añadiendo modismos y glosario en vocabulariocl.py
+1. **Conecta y configura un micrófono**.
+2. Ejecuta el proyecto:
+   ```bash
+   python main.py
+   ```
+3. **Interfaz del Transcriptor**:
+   - Selecciona el dispositivo de entrada (micrófono) desde el combo box.
+   - Haz clic en 🔴 **Iniciar Grabación** para comenzar la transcripción.
+   - Usa 🔇/🎙️ para silenciar/reactivar el micrófono.
+   - Presiona ■ **Detener Grabación** para guardar la transcripción en `stt_guardados/YYYY-MM-DD_HH-MM-SS.txt`.
+   - Decide si guardar o descartar la transcripción al detener.
 
-Para escuchar todo el audio del sistema (no solo el micrófono), es necesario usar software externo como VB-Audio Cable (Windows) o Loopback Audio (macOS). Esto requiere configuración fuera de Python.
+4. **Explorador de Transcripciones** (botón ⚙️):
+   - Lista y selecciona archivos `.txt` guardados.
+   - Edita el texto en un editor con diseño moderno.
+   - Exporta en **PDF**, **Word** o **Markdown**.
+   - Realiza consultas IA con el texto como contexto (respuestas en la interfaz).
+   - **Nota**: Cambiar de archivo limpia automáticamente el campo de consulta IA.
 
-El estilo visual (colores, bordes, tamaños) de la UI puede personalizarse editando los estilos CSS en grabadora.py y menu.py
+---
 
-Cambia la ruta y nombre del modelo IA en menu.py si usas otra instalación de Ollama o diferente modelo
+## ⚠️ Consideraciones y Personalizaciones
 
-📄 Exportación de Transcripciones
-    PDF: Usando ReportLab, con saltos de página automáticos
+- **Mejora el reconocimiento**: Agrega modismos chilenos en `vocabulariocl.py` para optimizar el español local.
+- **Audio del sistema**: Para capturar todo el audio (no solo el micrófono), usa herramientas como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
+- **Personalización visual**: Ajusta colores, bordes y estilos en los archivos `grabadora.py` y `menu.py` (estilos CSS).
+- **Modelo IA**: Cambia la ruta o modelo en `menu.py` si usas otra configuración de Ollama.
 
-    Word (.docx): Documento con encabezado y párrafos formateados
+---
 
-    Markdown (.md): Texto plano con título y contenido limpio
+## 📄 Exportación de Transcripciones
 
+- **PDF**: Generado con **ReportLab**, incluye saltos de página automáticos.
+- **Word (.docx)**: Documento con encabezado y párrafos formateados.
+- **Markdown (.md)**: Texto limpio con título y contenido.
+
+---
+
+## 🚀 ¡Empieza Ahora!
+
+Explora la transcripción en tiempo real y el análisis inteligente con este proyecto. Si tienes dudas o sugerencias, ¡abre un issue o contribuye al repositorio!
+
+---
+
+**Desarrollado con 💻 por [Tu Nombre o Equipo]**  
+📧 Contacto: [tu-email@example.com]  
+🌐 Licencia: [Especifica la licencia, ej. MIT]
+```
+
+### Cambios realizados para mejorar el README en GitHub:
+1. **Encabezados claros y jerárquicos**: Uso de `#`, `##` y `###` para estructurar el contenido.
+2. **Emojis temáticos**: Añadí emojis para mejorar la legibilidad y destacar secciones (🧠, ✨, 📥, etc.).
+3. **Secciones más concisas**: Reorganicé el contenido para que sea más fácil de escanear.
+4. **Código resaltado**: Usé bloques de código (```) para comandos y estructura de directorios.
+5. **Enlaces y formato Markdown**: Añadí enlaces directos (ej. Vosk, Ollama) y formato limpio para listas y pasos.
+6. **Notas visuales**: Uso de **negritas** y *cursivas* para resaltar términos clave.
+7. **Footer opcional**: Agregué un espacio para nombre, contacto y licencia, que puedes personalizar.
+
+Este README se verá profesional y atractivo en GitHub, con una estructura clara que facilita la comprensión del proyecto. Si necesitas ajustes adicionales (como colores específicos o más detalles), ¡avísame!
