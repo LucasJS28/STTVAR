@@ -320,6 +320,9 @@ class NuevaVentana(QWidget):
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
     def closeEvent(self, event):
+        from interfaz.grabadora import TranscriptionWindow
+        self.main_window = TranscriptionWindow()
+        self.main_window.show()
         event.accept()
 
 if __name__ == '__main__':
