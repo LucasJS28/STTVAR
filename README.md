@@ -1,58 +1,57 @@
-Aquí tienes una versión optimizada y visualmente atractiva del `README.md` para que se vea bien en GitHub, manteniendo el contenido original pero con un formato más limpio, organizado y con emojis que aprovechan el estilo de Markdown de GitHub:
+# 🧠 STTVAR: Transcripción y Análisis de Voz en Tiempo Real con IA
 
-```markdown
-# 🧠 Proyecto Transcripción en Tiempo Real con IA (Vosk + Python + Ollama)
-
-¡Bienvenido a **STTVAR**! Este proyecto combina tecnologías de vanguardia para ofrecer una solución completa de **transcripción de voz en tiempo real** y análisis de texto en español, con una interfaz gráfica intuitiva y capacidades de inteligencia artificial.
-
-## ✨ Características Principales
-
-- 🎤 **Transcripción en tiempo real**: Usa **Vosk** para convertir voz en texto al instante.
-- 🖥️ **Interfaz gráfica**: Desarrollada con **PyQt5**, permite explorar, editar y exportar transcripciones.
-- 🤖 **Análisis con IA**: Integra **Ollama** (modelo `mistral:7b-instruct-q4_K_M`) para consultas inteligentes basadas en el texto transcrito.
+[![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Vosk](https://img.shields.io/badge/Vosk-0.42%2B-orange.svg)](https://alphacephei.com/vosk/)
+[![Ollama](https://img.shields.io/badge/Ollama-Mistral%207B-purple.svg)](https://ollama.com/)
 
 ---
 
-## 📥 Configuración del Modelo Vosk
-
-Para que la transcripción funcione correctamente, sigue estos pasos:
-
-1. Descarga el modelo de reconocimiento de voz en español desde:  
-   🔗 [Vosk Model Small ES](https://alphacephei.com/vosk/models) (Recomendado: `vosk-model-small-es-0.42`).
-2. Descomprime el archivo en el directorio raíz del proyecto.
-3. Renombra la carpeta a `vosk-model-es-0.42`.
+¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real** y el **análisis de texto inteligente** en español. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5** y **Ollama**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento.
 
 ---
 
-## 📁 Estructura del Proyecto
+## ✨ Características Destacadas
 
-```plaintext
-STTVAR/
-├── interfaz/
-│   ├── grabadora.py         # UI para grabación, control de mute y STT en vivo
-│   └── menu.py              # Menú para explorar transcripciones y consultas IA
-├── stt_guardados/           # Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
-├── transcripcion/
-│   ├── transcriber.py       # Hilo para ejecutar Vosk en tiempo real
-│   └── vosk_utils.py        # Funciones auxiliares para Vosk
-├── vosk-model-es-0.42/      # Modelo Vosk renombrado
-├── main.py                  # Punto de entrada de la aplicación
-├── README.md                # Documentación del proyecto
-├── STTVAR.bat               # Script para ejecutar main.py sin consola
-├── vocabulariocl.py         # (Opcional) Glosario para español chileno
-└── .gitignore               # Archivos ignorados por Git
-```
+* **🎤 Transcripción Instantánea:** Convierte tu voz en texto al momento gracias a la potencia de **Vosk**.
+* **🖥️ Interfaz Intuitiva con PyQt5:** Explora, edita y gestiona tus transcripciones fácilmente con una UI moderna y responsiva.
+* **🤖 Análisis Inteligente con IA Local:** Integra **Ollama** con `mistral:7b-instruct-q4_K_M` para obtener insights, resúmenes o respuestas a tus preguntas directamente desde el texto transcrito, ¡todo offline!
+* **📝 Gestión Completa de Transcripciones:** Guarda, edita y exporta tus documentos en formatos populares como PDF, Word y Markdown.
+* **⚙️ Personalizable y Extensible:** Adapta el vocabulario, la configuración de audio y los estilos visuales a tus necesidades.
 
 ---
 
-## 🛠️ Instalación y Configuración
+## 🚀 Demo del Proyecto
 
-### 1. Instala las dependencias de Python
+<p align="center">
+  <img src="assets/sttvar_demo.gif" alt="Demostración de STTVAR" width="700"/>
+  <br>
+  <em>Transcripción en tiempo real y análisis inteligente al alcance de tu mano.</em>
+</p>
+
+---
+
+## 📥 Configuración Inicial
+
+Para poner STTVAR en marcha, sigue estos sencillos pasos:
+
+### 1. Descarga el Modelo de Voz Vosk
+
+STTVAR utiliza un modelo de reconocimiento de voz local para la transcripción.
+1.  Visita 🔗 [Vosk Model Small ES](https://alphacephei.com/vosk/models) (se recomienda `vosk-model-small-es-0.42`).
+2.  **Descomprime** el archivo ZIP descargado.
+3.  **Renombra** la carpeta resultante a `vosk-model-es-0.42` y colócala en el directorio raíz del proyecto (junto a `main.py`).
+
+### 2. Instala las Dependencias de Python
+
+Asegúrate de tener Python 3.9+ instalado y ejecuta:
+
 ```bash
 pip install -r requirements.txt
-```
+````
 
-Contenido mínimo de `requirements.txt`:
+**`requirements.txt`** (Contenido mínimo):
+
 ```
 PyQt5
 vosk
@@ -63,98 +62,121 @@ python-docx
 ollama
 ```
 
-### 2. Configura Ollama
-- Sigue las instrucciones en [ollama.com](https://ollama.com/).
-- Descarga el modelo ejecutando:
-  ```bash
-  ollama pull mistral:7b-instruct-q4_K_M
-  ```
-- Asegúrate de que la ruta al ejecutable `ollama.exe` esté correcta en `interfaz/menu.py`.
+### 3\. Configura Ollama y Descarga el Modelo de IA
 
----
+Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
 
-## ▶️ Cómo Usar
+1.  **Instala Ollama:** Sigue las instrucciones para tu sistema operativo en 🔗 [ollama.com](https://ollama.com/).
+2.  **Descarga el Modelo:** Abre tu terminal y ejecuta:
+    ```bash
+    ollama pull mistral:7b-instruct-q4_K_M
+    ```
+    *(Este modelo es ideal para análisis y conversaciones rápidas.)*
+3.  **Verifica la Ruta:** Asegúrate de que la ruta al ejecutable `ollama.exe` esté configurada correctamente dentro del archivo `interfaz/menu.py` si es necesario.
 
-1. **Conecta y configura un micrófono**.
-2. Ejecuta el proyecto:
-   ```bash
-   python main.py
-   ```
-3. **Interfaz del Transcriptor**:
-   - Selecciona el dispositivo de entrada (micrófono) desde el combo box.
-   - Haz clic en 🔴 **Iniciar Grabación** para comenzar la transcripción.
-   - Usa 🔇/🎙️ para silenciar/reactivar el micrófono.
-   - Presiona ■ **Detener Grabación** para guardar la transcripción en `stt_guardados/YYYY-MM-DD_HH-MM-SS.txt`.
-   - Decide si guardar o descartar la transcripción al detener.
+-----
 
-4. **Explorador de Transcripciones** (botón ⚙️):
-   - Lista y selecciona archivos `.txt` guardados.
-   - Edita el texto en un editor con diseño moderno.
-   - Exporta en **PDF**, **Word** o **Markdown**.
-   - Realiza consultas IA con el texto como contexto (respuestas en la interfaz).
-   - **Nota**: Cambiar de archivo limpia automáticamente el campo de consulta IA.
+## 📁 Estructura del Proyecto
 
----
-
-## ⚠️ Consideraciones y Personalizaciones
-
-- **Mejora el reconocimiento**: Agrega modismos chilenos en `vocabulariocl.py` para optimizar el español local.
-- **Audio del sistema**: Para capturar todo el audio (no solo el micrófono), usa herramientas como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
-- **Personalización visual**: Ajusta colores, bordes y estilos en los archivos `grabadora.py` y `menu.py` (estilos CSS).
-- **Modelo IA**: Cambia la ruta o modelo en `menu.py` si usas otra configuración de Ollama.
-
----
-
-## 📄 Exportación de Transcripciones
-
-- **PDF**: Generado con **ReportLab**, incluye saltos de página automáticos.
-- **Word (.docx)**: Documento con encabezado y párrafos formateados.
-- **Markdown (.md)**: Texto limpio con título y contenido.
-
----
-
-## 🚀 ¡Empieza Ahora!
-
-Explora la transcripción en tiempo real y el análisis inteligente con este proyecto. Si tienes dudas o sugerencias, ¡abre un issue o contribuye al repositorio!
-
----
-
-**Desarrollado con 💻 por [Tu Nombre o Equipo]**  
-📧 Contacto: [tu-email@example.com]  
-🌐 Licencia: [Especifica la licencia, ej. MIT]
+```
+STTVAR/
+├── interfaz/
+│   ├── grabadora.py         # 🎤 UI principal de grabación y transcripción en vivo
+│   └── menu.py              # 📝 Menú para explorar, editar y consultar transcripciones con IA
+├── stt_guardados/           # 📂 Carpeta donde se guardan las transcripciones (YYYY-MM-DD_HH-MM-SS.txt)
+├── transcripcion/
+│   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
+│   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
+├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk (¡recuerda renombrarlo!)
+├── main.py                  # ▶️ Punto de entrada principal de la aplicación
+├── README.md                # 📖 Documentación del proyecto
+├── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
+├── vocabulariocl.py         # 💬 (Opcional) Glosario de términos chilenos para mejorar el reconocimiento
+└── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
 ```
 
-### Cambios realizados para mejorar el README en GitHub:
-1. **Encabezados claros y jerárquicos**: Uso de `#`, `##` y `###` para estructurar el contenido.
-2. **Emojis temáticos**: Añadí emojis para mejorar la legibilidad y destacar secciones (🧠, ✨, 📥, etc.).
-3. **Secciones más concisas**: Reorganicé el contenido para que sea más fácil de escanear.
-4. **Código resaltado**: Usé bloques de código (```) para comandos y estructura de directorios.
-5. **Enlaces y formato Markdown**: Añadí enlaces directos (ej. Vosk, Ollama) y formato limpio para listas y pasos.
-6. **Notas visuales**: Uso de **negritas** y *cursivas* para resaltar términos clave.
-7. **Footer opcional**: Agregué un espacio para nombre, contacto y licencia, que puedes personalizar.
+-----
 
-Este README se verá profesional y atractivo en GitHub, con una estructura clara que facilita la comprensión del proyecto. Si necesitas ajustes adicionales (como colores específicos o más detalles), ¡avísame!
+## ▶️ Guía de Uso Rápido
 
+1.  **Conecta y configura tu micrófono** como dispositivo de entrada predeterminado.
 
-✅ PASO 1: Instala Argos Translate
-Asegúrate de instalar el paquete:
+2.  Inicia la aplicación desde la terminal:
 
-bash
-Copiar
-Editar
-pip install argostranslate
-Y luego instala los idiomas deseados desde consola:
+    ```bash
+    python main.py
+    ```
 
-bash
-Copiar
-Editar
-argos-translate-cli --install eng spa
-argos-translate-cli --install zho spa
-argos-translate-cli --install deu spa
-argos-translate-cli --install por spa
-Puedes revisar idiomas disponibles con:
+3.  **Interfaz Principal (Grabadora):**
 
-bash
-Copiar
-Editar
-argos-translate-cli --list-languages
+      * **Selecciona tu dispositivo** de micrófono desde el menú desplegable.
+      * Haz clic en 🔴 **Iniciar Grabación** para que la transcripción en tiempo real comience a aparecer.
+      * Usa 🔇/🎙️ para **silenciar/reactivar** tu micrófono sin detener la transcripción.
+      * Presiona ■ **Detener Grabación** para finalizar y guardar la transcripción en `stt_guardados/`. Se te preguntará si deseas guardar o descartar.
+
+4.  **Explorador de Transcripciones (Botón ⚙️):**
+
+      * Accede a una lista de tus transcripciones guardadas (`.txt`).
+      * **Edita** el texto directamente en un editor integrado.
+      * **Exporta** tus transcripciones a **PDF**, **Word** o **Markdown**.
+      * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz. *Nota: Cambiar de archivo limpiará automáticamente el campo de consulta IA.*
+
+-----
+
+## ⚠️ Consideraciones y Consejos
+
+  * **Mejora del Reconocimiento:** Si trabajas con español chileno, te animamos a personalizar el archivo `vocabulariocl.py` con modismos y términos locales para optimizar la precisión de Vosk.
+  * **Captura de Audio del Sistema:** Para transcribir audio que no provenga directamente de un micrófono (ej. YouTube, videollamadas), considera usar herramientas de audio virtual como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
+  * **Personalización Visual:** Los estilos CSS para la interfaz están en `grabadora.py` y `menu.py`. ¡Siéntete libre de jugar con los colores y la tipografía\!
+  * **Modelo de IA:** La ruta y el modelo de Ollama pueden cambiarse en `menu.py` si deseas experimentar con otros LLMs compatibles.
+
+-----
+
+## 📄 Formatos de Exportación
+
+STTVAR te permite exportar tus transcripciones con facilidad:
+
+| Formato    | Descripción                                           | Biblioteca Usada |
+| :--------- | :---------------------------------------------------- | :--------------- |
+| **PDF** | Documento portable con saltos de página automáticos.  | `ReportLab`      |
+| **Word** | (`.docx`) Documento editable con formato de párrafo.  | `python-docx`    |
+| **Markdown** | (`.md`) Texto plano con formato estructurado simple. | N/A              |
+
+-----
+
+## ✅ Soporte de Idiomas (Traducción Experimental)
+
+STTVAR tiene la capacidad de expandirse para la traducción. Para añadir soporte a más idiomas:
+
+1.  **Instala `argostranslate`:**
+    ```bash
+    pip install argostranslate
+    ```
+2.  **Instala los paquetes de idioma deseados** desde tu consola. Por ejemplo:
+    ```bash
+    argos-translate-cli --install eng spa  # Inglés a Español
+    argos-translate-cli --install zho spa  # Chino a Español
+    argos-translate-cli --install deu spa  # Alemán a Español
+    argos-translate-cli --install por spa  # Portugués a Español
+    ```
+    Puedes ver todos los idiomas disponibles con: `argos-translate-cli --list-languages`
+
+-----
+
+## 💬 Contribuciones
+
+¡Tu feedback y contribuciones son bienvenidos\! Si encuentras un bug, tienes una sugerencia o quieres añadir una nueva característica, por favor, abre un "issue" o envía un "pull request".
+
+-----
+
+## 🛡️ Licencia
+
+Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+
+-----
+
+**Desarrollado con 💖 por Lucas Jimenez Sepulveda**  
+📧 Contacto: lucasjimenezsepulveda@gmail.com  
+
+```
+```

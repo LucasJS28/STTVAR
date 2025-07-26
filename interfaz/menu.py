@@ -17,58 +17,104 @@ class NuevaVentana(QWidget):
         self.setMinimumSize(900, 600)
         self.folder_path = "stt_guardados"
         self.current_file = None
-        self.texto_original = ""  # Variable para almacenar el texto original
+        self.texto_original = ""
+        self.is_dark_theme = False  # Estado inicial: modo claro
 
-        self.setStyleSheet("""
+        # Estilo para modo claro
+        self.light_theme = """
             QWidget#MainWindow {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f0f4f8, stop:1 #d9e2ec);
                 border-radius: 15px;
-                background-color: #ffffff;
             }
             QWidget {
                 font-family: 'Segoe UI', sans-serif;
-                color: #333;
+                color: #2d3436;
             }
             QTextEdit {
-                border: 1px solid #ccc;
+                background-color: #ffffff;
+                border: 1px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 12px;
                 font-size: 14px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             QListWidget {
-                border: 1px solid #ccc;
+                background-color: #ffffff;
+                border: 1px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
             }
             QListWidget::item {
                 padding: 10px 5px;
+                border-radius: 8px;
             }
             QListWidget::item:selected {
-                background-color: #007bff;
+                background-color: #0984e3;
                 color: #ffffff;
                 border-radius: 8px;
             }
             QPushButton {
-                background-color: #4a90e2;
+                background-color: #0984e3;
                 color: white;
                 border: none;
                 border-radius: 12px;
-                padding: 10px 15px;
-                font-size: 14px;
+                padding: 8px 12px;
+                font-size: 13px;
                 margin-top: 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                transition: background-color 0.3s;
             }
             QPushButton:hover {
-                background-color: #357ABD;
+                background-color: #0652dd;
             }
             QPushButton:pressed {
-                background-color: #2c5da3;
+                background-color: #0549b5;
+            }
+            QPushButton#themeButton {
+                background-color: #ffffff;
+                color: #0984e3;
+                border: 1px solid #dfe6e9;
+                padding: 4px;
+                font-size: 14px;
+                min-width: 30px;
+                max-width: 30px;
+                min-height: 30px;
+                max-height: 30px;
+                border-radius: 15px;
+                margin: 0 5px;
+            }
+            QPushButton#themeButton:hover {
+                background-color: #e6f0fa;
+                color: #0652dd;
+            }
+            QPushButton#themeButton:pressed {
+                background-color: #cce0ff;
+                color: #0549b5;
+            }
+            QPushButton#backButton {
+                background-color: #ffffff;
+                color: #e17055;
+                border: 1px solid #dfe6e9;
+                padding: 4px 8px;
+                font-size: 12px;
+                margin: 0 5px;
+            }
+            QPushButton#backButton:hover {
+                background-color: #ffebee;
+                color: #d35400;
+            }
+            QPushButton#backButton:pressed {
+                background-color: #ffcdd2;
+                color: #b74700;
             }
             QComboBox {
-                padding: 6px;
+                background-color: #ffffff;
+                border: 1px solid #dfe6e9;
                 border-radius: 12px;
-                border: 1px solid #aaa;
+                padding: 6px;
                 font-size: 13px;
-                background-color: white;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             QComboBox#translateCombo {
                 max-width: 130px;
@@ -76,26 +122,215 @@ class NuevaVentana(QWidget):
                 font-size: 12px;
             }
             QLabel {
-                font-weight: bold;
+                font-weight: 600;
                 font-size: 13px;
+                color: #2d3436;
                 margin-right: 8px;
             }
+            #titleLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #0984e3;
+            }
+            #headerContainer {
+                background: transparent;
+                padding: 5px 10px;
+                margin: 0;
+            }
             #exportContainer, #iaQueryContainer, #iaResponseContainer {
-                border: 1px solid #c0c0c0;
+                background-color: #f0f4f8;
+                border: 1px solid #dfe6e9;
                 border-radius: 12px;
                 margin-top: 10px;
-                padding: 10px;
+                padding: 12px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             QLineEdit {
+                background-color: #ffffff;
+                border: 1px solid #dfe6e9;
+                border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
-                border-radius: 12px;
-                border: 1px solid #aaa;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-        """)
+        """
 
+        # Estilo para modo oscuro
+        self.dark_theme = """
+            QWidget#MainWindow {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3436, stop:1 #1e272e);
+                border-radius: 15px;
+            }
+            QWidget {
+                font-family: 'Segoe UI', sans-serif;
+                color: #dfe6e9;
+            }
+            QTextEdit {
+                background-color: #353b48;
+                border: 1px solid #4b5468;
+                border-radius: 12px;
+                padding: 12px;
+                font-size: 14px;
+                color: #dfe6e9;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+            QListWidget {
+                background-color: #353b48;
+                border: 1px solid #4b5468;
+                border-radius: 12px;
+                padding: 8px;
+                font-size: 13px;
+                color: #dfe6e9;
+            }
+            QListWidget::item {
+                padding: 10px 5px;
+                border-radius: 8px;
+            }
+            QListWidget::item:selected {
+                background-color: #0984e3;
+                color: #ffffff;
+                border-radius: 8px;
+            }
+            QPushButton {
+                background-color: #0984e3;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                padding: 8px 12px;
+                font-size: 13px;
+                margin-top: 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                transition: background-color 0.3s;
+            }
+            QPushButton:hover {
+                background-color: #0652dd;
+            }
+            QPushButton:pressed {
+                background-color: #0549b5;
+            }
+            QPushButton#themeButton {
+                background-color: #2d3436;
+                color: #74b9ff;
+                border: 1px solid #4b5468;
+                padding: 4px;
+                font-size: 14px;
+                min-width: 30px;
+                max-width: 30px;
+                min-height: 30px;
+                max-height: 30px;
+                border-radius: 15px;
+                margin: 0 5px;
+            }
+            QPushButton#themeButton:hover {
+                background-color: #34495e;
+                color: #54a0ff;
+            }
+            QPushButton#themeButton:pressed {
+                background-color: #2c3e50;
+                color: #339af0;
+            }
+            QPushButton#backButton {
+                background-color: #2d3436;
+                color: #e17055;
+                border: 1px solid #4b5468;
+                padding: 4px 8px;
+                font-size: 12px;
+                margin: 0 5px;
+            }
+            QPushButton#backButton:hover {
+                background-color: #34495e;
+                color: #d35400;
+            }
+            QPushButton#backButton:pressed {
+                background-color: #2c3e50;
+                color: #b74700;
+            }
+            QComboBox {
+                background-color: #353b48;
+                border: 1px solid #4b5468;
+                border-radius: 12px;
+                padding: 6px;
+                font-size: 13px;
+                color: #dfe6e9;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            }
+            QComboBox#translateCombo {
+                max-width: 130px;
+                padding: 4px;
+                font-size: 12px;
+            }
+            QLabel {
+                font-weight: 600;
+                font-size: 13px;
+                color: #dfe6e9;
+                margin-right: 8px;
+            }
+            #titleLabel {
+                font-size: 14px;
+                font-weight: bold;
+                color: #54a0ff;
+            }
+            #headerContainer {
+                background: transparent;
+                padding: 5px 10px;
+                margin: 0;
+            }
+            #exportContainer, #iaQueryContainer, #iaResponseContainer {
+                background-color: #2d3436;
+                border: 1px solid #4b5468;
+                border-radius: 12px;
+                margin-top: 10px;
+                padding: 12px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            }
+            QLineEdit {
+                background-color: #353b48;
+                border: 1px solid #4b5468;
+                border-radius: 12px;
+                padding: 8px;
+                font-size: 13px;
+                color: #dfe6e9;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            }
+        """
+
+        # Establecer el tema claro por defecto
+        self.setStyleSheet(self.light_theme)
+
+        # Layout principal
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+
+        # Contenedor para el título, micrófono, botón de volver y botón de tema
+        header_container = QWidget()
+        header_container.setObjectName("headerContainer")
+        header_layout = QHBoxLayout()
+        header_container.setLayout(header_layout)
+        header_layout.setContentsMargins(5, 0, 5, 0)
+
+        # Título STTVAR con micrófono
+        title_label = QLabel("🎙️ STTVAR")
+        title_label.setObjectName("titleLabel")
+        header_layout.addWidget(title_label)
+        header_layout.addStretch()
+
+        # Botón de volver
+        self.back_button = QPushButton("🔙")
+        self.back_button.setObjectName("backButton")
+        self.back_button.clicked.connect(self.back_to_transcription)
+        header_layout.addWidget(self.back_button)
+
+        # Botón de tema
+        self.theme_button = QPushButton("☀")
+        self.theme_button.setObjectName("themeButton")
+        self.theme_button.clicked.connect(self.toggle_theme)
+        header_layout.addWidget(self.theme_button)
+
+        main_layout.addWidget(header_container)
+
+        # Layout para el contenido principal
         layout = QHBoxLayout()
-        self.setLayout(layout)
+        main_layout.addLayout(layout)
 
         left_layout = QVBoxLayout()
         layout.addLayout(left_layout, 3)
@@ -104,7 +339,7 @@ class NuevaVentana(QWidget):
         self.textbox.setPlaceholderText("Selecciona un archivo para editarlo...")
         left_layout.addWidget(self.textbox)
 
-        # --- Contenedor para respuesta de IA y traducción ---
+        # Contenedor para respuesta de IA y traducción
         ia_response_container = QWidget()
         ia_response_container.setObjectName("iaResponseContainer")
         ia_response_layout = QVBoxLayout()
@@ -116,7 +351,7 @@ class NuevaVentana(QWidget):
         self.ia_response_box.hide()
         ia_response_layout.addWidget(self.ia_response_box)
 
-        # --- Bloque Traducir ---
+        # Bloque Traducir
         translate_container = QWidget()
         translate_layout = QHBoxLayout()
         translate_container.setLayout(translate_layout)
@@ -132,8 +367,8 @@ class NuevaVentana(QWidget):
         ])
         self.translate_combo.currentIndexChanged.connect(self.handle_translation)
         translate_layout.addWidget(self.translate_combo)
-        translate_layout.addStretch()  # Para alinear a la izquierda
-        translate_container.hide()  # Ocultar hasta que haya una respuesta de IA
+        translate_layout.addStretch()
+        translate_container.hide()
         ia_response_layout.addWidget(translate_container)
 
         left_layout.addWidget(ia_response_container)
@@ -161,7 +396,7 @@ class NuevaVentana(QWidget):
         export_layout.setContentsMargins(10, 5, 10, 5)
         left_layout.addWidget(export_container)
 
-        # --- Bloque Preguntar a IA ---
+        # Bloque Preguntar a IA
         ia_query_container = QWidget()
         ia_query_container.setObjectName("iaQueryContainer")
         ia_query_layout = QHBoxLayout()
@@ -203,7 +438,22 @@ class NuevaVentana(QWidget):
 
         self.load_file_list()
         self.installed_languages = translate.get_installed_languages()
-        self.translate_container = translate_container  # Guardar referencia para controlar visibilidad
+        self.translate_container = translate_container
+
+    def toggle_theme(self):
+        self.is_dark_theme = not self.is_dark_theme
+        if self.is_dark_theme:
+            self.setStyleSheet(self.dark_theme)
+            self.theme_button.setText("🌙")
+        else:
+            self.setStyleSheet(self.light_theme)
+            self.theme_button.setText("☀")
+
+    def back_to_transcription(self):
+        from interfaz.grabadora import TranscriptionWindow
+        self.main_window = TranscriptionWindow()
+        self.main_window.show()
+        self.close()
 
     def get_code_from_selection(self):
         text = self.translate_combo.currentText()
@@ -293,7 +543,7 @@ class NuevaVentana(QWidget):
             self.translate_container.hide()
             self.ia_query_input.clear()
             self.translate_combo.setCurrentIndex(0)
-            self.texto_original = ""  # Reiniciar texto original
+            self.texto_original = ""
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
             self.current_file = None
@@ -440,7 +690,7 @@ class NuevaVentana(QWidget):
                     self.ia_response_box.hide()
                     self.translate_container.hide()
                     self.ia_query_input.clear()
-                    self.texto_original = ""  # Reiniciar texto original
+                    self.texto_original = ""
                 self.load_file_list()
                 QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' ha sido eliminado.")
             except Exception as e:
@@ -471,10 +721,10 @@ class NuevaVentana(QWidget):
         QApplication.processEvents()
 
         respuesta = self.consultar_ollama(prompt)
-        self.texto_original = respuesta  # Guardar el texto original
+        self.texto_original = respuesta
         self.ia_response_box.setPlainText(respuesta)
         self.ia_query_input.clear()
-        self.translate_combo.setCurrentIndex(0)  # Reiniciar a español
+        self.translate_combo.setCurrentIndex(0)
 
     def consultar_ollama(self, prompt: str) -> str:
         ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
