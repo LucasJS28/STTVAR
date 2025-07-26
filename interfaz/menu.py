@@ -18,9 +18,8 @@ class NuevaVentana(QWidget):
         self.folder_path = "stt_guardados"
         self.current_file = None
         self.texto_original = ""
-        self.is_dark_theme = False  # Estado inicial: modo claro
+        self.is_dark_theme = False
 
-        # Estilo para modo claro
         self.light_theme = """
             QWidget#MainWindow {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f0f4f8, stop:1 #d9e2ec);
@@ -36,7 +35,6 @@ class NuevaVentana(QWidget):
                 border-radius: 12px;
                 padding: 12px;
                 font-size: 14px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             QListWidget {
                 background-color: #ffffff;
@@ -62,8 +60,6 @@ class NuevaVentana(QWidget):
                 padding: 8px 12px;
                 font-size: 13px;
                 margin-top: 10px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                transition: background-color 0.3s;
             }
             QPushButton:hover {
                 background-color: #0652dd;
@@ -114,7 +110,6 @@ class NuevaVentana(QWidget):
                 border-radius: 12px;
                 padding: 6px;
                 font-size: 13px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             QComboBox#translateCombo {
                 max-width: 130px;
@@ -143,7 +138,6 @@ class NuevaVentana(QWidget):
                 border-radius: 12px;
                 margin-top: 10px;
                 padding: 12px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             }
             QLineEdit {
                 background-color: #ffffff;
@@ -151,11 +145,9 @@ class NuevaVentana(QWidget):
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
         """
 
-        # Estilo para modo oscuro
         self.dark_theme = """
             QWidget#MainWindow {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3436, stop:1 #1e272e);
@@ -172,7 +164,6 @@ class NuevaVentana(QWidget):
                 padding: 12px;
                 font-size: 14px;
                 color: #dfe6e9;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             }
             QListWidget {
                 background-color: #353b48;
@@ -199,8 +190,6 @@ class NuevaVentana(QWidget):
                 padding: 8px 12px;
                 font-size: 13px;
                 margin-top: 10px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                transition: background-color 0.3s;
             }
             QPushButton:hover {
                 background-color: #0652dd;
@@ -252,7 +241,6 @@ class NuevaVentana(QWidget):
                 padding: 6px;
                 font-size: 13px;
                 color: #dfe6e9;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             }
             QComboBox#translateCombo {
                 max-width: 130px;
@@ -281,7 +269,6 @@ class NuevaVentana(QWidget):
                 border-radius: 12px;
                 margin-top: 10px;
                 padding: 12px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             }
             QLineEdit {
                 background-color: #353b48;
@@ -290,9 +277,9 @@ class NuevaVentana(QWidget):
                 padding: 8px;
                 font-size: 13px;
                 color: #dfe6e9;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             }
         """
+
 
         # Establecer el tema claro por defecto
         self.setStyleSheet(self.light_theme)
@@ -537,7 +524,7 @@ class NuevaVentana(QWidget):
             with open(filepath, "r", encoding="utf-8") as file:
                 content = file.read()
                 self.textbox.setPlainText(content)
-                self.current_file = filepath
+                self.current_file = filepath  # Asegurar que se asigne correctamente
             self.ia_response_box.clear()
             self.ia_response_box.hide()
             self.translate_container.hide()
@@ -555,14 +542,19 @@ class NuevaVentana(QWidget):
 
     def save_file(self):
         if not self.current_file:
-            QMessageBox.warning(self, "Advertencia", "No hay archivo seleccionado para guardar.")
+            QMessageBox.warning(self, "Advertencia", "No hay archivo seleccionado para guardar. Por favor, selecciona un archivo.")
             return
         try:
             with open(self.current_file, "w", encoding="utf-8") as file:
-                file.write(self.textbox.toPlainText())
-            QMessageBox.information(self, "Éxito", f"Archivo guardado correctamente:\n{os.path.basename(self.current_file)}")
+                content = self.textbox.toPlainText()
+                file.write(content)
+            QMessageBox.information(self, "Éxito", f"Archivo guardado correctamente en: {os.path.basename(self.current_file)}")
+        except PermissionError:
+            QMessageBox.critical(self, "Error", f"No tienes permisos para guardar en: {self.current_file}. Verifica los permisos del archivo o directorio.")
+        except IOError as e:
+            QMessageBox.critical(self, "Error", f"Error de E/S al guardar el archivo: {e}. Verifica que el archivo no esté en uso.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo:\n{e}")
+            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo: {e}. Revisa la ruta o contacta al soporte.")
 
     def export_selected_format(self):
         if not self.current_file:
@@ -644,6 +636,9 @@ class NuevaVentana(QWidget):
 
         new_name, ok = QInputDialog.getText(self, "Renombrar archivo", "Nuevo nombre:", text=old_name)
         if ok and new_name:
+            if not new_name.endswith(".txt"):
+                new_name += ".txt"
+
             old_path = os.path.join(self.folder_path, old_name)
             new_path = os.path.join(self.folder_path, new_name)
             if os.path.exists(new_path):
@@ -654,6 +649,7 @@ class NuevaVentana(QWidget):
                 self.load_file_list()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
+
 
     def show_context_menu(self, position: QPoint):
         item = self.file_list.itemAt(position)
