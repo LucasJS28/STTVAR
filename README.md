@@ -134,3 +134,27 @@ Explora la transcripción en tiempo real y el análisis inteligente con este pro
 7. **Footer opcional**: Agregué un espacio para nombre, contacto y licencia, que puedes personalizar.
 
 Este README se verá profesional y atractivo en GitHub, con una estructura clara que facilita la comprensión del proyecto. Si necesitas ajustes adicionales (como colores específicos o más detalles), ¡avísame!
+
+
+✅ PASO 1: Instala Argos Translate
+Asegúrate de instalar el paquete:
+
+bash
+Copiar
+Editar
+pip install argostranslate
+Y luego instala los idiomas deseados desde consola:
+
+bash
+Copiar
+Editar
+argos-translate-cli --install eng spa
+argos-translate-cli --install zho spa
+argos-translate-cli --install deu spa
+argos-translate-cli --install por spa
+Puedes revisar idiomas disponibles con:
+
+bash
+Copiar
+Editar
+argos-translate-cli --list-languages
