@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import (
     QApplication, QLabel, QComboBox, QFileDialog, QLineEdit, QInputDialog, QMenu
 )
 from PyQt5.QtCore import Qt, QPoint
-from argostranslate import translate  # Para traducción local
+from argostranslate import translate
+import pyttsx3  # Para el lector de texto
 
 class NuevaVentana(QWidget):
     def __init__(self):
@@ -19,6 +20,11 @@ class NuevaVentana(QWidget):
         self.current_file = None
         self.texto_original = ""
         self.is_dark_theme = False
+
+        # Inicializar el motor de texto a voz
+        self.tts_engine = None
+        self.initialize_tts_engine()
+        self.is_reading = False
 
         self.light_theme = """
             QWidget#MainWindow {
@@ -67,24 +73,24 @@ class NuevaVentana(QWidget):
             QPushButton:pressed {
                 background-color: #0549b5;
             }
-            QPushButton#themeButton {
+            QPushButton#themeButton, QPushButton#ttsButton {
                 background-color: #ffffff;
                 color: #0984e3;
                 border: 1px solid #dfe6e9;
-                padding: 4px;
-                font-size: 14px;
-                min-width: 30px;
-                max-width: 30px;
-                min-height: 30px;
-                max-height: 30px;
-                border-radius: 15px;
-                margin: 0 5px;
+                padding: 2px;
+                font-size: 11px;
+                min-width: 20px;
+                max-width: 20px;
+                min-height: 20px;
+                max-height: 20px;
+                border-radius: 10px;
+                margin: 0 3px;
             }
-            QPushButton#themeButton:hover {
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover {
                 background-color: #e6f0fa;
                 color: #0652dd;
             }
-            QPushButton#themeButton:pressed {
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed {
                 background-color: #cce0ff;
                 color: #0549b5;
             }
@@ -197,24 +203,24 @@ class NuevaVentana(QWidget):
             QPushButton:pressed {
                 background-color: #0549b5;
             }
-            QPushButton#themeButton {
+            QPushButton#themeButton, QPushButton#ttsButton {
                 background-color: #2d3436;
                 color: #74b9ff;
                 border: 1px solid #4b5468;
-                padding: 4px;
-                font-size: 14px;
-                min-width: 30px;
-                max-width: 30px;
-                min-height: 30px;
-                max-height: 30px;
-                border-radius: 15px;
-                margin: 0 5px;
+                padding: 2px;
+                font-size: 11px;
+                min-width: 20px;
+                max-width: 20px;
+                min-height: 20px;
+                max-height: 20px;
+                border-radius: 10px;
+                margin: 0 3px;
             }
-            QPushButton#themeButton:hover {
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover {
                 background-color: #34495e;
                 color: #54a0ff;
             }
-            QPushButton#themeButton:pressed {
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed {
                 background-color: #2c3e50;
                 color: #339af0;
             }
@@ -280,34 +286,27 @@ class NuevaVentana(QWidget):
             }
         """
 
-
-        # Establecer el tema claro por defecto
         self.setStyleSheet(self.light_theme)
 
-        # Layout principal
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
 
-        # Contenedor para el título, micrófono, botón de volver y botón de tema
         header_container = QWidget()
         header_container.setObjectName("headerContainer")
         header_layout = QHBoxLayout()
         header_container.setLayout(header_layout)
         header_layout.setContentsMargins(5, 0, 5, 0)
 
-        # Título STTVAR con micrófono
         title_label = QLabel("🎙️ STTVAR")
         title_label.setObjectName("titleLabel")
         header_layout.addWidget(title_label)
         header_layout.addStretch()
 
-        # Botón de volver
         self.back_button = QPushButton("🔙")
         self.back_button.setObjectName("backButton")
         self.back_button.clicked.connect(self.back_to_transcription)
         header_layout.addWidget(self.back_button)
 
-        # Botón de tema
         self.theme_button = QPushButton("☀")
         self.theme_button.setObjectName("themeButton")
         self.theme_button.clicked.connect(self.toggle_theme)
@@ -315,7 +314,6 @@ class NuevaVentana(QWidget):
 
         main_layout.addWidget(header_container)
 
-        # Layout para el contenido principal
         layout = QHBoxLayout()
         main_layout.addLayout(layout)
 
@@ -326,19 +324,25 @@ class NuevaVentana(QWidget):
         self.textbox.setPlaceholderText("Selecciona un archivo para editarlo...")
         left_layout.addWidget(self.textbox)
 
-        # Contenedor para respuesta de IA y traducción
         ia_response_container = QWidget()
         ia_response_container.setObjectName("iaResponseContainer")
         ia_response_layout = QVBoxLayout()
         ia_response_container.setLayout(ia_response_layout)
 
+        ia_response_header = QHBoxLayout()
         self.ia_response_box = QTextEdit()
         self.ia_response_box.setReadOnly(True)
         self.ia_response_box.setPlaceholderText("Respuesta de IA aparecerá aquí...")
         self.ia_response_box.hide()
-        ia_response_layout.addWidget(self.ia_response_box)
+        ia_response_header.addWidget(self.ia_response_box)
 
-        # Bloque Traducir
+        self.tts_button = QPushButton("🔊")
+        self.tts_button.setObjectName("ttsButton")
+        self.tts_button.clicked.connect(self.toggle_text_to_speech)
+        self.tts_button.hide()
+        ia_response_header.addWidget(self.tts_button)
+        ia_response_layout.addLayout(ia_response_header)
+
         translate_container = QWidget()
         translate_layout = QHBoxLayout()
         translate_container.setLayout(translate_layout)
@@ -383,7 +387,6 @@ class NuevaVentana(QWidget):
         export_layout.setContentsMargins(10, 5, 10, 5)
         left_layout.addWidget(export_container)
 
-        # Bloque Preguntar a IA
         ia_query_container = QWidget()
         ia_query_container.setObjectName("iaQueryContainer")
         ia_query_layout = QHBoxLayout()
@@ -427,6 +430,18 @@ class NuevaVentana(QWidget):
         self.installed_languages = translate.get_installed_languages()
         self.translate_container = translate_container
 
+    def initialize_tts_engine(self):
+        """Inicializa o reinicia el motor TTS con una velocidad específica."""
+        try:
+            if self.tts_engine:
+                self.tts_engine.stop()
+                self.tts_engine = None
+            self.tts_engine = pyttsx3.init()
+            # Ajustar la velocidad de habla (170 es un valor recomendado)
+            self.tts_engine.setProperty('rate', 170)  # Ajusta este valor según prefieras
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo inicializar el motor TTS: {e}")
+
     def toggle_theme(self):
         self.is_dark_theme = not self.is_dark_theme
         if self.is_dark_theme:
@@ -451,6 +466,7 @@ class NuevaVentana(QWidget):
     def handle_translation(self):
         if not self.texto_original:
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
             return
 
@@ -460,6 +476,7 @@ class NuevaVentana(QWidget):
         if idioma_destino == idioma_origen:
             self.ia_response_box.setPlainText(self.texto_original)
             self.ia_response_box.show()
+            self.tts_button.show()
             self.translate_container.show()
             return
 
@@ -469,6 +486,7 @@ class NuevaVentana(QWidget):
         if idioma_origen_obj is None or idioma_destino_obj is None:
             QMessageBox.critical(self, "Error", f"No está instalado el paquete de traducción para: {idioma_origen} -> {idioma_destino}")
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
             return
 
@@ -476,6 +494,7 @@ class NuevaVentana(QWidget):
         if traductor is None:
             QMessageBox.critical(self, "Error", f"No existe traducción directa para: {idioma_origen} -> {idioma_destino}")
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
             return
 
@@ -483,10 +502,12 @@ class NuevaVentana(QWidget):
             traduccion = traductor.translate(self.texto_original)
             self.ia_response_box.setPlainText(traduccion)
             self.ia_response_box.show()
+            self.tts_button.show()
             self.translate_container.show()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al traducir: {e}")
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
 
     def load_file_list(self):
@@ -524,21 +545,25 @@ class NuevaVentana(QWidget):
             with open(filepath, "r", encoding="utf-8") as file:
                 content = file.read()
                 self.textbox.setPlainText(content)
-                self.current_file = filepath  # Asegurar que se asigne correctamente
+                self.current_file = filepath
             self.ia_response_box.clear()
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
             self.ia_query_input.clear()
             self.translate_combo.setCurrentIndex(0)
             self.texto_original = ""
+            self.stop_text_to_speech()
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
             self.current_file = None
             self.ia_response_box.clear()
             self.ia_response_box.hide()
+            self.tts_button.hide()
             self.translate_container.hide()
             self.ia_query_input.clear()
             self.texto_original = ""
+            self.stop_text_to_speech()
 
     def save_file(self):
         if not self.current_file:
@@ -650,7 +675,6 @@ class NuevaVentana(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
 
-
     def show_context_menu(self, position: QPoint):
         item = self.file_list.itemAt(position)
         if item is None:
@@ -684,9 +708,11 @@ class NuevaVentana(QWidget):
                     self.textbox.clear()
                     self.ia_response_box.clear()
                     self.ia_response_box.hide()
+                    self.tts_button.hide()
                     self.translate_container.hide()
                     self.ia_query_input.clear()
                     self.texto_original = ""
+                    self.stop_text_to_speech()
                 self.load_file_list()
                 QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' ha sido eliminado.")
             except Exception as e:
@@ -713,6 +739,7 @@ class NuevaVentana(QWidget):
 
         self.ia_response_box.setPlainText("Consultando a la IA, por favor espera...")
         self.ia_response_box.show()
+        self.tts_button.show()
         self.translate_container.show()
         QApplication.processEvents()
 
@@ -721,6 +748,11 @@ class NuevaVentana(QWidget):
         self.ia_response_box.setPlainText(respuesta)
         self.ia_query_input.clear()
         self.translate_combo.setCurrentIndex(0)
+
+        # Detener cualquier lectura en curso antes de mostrar nueva respuesta
+        self.stop_text_to_speech()
+        self.is_reading = False
+        self.tts_button.setText("🔊")
 
     def consultar_ollama(self, prompt: str) -> str:
         ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
@@ -745,7 +777,46 @@ class NuevaVentana(QWidget):
         except Exception as e:
             return f"Error inesperado: {str(e)}"
 
+    def toggle_text_to_speech(self):
+        text = self.ia_response_box.toPlainText().strip()
+        if not text:
+            QMessageBox.warning(self, "Advertencia", "No hay texto para leer.")
+            return
+
+        try:
+            if self.is_reading:
+                # Detener la lectura
+                self.stop_text_to_speech()
+                self.is_reading = False
+                self.tts_button.setText("🔊")
+            else:
+                # Iniciar la lectura
+                self.stop_text_to_speech()  # Detener cualquier lectura previa
+                self.initialize_tts_engine()  # Reiniciar el motor TTS
+                self.is_reading = True
+                self.tts_button.setText("⏸")
+                self.tts_engine.say(text)
+                self.tts_engine.runAndWait()
+                self.is_reading = False
+                self.tts_button.setText("🔊")
+        except Exception as e:
+            self.stop_text_to_speech()
+            self.is_reading = False
+            self.tts_button.setText("🔊")
+            QMessageBox.critical(self, "Error", f"Error al reproducir el texto: {e}")
+            self.initialize_tts_engine()  # Intentar reiniciar el motor en caso de error
+
+    def stop_text_to_speech(self):
+        # Detener la lectura si está en curso
+        try:
+            if self.tts_engine:
+                self.tts_engine.stop()
+        except Exception:
+            pass  # Ignorar errores si no hay lectura activa
+
     def closeEvent(self, event):
+        # Detener la lectura al cerrar la ventana
+        self.stop_text_to_speech()
         from interfaz.grabadora import TranscriptionWindow
         self.main_window = TranscriptionWindow()
         self.main_window.show()

@@ -1,54 +1,56 @@
 # 🧠 STTVAR: Transcripción y Análisis de Voz en Tiempo Real con IA
 
-[![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
-[![Vosk](https://img.shields.io/badge/Vosk-0.42%2B-orange.svg)](https://alphacephei.com/vosk/)
-[![Ollama](https://img.shields.io/badge/Ollama-Mistral%207B-purple.svg)](https://ollama.com/)
+[](https://opensource.org/licenses/MIT)
+[](https://www.python.org/)
+[](https://alphacephei.com/vosk/)
+[](https://ollama.com/)
 
----
+-----
 
-¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real** y el **análisis de texto inteligente** en español. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5** y **Ollama**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento.
+¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)\! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real** y el **análisis de texto inteligente** en español. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5**, **Ollama** y ahora **pyttsx3**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento y escuchar el análisis de la IA.
 
----
+-----
 
 ## ✨ Características Destacadas
 
-* **🎤 Transcripción Instantánea:** Convierte tu voz en texto al momento gracias a la potencia de **Vosk**.
-* **🖥️ Interfaz Intuitiva con PyQt5:** Explora, edita y gestiona tus transcripciones fácilmente con una UI moderna y responsiva.
-* **🤖 Análisis Inteligente con IA Local:** Integra **Ollama** con `mistral:7b-instruct-q4_K_M` para obtener insights, resúmenes o respuestas a tus preguntas directamente desde el texto transcrito, ¡todo offline!
-* **📝 Gestión Completa de Transcripciones:** Guarda, edita y exporta tus documentos en formatos populares como PDF, Word y Markdown.
-* **⚙️ Personalizable y Extensible:** Adapta el vocabulario, la configuración de audio y los estilos visuales a tus necesidades.
+  * **🎤 Transcripción Instantánea:** Convierte tu voz en texto al momento gracias a la potencia de **Vosk**.
+  * **🖥️ Interfaz Intuitiva con PyQt5:** Explora, edita y gestiona tus transcripciones fácilmente con una UI moderna y responsiva.
+  * **🤖 Análisis Inteligente con IA Local:** Integra **Ollama** con `mistral:7b-instruct-q4_K_M` para obtener insights, resúmenes o respuestas a tus preguntas directamente desde el texto transcrito, ¡todo offline\!
+  * **🗣️ Lectura de Texto con Voz (TTS):** Utiliza **pyttsx3** para escuchar los resultados generados por la IA en diversos idiomas, mejorando la accesibilidad y la revisión.
+  * **📝 Gestión Completa de Transcripciones:** Guarda, edita y exporta tus documentos en formatos populares como PDF, Word y Markdown.
+  * **⚙️ Personalizable y Extensible:** Adapta el vocabulario, la configuración de audio y los estilos visuales a tus necesidades.
 
----
+-----
 
 ## 🚀 Demo del Proyecto
 
-<p align="center">
-  <img src="assets/sttvar_demo.gif" alt="Demostración de STTVAR" width="700"/>
-  <br>
-  <em>Transcripción en tiempo real y análisis inteligente al alcance de tu mano.</em>
-</p>
+\<p align="center"\>
+\<img src="assets/sttvar\_demo.gif" alt="Demostración de STTVAR" width="700"/\>
+\<br\>
+\<em\>Transcripción en tiempo real, análisis inteligente y ahora ¡lectura de texto\!\</em\>
+\</p\>
 
----
+-----
 
 ## 📥 Configuración Inicial
 
 Para poner STTVAR en marcha, sigue estos sencillos pasos:
 
-### 1. Descarga el Modelo de Voz Vosk
+### 1\. Descarga el Modelo de Voz Vosk
 
 STTVAR utiliza un modelo de reconocimiento de voz local para la transcripción.
+
 1.  Visita 🔗 [Vosk Model Small ES](https://alphacephei.com/vosk/models) (se recomienda `vosk-model-small-es-0.42`).
 2.  **Descomprime** el archivo ZIP descargado.
 3.  **Renombra** la carpeta resultante a `vosk-model-es-0.42` y colócala en el directorio raíz del proyecto (junto a `main.py`).
 
-### 2. Instala las Dependencias de Python
+### 2\. Instala las Dependencias de Python
 
 Asegúrate de tener Python 3.9+ instalado y ejecuta:
 
 ```bash
 pip install -r requirements.txt
-````
+```
 
 **`requirements.txt`** (Contenido mínimo):
 
@@ -60,6 +62,7 @@ numpy
 reportlab
 python-docx
 ollama
+pyttsx3 # ¡Nuevo requisito!
 ```
 
 ### 3\. Configura Ollama y Descarga el Modelo de IA
@@ -74,6 +77,19 @@ Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
     *(Este modelo es ideal para análisis y conversaciones rápidas.)*
 3.  **Verifica la Ruta:** Asegúrate de que la ruta al ejecutable `ollama.exe` esté configurada correctamente dentro del archivo `interfaz/menu.py` si es necesario.
 
+### 4\. Configuración Adicional para pyttsx3 (Sistemas Operativos)
+
+`pyttsx3` utiliza los motores de texto a voz nativos de tu sistema operativo.
+
+  * **Windows:** Generalmente funciona sin configuración adicional.
+  * **macOS:** Funciona de inmediato con `NSSpeechSynthesizer`.
+  * **Linux:** Asegúrate de tener `espeak` y/o `festival` instalados. Por ejemplo, en Ubuntu/Debian:
+    ```bash
+    sudo apt-get update
+    sudo apt-get install espeak
+    # o sudo apt-get install festival
+    ```
+
 -----
 
 ## 📁 Estructura del Proyecto
@@ -82,7 +98,7 @@ Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
 STTVAR/
 ├── interfaz/
 │   ├── grabadora.py         # 🎤 UI principal de grabación y transcripción en vivo
-│   └── menu.py              # 📝 Menú para explorar, editar y consultar transcripciones con IA
+│   └── menu.py              # 📝 Menú para explorar, editar y consultar transcripciones con IA (¡Ahora con lectura de voz!)
 ├── stt_guardados/           # 📂 Carpeta donde se guardan las transcripciones (YYYY-MM-DD_HH-MM-SS.txt)
 ├── transcripcion/
 │   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
@@ -119,7 +135,9 @@ STTVAR/
       * Accede a una lista de tus transcripciones guardadas (`.txt`).
       * **Edita** el texto directamente en un editor integrado.
       * **Exporta** tus transcripciones a **PDF**, **Word** o **Markdown**.
-      * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz. *Nota: Cambiar de archivo limpiará automáticamente el campo de consulta IA.*
+      * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz.
+          * **¡Nuevo\!** Ahora verás un botón o una opción para **"Leer Respuesta"** que usará `pyttsx3` para vocalizar el texto generado por la IA, independientemente del idioma detectado.
+      * *Nota: Cambiar de archivo limpiará automáticamente el campo de consulta IA.*
 
 -----
 
@@ -129,6 +147,7 @@ STTVAR/
   * **Captura de Audio del Sistema:** Para transcribir audio que no provenga directamente de un micrófono (ej. YouTube, videollamadas), considera usar herramientas de audio virtual como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
   * **Personalización Visual:** Los estilos CSS para la interfaz están en `grabadora.py` y `menu.py`. ¡Siéntete libre de jugar con los colores y la tipografía\!
   * **Modelo de IA:** La ruta y el modelo de Ollama pueden cambiarse en `menu.py` si deseas experimentar con otros LLMs compatibles.
+  * **Voces de pyttsx3:** La calidad y variedad de las voces disponibles con `pyttsx3` dependen de los motores TTS instalados en tu sistema operativo. Puedes explorar y seleccionar diferentes voces si tu OS las ofrece.
 
 -----
 
@@ -175,8 +194,5 @@ Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `L
 
 -----
 
-**Desarrollado con 💖 por Lucas Jimenez Sepulveda**  
-📧 Contacto: lucasjimenezsepulveda@gmail.com  
-
-```
-```
+**Desarrollado con 💖 por [Tu Nombre o Equipo]**  
+📧 Contacto: [lucasjimenezsepulveda.com]  
