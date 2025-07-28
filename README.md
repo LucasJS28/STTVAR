@@ -88,17 +88,23 @@ Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
 STTVAR/
 ├── interfaz/
 │   ├── grabadora.py         # 🎤 UI principal de grabación y transcripción en vivo
-│   └── menu.py              # 📝 Menú para explorar, editar y consultar transcripciones con IA (¡Ahora con lectura de voz!)
+│   └── menu.py              # 📝 Menú para explorar, editar, consultar y traducir transcripciones
 ├── stt_guardados/           # 📂 Carpeta donde se guardan las transcripciones (YYYY-MM-DD_HH-MM-SS.txt)
+├── traduccion/              # 🌐 Módulo para la gestión y ejecución de traducciones
+│   ├── __pycache__
+│   ├── __init__.py
+│   ├── instalar_modelos.py  # 📥 Script para automatizar la descarga de modelos de traducción
+│   └── revisar_modelos.py   # 🔍 Script para verificar modelos de traducción instalados
 ├── transcripcion/
 │   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
 │   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
 ├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk (¡recuerda renombrarlo!)
+├── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
 ├── main.py                  # ▶️ Punto de entrada principal de la aplicación
 ├── README.md                # 📖 Documentación del proyecto
+├── requirements.txt         # 📦 Lista de dependencias de Python
 ├── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
-├── vocabulariocl.py         # 💬 (Opcional) Glosario de términos chilenos para mejorar el reconocimiento
-└── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
+└── vocabulariocl.py         # 💬 (Opcional) Glosario de términos chilenos para mejorar el reconocimiento
 ```
 
 -----
