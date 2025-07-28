@@ -395,26 +395,17 @@ class NuevaVentana(QWidget):
         ia_response_layout = QVBoxLayout()
         ia_response_container.setLayout(ia_response_layout)
 
-        ia_response_header = QHBoxLayout()
         self.ia_response_box = QTextEdit()
         self.ia_response_box.setReadOnly(True)
         self.ia_response_box.setPlaceholderText("Respuesta de IA aparecerá aquí...")
         self.ia_response_box.hide()
-        ia_response_header.addWidget(self.ia_response_box)
-
-        self.tts_button = QPushButton("🔊")
-        self.tts_button.setObjectName("ttsButton")
-        self.tts_button.clicked.connect(self.toggle_text_to_speech)
-        self.tts_button.hide()
-        ia_response_header.addWidget(self.tts_button)
-        ia_response_layout.addLayout(ia_response_header)
+        ia_response_layout.addWidget(self.ia_response_box)
 
         translate_container = QWidget()
         translate_layout = QHBoxLayout()
         translate_container.setLayout(translate_layout)
 
         translate_layout.addWidget(QLabel("🈯 Traducir a:"))
-
         self.translate_combo = QComboBox()
         self.translate_combo.setObjectName("translateCombo")
         self.translate_combo.addItems([
@@ -424,7 +415,14 @@ class NuevaVentana(QWidget):
         ])
         self.translate_combo.currentIndexChanged.connect(self.handle_translation)
         translate_layout.addWidget(self.translate_combo)
+
+        self.tts_button = QPushButton("🔊")
+        self.tts_button.setObjectName("ttsButton")
+        self.tts_button.clicked.connect(self.toggle_text_to_speech)
+        self.tts_button.hide()
+        translate_layout.addWidget(self.tts_button)
         translate_layout.addStretch()
+
         translate_container.hide()
         ia_response_layout.addWidget(translate_container)
 
@@ -483,7 +481,7 @@ class NuevaVentana(QWidget):
         self.file_list = QTableWidget()
         self.file_list.setColumnCount(2)
         self.file_list.setHorizontalHeaderLabels(["Archivo", "Audio"])
-        self.file_list.horizontalHeader().hide()  # Hide the table header
+        self.file_list.horizontalHeader().hide()
         self.file_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.file_list.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
         self.file_list.verticalHeader().setVisible(False)
