@@ -22,16 +22,6 @@
 
 -----
 
-## 🚀 Demo del Proyecto
-
-\<p align="center"\>
-\<img src="assets/sttvar\_demo.gif" alt="Demostración de STTVAR" width="700"/\>
-\<br\>
-\<em\>Transcripción en tiempo real, análisis inteligente y ahora ¡lectura de texto\!\</em\>
-\</p\>
-
------
-
 ## 📥 Configuración Inicial
 
 Para poner STTVAR en marcha, sigue estos sencillos pasos:
@@ -182,17 +172,5 @@ STTVAR tiene la capacidad de expandirse para la traducción. Para añadir soport
 
 -----
 
-## 💬 Contribuciones
-
-¡Tu feedback y contribuciones son bienvenidos\! Si encuentras un bug, tienes una sugerencia o quieres añadir una nueva característica, por favor, abre un "issue" o envía un "pull request".
-
------
-
-## 🛡️ Licencia
-
-Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
-
------
-
-**Desarrollado con 💖 por [Tu Nombre o Equipo]**  
+**Desarrollado con 💖 por Lucas Jimenez Sepulveda**  
 📧 Contacto: [lucasjimenezsepulveda.com]  
