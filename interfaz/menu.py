@@ -2,13 +2,14 @@ import subprocess
 import os
 import sys
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTextEdit,
-    QListWidget, QListWidgetItem, QPushButton, QMessageBox,
-    QApplication, QLabel, QComboBox, QFileDialog, QLineEdit, QInputDialog, QMenu
+    QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem,
+    QPushButton, QMessageBox, QApplication, QLabel, QComboBox, QFileDialog,
+    QLineEdit, QInputDialog, QMenu, QSizePolicy, QHeaderView
 )
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QUrl, QSize
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from argostranslate import translate
-import pyttsx3  # Para el lector de texto
+import pyttsx3
 
 class NuevaVentana(QWidget):
     def __init__(self):
@@ -17,15 +18,28 @@ class NuevaVentana(QWidget):
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
         self.folder_path = "stt_guardados"
+        self.audio_folder_path = "sttaudio_guardados"
         self.current_file = None
         self.texto_original = ""
         self.is_dark_theme = False
 
-        # Inicializar el motor de texto a voz
+        # Initialize TTS engine
         self.tts_engine = None
         self.initialize_tts_engine()
         self.is_reading = False
 
+        # Initialize QMediaPlayer for audio playback
+        self.audio_player = QMediaPlayer()
+        self.audio_player.stateChanged.connect(self.handle_audio_state_changed)
+        self.current_audio_file = None
+
+        # Ensure folders exist
+        if not os.path.exists(self.folder_path):
+            os.makedirs(self.folder_path)
+        if not os.path.exists(self.audio_folder_path):
+            os.makedirs(self.audio_folder_path)
+
+        # Light theme stylesheet
         self.light_theme = """
             QWidget#MainWindow {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f0f4f8, stop:1 #d9e2ec);
@@ -37,26 +51,32 @@ class NuevaVentana(QWidget):
             }
             QTextEdit {
                 background-color: #ffffff;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 12px;
                 font-size: 14px;
             }
-            QListWidget {
+            QTableWidget {
                 background-color: #ffffff;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
+                show-decoration-selected: 1;
+                alternate-background-color: #f8fafc;
             }
-            QListWidget::item {
-                padding: 10px 5px;
-                border-radius: 8px;
+            QTableWidget::item {
+                padding: 0px;
+                border: none;
+                height: 40px;
+                alignment: center;
             }
-            QListWidget::item:selected {
+            QTableWidget::item:selected {
                 background-color: #0984e3;
                 color: #ffffff;
-                border-radius: 8px;
+            }
+            QTableWidget {
+                gridline-color: transparent;
             }
             QPushButton {
                 background-color: #0984e3;
@@ -73,31 +93,37 @@ class NuevaVentana(QWidget):
             QPushButton:pressed {
                 background-color: #0549b5;
             }
-            QPushButton#themeButton, QPushButton#ttsButton {
+            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton {
                 background-color: #ffffff;
                 color: #0984e3;
-                border: 1px solid #dfe6e9;
-                padding: 2px;
-                font-size: 11px;
-                min-width: 20px;
-                max-width: 20px;
-                min-height: 20px;
-                max-height: 20px;
-                border-radius: 10px;
-                margin: 0 3px;
+                border: 2px solid #dfe6e9;
+                padding: 0px;
+                font-size: 14px;
+                min-width: 32px;
+                max-width: 32px;
+                min-height: 32px;
+                max-height: 32px;
+                border-radius: 8px;
+                margin: 4px;
             }
-            QPushButton#themeButton:hover, QPushButton#ttsButton:hover {
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled {
                 background-color: #e6f0fa;
                 color: #0652dd;
+                border: 2px solid #b3d4fc;
             }
-            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed {
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled {
                 background-color: #cce0ff;
                 color: #0549b5;
+                border: 2px solid #b3d4fc;
+            }
+            QPushButton#speakerButton:disabled {
+                color: #b0b0b0;
+                border: 2px solid #dfe6e9;
             }
             QPushButton#backButton {
                 background-color: #ffffff;
                 color: #e17055;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 padding: 4px 8px;
                 font-size: 12px;
                 margin: 0 5px;
@@ -105,14 +131,16 @@ class NuevaVentana(QWidget):
             QPushButton#backButton:hover {
                 background-color: #ffebee;
                 color: #d35400;
+                border: 2px solid #ffc1cc;
             }
             QPushButton#backButton:pressed {
                 background-color: #ffcdd2;
                 color: #b74700;
+                border: 2px solid #ffc1cc;
             }
             QComboBox {
                 background-color: #ffffff;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 6px;
                 font-size: 13px;
@@ -122,38 +150,49 @@ class NuevaVentana(QWidget):
                 padding: 4px;
                 font-size: 12px;
             }
+            QComboBox:hover {
+                background-color: #f8fafc;
+                border: 2px solid #b3d4fc;
+            }
             QLabel {
                 font-weight: 600;
                 font-size: 13px;
                 color: #2d3436;
                 margin-right: 8px;
+                padding: 2px;
             }
             #titleLabel {
                 font-size: 14px;
                 font-weight: bold;
                 color: #0984e3;
+                padding: 8px;
             }
             #headerContainer {
                 background: transparent;
-                padding: 5px 10px;
+                padding: 10px 15px;
                 margin: 0;
             }
             #exportContainer, #iaQueryContainer, #iaResponseContainer {
                 background-color: #f0f4f8;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 border-radius: 12px;
                 margin-top: 10px;
                 padding: 12px;
             }
             QLineEdit {
                 background-color: #ffffff;
-                border: 1px solid #dfe6e9;
+                border: 2px solid #dfe6e9;
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
             }
+            QLineEdit:hover {
+                background-color: #f8fafc;
+                border: 2px solid #b3d4fc;
+            }
         """
 
+        # Dark theme stylesheet
         self.dark_theme = """
             QWidget#MainWindow {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3436, stop:1 #1e272e);
@@ -165,28 +204,34 @@ class NuevaVentana(QWidget):
             }
             QTextEdit {
                 background-color: #353b48;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 border-radius: 12px;
                 padding: 12px;
                 font-size: 14px;
                 color: #dfe6e9;
             }
-            QListWidget {
+            QTableWidget {
                 background-color: #353b48;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
                 color: #dfe6e9;
+                show-decoration-selected: 1;
+                alternate-background-color: #3b434f;
             }
-            QListWidget::item {
-                padding: 10px 5px;
-                border-radius: 8px;
+            QTableWidget::item {
+                padding: 0px;
+                border: none;
+                height: 40px;
+                alignment: center;
             }
-            QListWidget::item:selected {
+            QTableWidget::item:selected {
                 background-color: #0984e3;
                 color: #ffffff;
-                border-radius: 8px;
+            }
+            QTableWidget {
+                gridline-color: transparent;
             }
             QPushButton {
                 background-color: #0984e3;
@@ -203,31 +248,37 @@ class NuevaVentana(QWidget):
             QPushButton:pressed {
                 background-color: #0549b5;
             }
-            QPushButton#themeButton, QPushButton#ttsButton {
-                background-color: #2d3436;
+            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton {
+                background-color: #353b48;
                 color: #74b9ff;
-                border: 1px solid #4b5468;
-                padding: 2px;
-                font-size: 11px;
-                min-width: 20px;
-                max-width: 20px;
-                min-height: 20px;
-                max-height: 20px;
-                border-radius: 10px;
-                margin: 0 3px;
+                border: 2px solid #4b5468;
+                padding: 0px;
+                font-size: 14px;
+                min-width: 32px;
+                max-width: 32px;
+                min-height: 32px;
+                max-height: 32px;
+                border-radius: 8px;
+                margin: 4px;
             }
-            QPushButton#themeButton:hover, QPushButton#ttsButton:hover {
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled {
                 background-color: #34495e;
                 color: #54a0ff;
+                border: 2px solid #74b9ff;
             }
-            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed {
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled {
                 background-color: #2c3e50;
                 color: #339af0;
+                border: 2px solid #74b9ff;
+            }
+            QPushButton#speakerButton:disabled {
+                color: #6b7280;
+                border: 2px solid #4b5468;
             }
             QPushButton#backButton {
-                background-color: #2d3436;
+                background-color: #353b48;
                 color: #e17055;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 padding: 4px 8px;
                 font-size: 12px;
                 margin: 0 5px;
@@ -235,14 +286,16 @@ class NuevaVentana(QWidget):
             QPushButton#backButton:hover {
                 background-color: #34495e;
                 color: #d35400;
+                border: 2px solid #ff8a80;
             }
             QPushButton#backButton:pressed {
                 background-color: #2c3e50;
                 color: #b74700;
+                border: 2px solid #ff8a80;
             }
             QComboBox {
                 background-color: #353b48;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 border-radius: 12px;
                 padding: 6px;
                 font-size: 13px;
@@ -253,36 +306,46 @@ class NuevaVentana(QWidget):
                 padding: 4px;
                 font-size: 12px;
             }
+            QComboBox:hover {
+                background-color: #3b434f;
+                border: 2px solid #74b9ff;
+            }
             QLabel {
                 font-weight: 600;
                 font-size: 13px;
                 color: #dfe6e9;
                 margin-right: 8px;
+                padding: 2px;
             }
             #titleLabel {
                 font-size: 14px;
                 font-weight: bold;
                 color: #54a0ff;
+                padding: 8px;
             }
             #headerContainer {
                 background: transparent;
-                padding: 5px 10px;
+                padding: 10px 15px;
                 margin: 0;
             }
             #exportContainer, #iaQueryContainer, #iaResponseContainer {
                 background-color: #2d3436;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 border-radius: 12px;
                 margin-top: 10px;
                 padding: 12px;
             }
             QLineEdit {
                 background-color: #353b48;
-                border: 1px solid #4b5468;
+                border: 2px solid #4b5468;
                 border-radius: 12px;
                 padding: 8px;
                 font-size: 13px;
                 color: #dfe6e9;
+            }
+            QLineEdit:hover {
+                background-color: #3b434f;
+                border: 2px solid #74b9ff;
             }
         """
 
@@ -295,10 +358,13 @@ class NuevaVentana(QWidget):
         header_container.setObjectName("headerContainer")
         header_layout = QHBoxLayout()
         header_container.setLayout(header_layout)
-        header_layout.setContentsMargins(5, 0, 5, 0)
+        header_layout.setContentsMargins(10, 5, 10, 5)
 
         title_label = QLabel("🎙️ STTVAR")
         title_label.setObjectName("titleLabel")
+        title_label.setFixedHeight(30)
+        title_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        title_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         header_layout.addWidget(title_label)
         header_layout.addStretch()
 
@@ -414,11 +480,23 @@ class NuevaVentana(QWidget):
         self.sort_combo.addItems(["Ordenar: Nombre (A-Z)", "Nombre (Z-A)", "Fecha reciente", "Fecha antigua"])
         self.sort_combo.currentIndexChanged.connect(self.load_file_list)
 
-        self.file_list = QListWidget()
-        self.file_list.itemClicked.connect(self.load_file_content)
-        self.file_list.itemDoubleClicked.connect(self.rename_file)
+        self.file_list = QTableWidget()
+        self.file_list.setColumnCount(2)
+        self.file_list.setHorizontalHeaderLabels(["Archivo", "Audio"])
+        self.file_list.horizontalHeader().hide()  # Hide the table header
+        self.file_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.file_list.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.file_list.verticalHeader().setVisible(False)
+        self.file_list.setSelectionMode(QTableWidget.SingleSelection)
+        self.file_list.setSelectionBehavior(QTableWidget.SelectRows)
+        self.file_list.cellClicked.connect(self.load_file_content)
+        self.file_list.cellDoubleClicked.connect(self.rename_file)
         self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+        self.file_list.setMinimumHeight(300)
+        self.file_list.setShowGrid(False)
+        self.file_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.file_list.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
         right_container = QVBoxLayout()
         right_container.addWidget(self.search_bar)
@@ -431,25 +509,22 @@ class NuevaVentana(QWidget):
         self.translate_container = translate_container
 
     def initialize_tts_engine(self):
-        """Inicializa o reinicia el motor TTS con una velocidad específica."""
         try:
             if self.tts_engine:
                 self.tts_engine.stop()
                 self.tts_engine = None
             self.tts_engine = pyttsx3.init()
-            # Ajustar la velocidad de habla (170 es un valor recomendado)
-            self.tts_engine.setProperty('rate', 170)  # Ajusta este valor según prefieras
+            self.tts_engine.setProperty('rate', 170)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo inicializar el motor TTS: {e}")
 
     def toggle_theme(self):
         self.is_dark_theme = not self.is_dark_theme
-        if self.is_dark_theme:
-            self.setStyleSheet(self.dark_theme)
-            self.theme_button.setText("🌙")
-        else:
-            self.setStyleSheet(self.light_theme)
-            self.theme_button.setText("☀")
+        self.setStyleSheet(self.dark_theme if self.is_dark_theme else self.light_theme)
+        self.theme_button.setText("🌙" if self.is_dark_theme else "☀")
+        self.file_list.setUpdatesEnabled(False)
+        self.load_file_list()
+        self.file_list.setUpdatesEnabled(True)
 
     def back_to_transcription(self):
         from interfaz.grabadora import TranscriptionWindow
@@ -511,7 +586,8 @@ class NuevaVentana(QWidget):
             self.translate_container.hide()
 
     def load_file_list(self):
-        self.file_list.clear()
+        self.file_list.clearContents()
+        self.file_list.setRowCount(0)
         if not os.path.exists(self.folder_path):
             os.makedirs(self.folder_path)
 
@@ -532,14 +608,65 @@ class NuevaVentana(QWidget):
                 reverse="Fecha reciente" in sort_option
             )
 
-        for filename in files:
-            self.file_list.addItem(QListWidgetItem(filename))
+        self.file_list.setRowCount(len(files))
+        for row, filename in enumerate(files):
+            self.file_list.setRowHeight(row, 40)
+            text_item = QTableWidgetItem(filename)
+            text_item.setData(Qt.UserRole, filename)
+            text_item.setFlags(text_item.flags() & ~Qt.ItemIsEditable)
+            text_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.file_list.setItem(row, 0, text_item)
+
+            base_name = os.path.splitext(filename)[0]
+            audio_path = os.path.join(self.audio_folder_path, f"{base_name}.wav")
+            has_audio = os.path.exists(audio_path)
+
+            speaker_button = QPushButton("🔊" if has_audio else "🔇")
+            speaker_button.setObjectName("speakerButton")
+            speaker_button.setEnabled(has_audio)
+            speaker_button.setFixedSize(32, 32)
+            speaker_button.setStyleSheet("margin: 4px;")
+            if has_audio:
+                speaker_button.clicked.connect(lambda checked, f=audio_path: self.toggle_audio_playback(f))
+            self.file_list.setCellWidget(row, 1, speaker_button)
 
         if not files:
-            self.file_list.addItem(QListWidgetItem("⚠️ No se encontraron archivos."))
+            self.file_list.setRowCount(1)
+            self.file_list.setRowHeight(0, 40)
+            text_item = QTableWidgetItem("⚠️ No se encontraron archivos.")
+            text_item.setFlags(text_item.flags() & ~Qt.ItemIsEditable)
+            text_item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            self.file_list.setItem(0, 0, text_item)
 
-    def load_file_content(self, item: QListWidgetItem):
-        filename = item.text()
+        self.file_list.setColumnWidth(1, 40)
+        self.file_list.resizeColumnsToContents()
+
+    def toggle_audio_playback(self, audio_file):
+        if self.audio_player.state() == QMediaPlayer.PlayingState and self.current_audio_file == audio_file:
+            self.audio_player.pause()
+        else:
+            self.audio_player.setMedia(QMediaContent(QUrl.fromLocalFile(audio_file)))
+            self.current_audio_file = audio_file
+            self.audio_player.play()
+
+    def handle_audio_state_changed(self, state):
+        for row in range(self.file_list.rowCount()):
+            item = self.file_list.item(row, 0)
+            if item:
+                filename = item.data(Qt.UserRole)
+                if filename and filename != "⚠️ No se encontraron archivos.":
+                    base_name = os.path.splitext(filename)[0]
+                    audio_path = os.path.join(self.audio_folder_path, f"{base_name}.wav")
+                    if audio_path == self.current_audio_file:
+                        speaker_button = self.file_list.cellWidget(row, 1)
+                        if speaker_button:
+                            speaker_button.setText("⏸" if state == QMediaPlayer.PlayingState else "🔊")
+
+    def load_file_content(self, row, column):
+        item = self.file_list.item(row, 0)
+        if not item or item.text() == "⚠️ No se encontraron archivos.":
+            return
+        filename = item.data(Qt.UserRole)
         filepath = os.path.join(self.folder_path, filename)
         try:
             with open(filepath, "r", encoding="utf-8") as file:
@@ -554,6 +681,9 @@ class NuevaVentana(QWidget):
             self.translate_combo.setCurrentIndex(0)
             self.texto_original = ""
             self.stop_text_to_speech()
+            self.audio_player.stop()
+            self.current_audio_file = None
+            self.load_file_list()
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
             self.current_file = None
@@ -654,11 +784,12 @@ class NuevaVentana(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
-    def rename_file(self, item: QListWidgetItem):
-        old_name = item.text()
-        if old_name == "⚠️ No se encontraron archivos.":
+    def rename_file(self, row, column):
+        item = self.file_list.item(row, 0)
+        if not item or item.text() == "⚠️ No se encontraron archivos.":
             return
 
+        old_name = item.data(Qt.UserRole)
         new_name, ok = QInputDialog.getText(self, "Renombrar archivo", "Nuevo nombre:", text=old_name)
         if ok and new_name:
             if not new_name.endswith(".txt"):
@@ -669,30 +800,42 @@ class NuevaVentana(QWidget):
             if os.path.exists(new_path):
                 QMessageBox.warning(self, "Error", "Ya existe un archivo con ese nombre.")
                 return
+
             try:
                 os.rename(old_path, new_path)
+                old_audio_path = os.path.join(self.audio_folder_path, os.path.splitext(old_name)[0] + ".wav")
+                new_audio_path = os.path.join(self.audio_folder_path, os.path.splitext(new_name)[0] + ".wav")
+                if os.path.exists(old_audio_path):
+                    os.rename(old_audio_path, new_audio_path)
                 self.load_file_list()
+                if self.current_file == old_path:
+                    self.current_file = new_path
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
 
     def show_context_menu(self, position: QPoint):
         item = self.file_list.itemAt(position)
-        if item is None:
+        if not item or item.text() == "⚠️ No se encontraron archivos.":
             return
 
         menu = QMenu()
-        eliminar_action = menu.addAction("Eliminar archivo")
+        rename_action = menu.addAction("Renombrar archivo")
+        delete_action = menu.addAction("Eliminar archivo")
+        
         action = menu.exec_(self.file_list.viewport().mapToGlobal(position))
 
-        if action == eliminar_action:
+        if action == rename_action:
+            self.rename_file(self.file_list.row(item), 0)
+        elif action == delete_action:
             self.delete_file(item)
 
-    def delete_file(self, item: QListWidgetItem):
-        filename = item.text()
-        filepath = os.path.join(self.folder_path, filename)
-
+    def delete_file(self, item: QTableWidgetItem):
+        filename = item.data(Qt.UserRole)
         if filename == "⚠️ No se encontraron archivos.":
             return
+
+        filepath = os.path.join(self.folder_path, filename)
+        audio_path = os.path.join(self.audio_folder_path, os.path.splitext(filename)[0] + ".wav")
 
         reply = QMessageBox.question(
             self, "Confirmar eliminación",
@@ -702,7 +845,12 @@ class NuevaVentana(QWidget):
 
         if reply == QMessageBox.Yes:
             try:
+                if self.current_audio_file == audio_path:
+                    self.audio_player.stop()
+                    self.current_audio_file = None
                 os.remove(filepath)
+                if os.path.exists(audio_path):
+                    os.remove(audio_path)
                 if self.current_file == filepath:
                     self.current_file = None
                     self.textbox.clear()
@@ -714,7 +862,7 @@ class NuevaVentana(QWidget):
                     self.texto_original = ""
                     self.stop_text_to_speech()
                 self.load_file_list()
-                QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' ha sido eliminado.")
+                QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' y su audio asociado (si existía) han sido eliminados.")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo eliminar el archivo:\n{e}")
 
@@ -749,7 +897,6 @@ class NuevaVentana(QWidget):
         self.ia_query_input.clear()
         self.translate_combo.setCurrentIndex(0)
 
-        # Detener cualquier lectura en curso antes de mostrar nueva respuesta
         self.stop_text_to_speech()
         self.is_reading = False
         self.tts_button.setText("🔊")
@@ -785,14 +932,12 @@ class NuevaVentana(QWidget):
 
         try:
             if self.is_reading:
-                # Detener la lectura
                 self.stop_text_to_speech()
                 self.is_reading = False
                 self.tts_button.setText("🔊")
             else:
-                # Iniciar la lectura
-                self.stop_text_to_speech()  # Detener cualquier lectura previa
-                self.initialize_tts_engine()  # Reiniciar el motor TTS
+                self.stop_text_to_speech()
+                self.initialize_tts_engine()
                 self.is_reading = True
                 self.tts_button.setText("⏸")
                 self.tts_engine.say(text)
@@ -804,19 +949,18 @@ class NuevaVentana(QWidget):
             self.is_reading = False
             self.tts_button.setText("🔊")
             QMessageBox.critical(self, "Error", f"Error al reproducir el texto: {e}")
-            self.initialize_tts_engine()  # Intentar reiniciar el motor en caso de error
+            self.initialize_tts_engine()
 
     def stop_text_to_speech(self):
-        # Detener la lectura si está en curso
         try:
             if self.tts_engine:
                 self.tts_engine.stop()
         except Exception:
-            pass  # Ignorar errores si no hay lectura activa
+            pass
 
     def closeEvent(self, event):
-        # Detener la lectura al cerrar la ventana
         self.stop_text_to_speech()
+        self.audio_player.stop()
         from interfaz.grabadora import TranscriptionWindow
         self.main_window = TranscriptionWindow()
         self.main_window.show()

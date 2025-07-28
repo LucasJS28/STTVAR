@@ -22,6 +22,6 @@ def cargar_modelo():
     return Model(MODEL_PATH)
 
 def crear_recognizer(modelo):
-    recognizer = KaldiRecognizer(modelo, SAMPLE_RATE, json.dumps(VOCABULARIO_CL))
+    recognizer = KaldiRecognizer(modelo, SAMPLE_RATE)  # Remove VOCABULARIO_CL
     recognizer.SetWords(True)
     return recognizer

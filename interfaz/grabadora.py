@@ -24,6 +24,7 @@ class TranscriptionWindow(QWidget):
         self.transcriber_thread = None
         self.transcription_active = False
         self.current_transcription_filepath = None
+        self.current_audio_filepath = None  # Nuevo atributo para el archivo de audio
         self._already_stopped = False  # Para evitar doble llamado
 
         self._setup_ui()
@@ -266,11 +267,17 @@ class TranscriptionWindow(QWidget):
             return
 
         output_dir = "stt_guardados"
+        audio_output_dir = "sttaudio_guardados"
         os.makedirs(output_dir, exist_ok=True)
-        self.current_transcription_filepath = datetime.now().strftime(f"{output_dir}/%Y-%m-%d_%H-%M-%S.txt")
+        os.makedirs(audio_output_dir, exist_ok=True)
+
+        # Generar nombre base para ambos archivos
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"
+        self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
 
         try:
-            self.transcriber_thread = TranscriberThread(device_index, self.current_transcription_filepath)
+            self.transcriber_thread = TranscriberThread(device_index, self.current_transcription_filepath, self.current_audio_filepath)
             self.transcriber_thread.new_text.connect(self._update_text_area)
             self.transcriber_thread.finished.connect(self._on_transcription_finished)
             self.transcriber_thread.start()
@@ -359,15 +366,19 @@ class TranscriptionWindow(QWidget):
         if self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath):
             reply = QMessageBox.question(
                 self, "Guardar Transcripción",
-                "¿Deseas guardar la transcripción?",
+                "¿Deseas guardar la transcripción y el audio?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
             )
             if reply == QMessageBox.No:
                 try:
-                    os.remove(self.current_transcription_filepath)
+                    if os.path.exists(self.current_transcription_filepath):
+                        os.remove(self.current_transcription_filepath)
+                    if self.current_audio_filepath and os.path.exists(self.current_audio_filepath):
+                        os.remove(self.current_audio_filepath)
                 except Exception as e:
                     QMessageBox.warning(self, "Error al eliminar", str(e))
         self.current_transcription_filepath = None
+        self.current_audio_filepath = None
 
     def closeEvent(self, event):
         if self.transcriber_thread and self.transcriber_thread.isRunning():
