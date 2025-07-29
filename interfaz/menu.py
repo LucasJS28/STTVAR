@@ -8,8 +8,46 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPoint, QUrl, QSize
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 from argostranslate import translate
 import pyttsx3
+from collections import Counter
+import re
+
+class TextHighlighter(QSyntaxHighlighter):
+    def __init__(self, parent, original_text):
+        super().__init__(parent)
+        # Usar regex para dividir el texto en palabras, ignorando puntuación
+        self.original_word_counts = Counter(
+            word.lower() for word in re.findall(r'\b\w+\b', original_text, re.UNICODE)
+        )
+        self.new_word_format = QTextCharFormat()
+        self.new_word_format.setForeground(QColor("#2ecc71"))  # Verde claro para palabras nuevas
+
+    def highlightBlock(self, text):
+        # Dividir el bloque actual en palabras usando regex
+        current_words = list(re.findall(r'\b\w+\b', text.lower(), re.UNICODE))
+        current_word_counts = Counter(current_words)
+        
+        # Rastrear cuántas veces se ha resaltado cada palabra en este bloque
+        highlighted_counts = Counter()
+        
+        # Iterar sobre el texto para encontrar y resaltar palabras
+        current_pos = 0
+        for word in current_words:
+            # Encontrar la próxima aparición de la palabra en el texto
+            start_idx = text.lower().find(word, current_pos)
+            if start_idx == -1:
+                continue
+            
+            # Contar cuántas veces aparece esta palabra hasta ahora
+            highlighted_counts[word] += 1
+            
+            # Resaltar si la palabra es nueva o excede la frecuencia original
+            if word not in self.original_word_counts or highlighted_counts[word] > self.original_word_counts[word]:
+                self.setFormat(start_idx, len(word), self.new_word_format)
+            
+            current_pos = start_idx + len(word)
 
 class NuevaVentana(QWidget):
     def __init__(self):
@@ -22,6 +60,8 @@ class NuevaVentana(QWidget):
         self.current_file = None
         self.texto_original = ""
         self.is_dark_theme = False
+        self.original_text = ""  # Store the original text for comparison
+        self.highlighter = None  # Inicializar el resaltador
 
         # Initialize TTS engine
         self.tts_engine = None
@@ -137,6 +177,29 @@ class NuevaVentana(QWidget):
                 background-color: #ffcdd2;
                 color: #b74700;
                 border: 2px solid #ffc1cc;
+            }
+            QPushButton#undoButton, QPushButton#redoButton {
+                background-color: #ffffff;
+                color: #0984e3;
+                border: 2px solid #dfe6e9;
+                padding: 4px 8px;
+                font-size: 12px;
+                margin: 4px;
+                border-radius: 8px;
+            }
+            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled {
+                background-color: #e6f0fa;
+                color: #0652dd;
+                border: 2px solid #b3d4fc;
+            }
+            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled {
+                background-color: #cce0ff;
+                color: #0549b5;
+                border: 2px solid #b3d4fc;
+            }
+            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled {
+                color: #b0b0b0;
+                border: 2px solid #dfe6e9;
             }
             QComboBox {
                 background-color: #ffffff;
@@ -293,6 +356,29 @@ class NuevaVentana(QWidget):
                 color: #b74700;
                 border: 2px solid #ff8a80;
             }
+            QPushButton#undoButton, QPushButton#redoButton {
+                background-color: #353b48;
+                color: #74b9ff;
+                border: 2px solid #4b5468;
+                padding: 4px 8px;
+                font-size: 12px;
+                margin: 4px;
+                border-radius: 8px;
+            }
+            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled {
+                background-color: #34495e;
+                color: #54a0ff;
+                border: 2px solid #74b9ff;
+            }
+            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled {
+                background-color: #2c3e50;
+                color: #339af0;
+                border: 2px solid #74b9ff;
+            }
+            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled {
+                color: #6b7280;
+                border: 2px solid #4b5468;
+            }
             QComboBox {
                 background-color: #353b48;
                 border: 2px solid #4b5468;
@@ -388,7 +474,27 @@ class NuevaVentana(QWidget):
 
         self.textbox = QTextEdit()
         self.textbox.setPlaceholderText("Selecciona un archivo para editarlo...")
+        self.textbox.textChanged.connect(self.check_text_changes)
         left_layout.addWidget(self.textbox)
+
+        # Agregar botones para deshacer/rehacer
+        edit_buttons_layout = QHBoxLayout()
+        self.undo_button = QPushButton("↶ Deshacer")
+        self.undo_button.setObjectName("undoButton")
+        self.undo_button.clicked.connect(self.textbox.undo)
+        self.undo_button.setEnabled(False)
+        self.redo_button = QPushButton("↷ Rehacer")
+        self.redo_button.setObjectName("redoButton")
+        self.redo_button.clicked.connect(self.textbox.redo)
+        self.redo_button.setEnabled(False)
+        edit_buttons_layout.addWidget(self.undo_button)
+        edit_buttons_layout.addWidget(self.redo_button)
+        edit_buttons_layout.addStretch()
+        left_layout.addLayout(edit_buttons_layout)
+
+        # Conectar señales para habilitar/deshabilitar botones
+        self.textbox.undoAvailable.connect(self.undo_button.setEnabled)
+        self.textbox.redoAvailable.connect(self.redo_button.setEnabled)
 
         ia_response_container = QWidget()
         ia_response_container.setObjectName("iaResponseContainer")
@@ -426,10 +532,12 @@ class NuevaVentana(QWidget):
         translate_container.hide()
         ia_response_layout.addWidget(translate_container)
 
+        self.translate_container = translate_container
         left_layout.addWidget(ia_response_container)
 
         self.save_button = QPushButton("💾 Guardar cambios")
         self.save_button.clicked.connect(self.save_file)
+        self.save_button.hide()
         left_layout.addWidget(self.save_button)
 
         export_container = QWidget()
@@ -504,7 +612,6 @@ class NuevaVentana(QWidget):
 
         self.load_file_list()
         self.installed_languages = translate.get_installed_languages()
-        self.translate_container = translate_container
 
     def initialize_tts_engine(self):
         try:
@@ -670,7 +777,10 @@ class NuevaVentana(QWidget):
             with open(filepath, "r", encoding="utf-8") as file:
                 content = file.read()
                 self.textbox.setPlainText(content)
+                self.original_text = content
                 self.current_file = filepath
+                # Reiniciar el resaltador con el nuevo texto original
+                self.highlighter = TextHighlighter(self.textbox.document(), self.original_text)
             self.ia_response_box.clear()
             self.ia_response_box.hide()
             self.tts_button.hide()
@@ -681,10 +791,12 @@ class NuevaVentana(QWidget):
             self.stop_text_to_speech()
             self.audio_player.stop()
             self.current_audio_file = None
+            self.save_button.hide()
             self.load_file_list()
         except Exception as e:
             self.textbox.setPlainText(f"⚠️ Error al leer el archivo: {e}")
             self.current_file = None
+            self.original_text = ""
             self.ia_response_box.clear()
             self.ia_response_box.hide()
             self.tts_button.hide()
@@ -692,22 +804,38 @@ class NuevaVentana(QWidget):
             self.ia_query_input.clear()
             self.texto_original = ""
             self.stop_text_to_speech()
+            self.save_button.hide()
+            self.highlighter = None
+
+    def check_text_changes(self):
+        if not self.current_file:
+            self.save_button.hide()
+            return
+        current_text = self.textbox.toPlainText()
+        if current_text != self.original_text:
+            self.save_button.show()
+        else:
+            self.save_button.hide()
 
     def save_file(self):
         if not self.current_file:
-            QMessageBox.warning(self, "Advertencia", "No hay archivo seleccionado para guardar. Por favor, selecciona un archivo.")
+            QMessageBox.warning(self, "Advertencia", "No hay archivo seleccionado para guardar.")
             return
         try:
             with open(self.current_file, "w", encoding="utf-8") as file:
                 content = self.textbox.toPlainText()
                 file.write(content)
+                self.original_text = content
+                # Reiniciar el resaltador después de guardar
+                self.highlighter = TextHighlighter(self.textbox.document(), self.original_text)
+            self.save_button.hide()
             QMessageBox.information(self, "Éxito", f"Archivo guardado correctamente en: {os.path.basename(self.current_file)}")
         except PermissionError:
-            QMessageBox.critical(self, "Error", f"No tienes permisos para guardar en: {self.current_file}. Verifica los permisos del archivo o directorio.")
+            QMessageBox.critical(self, "Error", f"No tienes permisos para guardar en: {self.current_file}.")
         except IOError as e:
-            QMessageBox.critical(self, "Error", f"Error de E/S al guardar el archivo: {e}. Verifica que el archivo no esté en uso.")
+            QMessageBox.critical(self, "Error", f"Error de E/S al guardar el archivo: {e}.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo: {e}. Revisa la ruta o contacta al soporte.")
+            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo: {e}.")
 
     def export_selected_format(self):
         if not self.current_file:
@@ -744,7 +872,7 @@ class NuevaVentana(QWidget):
                     c.showPage()
                     y = height - 40
             c.save()
-            QMessageBox.information(self, "Exportado", f"Archivo exportado a PDF:\n{export_path}")
+            QMessageBox.information(self, "Éxito", f"Archivo exportado a PDF:\n{export_path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo exportar a PDF:\n{e}")
 
@@ -763,7 +891,7 @@ class NuevaVentana(QWidget):
             for line in text.splitlines():
                 doc.add_paragraph(line)
             doc.save(export_path)
-            QMessageBox.information(self, "Exportado", f"Archivo exportado a Word:\n{export_path}")
+            QMessageBox.information(self, "Éxito", f"Archivo exportado a Word:\n{export_path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Word:\n{e}")
 
@@ -778,7 +906,7 @@ class NuevaVentana(QWidget):
             text = self.textbox.toPlainText()
             with open(export_path, "w", encoding="utf-8") as f:
                 f.write(text)
-            QMessageBox.information(self, "Exportado", f"Archivo exportado a Markdown:\n{export_path}")
+            QMessageBox.information(self, "Éxito", f"Archivo exportado a Markdown:\n{export_path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
@@ -852,6 +980,7 @@ class NuevaVentana(QWidget):
                 if self.current_file == filepath:
                     self.current_file = None
                     self.textbox.clear()
+                    self.original_text = ""
                     self.ia_response_box.clear()
                     self.ia_response_box.hide()
                     self.tts_button.hide()
@@ -859,8 +988,10 @@ class NuevaVentana(QWidget):
                     self.ia_query_input.clear()
                     self.texto_original = ""
                     self.stop_text_to_speech()
+                    self.save_button.hide()
+                    self.highlighter = None
                 self.load_file_list()
-                QMessageBox.information(self, "Archivo eliminado", f"El archivo '{filename}' y su audio asociado (si existía) han sido eliminados.")
+                QMessageBox.information(self, "Éxito", f"El archivo '{filename}' y su audio asociado (si existía) han sido eliminados.")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo eliminar el archivo:\n{e}")
 
