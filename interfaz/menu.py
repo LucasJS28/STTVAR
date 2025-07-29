@@ -17,36 +17,27 @@ import re
 class TextHighlighter(QSyntaxHighlighter):
     def __init__(self, parent, original_text):
         super().__init__(parent)
-        # Usar regex para dividir el texto en palabras, ignorando puntuación
         self.original_word_counts = Counter(
             word.lower() for word in re.findall(r'\b\w+\b', original_text, re.UNICODE)
         )
         self.new_word_format = QTextCharFormat()
-        self.new_word_format.setForeground(QColor("#2ecc71"))  # Verde claro para palabras nuevas
+        self.new_word_format.setForeground(QColor("#2ecc71"))
+        self.new_word_format.setFontUnderline(False)
 
     def highlightBlock(self, text):
-        # Dividir el bloque actual en palabras usando regex
+        self.setFormat(0, len(text), QTextCharFormat())
         current_words = list(re.findall(r'\b\w+\b', text.lower(), re.UNICODE))
         current_word_counts = Counter(current_words)
-        
-        # Rastrear cuántas veces se ha resaltado cada palabra en este bloque
         highlighted_counts = Counter()
-        
-        # Iterar sobre el texto para encontrar y resaltar palabras
         current_pos = 0
         for word in current_words:
-            # Encontrar la próxima aparición de la palabra en el texto
             start_idx = text.lower().find(word, current_pos)
             if start_idx == -1:
                 continue
-            
-            # Contar cuántas veces aparece esta palabra hasta ahora
             highlighted_counts[word] += 1
-            
-            # Resaltar si la palabra es nueva o excede la frecuencia original
-            if word not in self.original_word_counts or highlighted_counts[word] > self.original_word_counts[word]:
+            if (word not in self.original_word_counts or 
+                highlighted_counts[word] > self.original_word_counts.get(word, 0)):
                 self.setFormat(start_idx, len(word), self.new_word_format)
-            
             current_pos = start_idx + len(word)
 
 class NuevaVentana(QWidget):
@@ -60,379 +51,86 @@ class NuevaVentana(QWidget):
         self.current_file = None
         self.texto_original = ""
         self.is_dark_theme = False
-        self.original_text = ""  # Store the original text for comparison
-        self.highlighter = None  # Inicializar el resaltador
+        self.original_text = ""
+        self.highlighter = None
 
-        # Initialize TTS engine
         self.tts_engine = None
         self.initialize_tts_engine()
         self.is_reading = False
 
-        # Initialize QMediaPlayer for audio playback
         self.audio_player = QMediaPlayer()
         self.audio_player.stateChanged.connect(self.handle_audio_state_changed)
         self.current_audio_file = None
 
-        # Ensure folders exist
         if not os.path.exists(self.folder_path):
             os.makedirs(self.folder_path)
         if not os.path.exists(self.audio_folder_path):
             os.makedirs(self.audio_folder_path)
 
-        # Light theme stylesheet
         self.light_theme = """
-            QWidget#MainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f0f4f8, stop:1 #d9e2ec);
-                border-radius: 15px;
-            }
-            QWidget {
-                font-family: 'Segoe UI', sans-serif;
-                color: #2d3436;
-            }
-            QTextEdit {
-                background-color: #ffffff;
-                border: 2px solid #dfe6e9;
-                border-radius: 12px;
-                padding: 12px;
-                font-size: 14px;
-            }
-            QTableWidget {
-                background-color: #ffffff;
-                border: 2px solid #dfe6e9;
-                border-radius: 12px;
-                padding: 8px;
-                font-size: 13px;
-                show-decoration-selected: 1;
-                alternate-background-color: #f8fafc;
-            }
-            QTableWidget::item {
-                padding: 0px;
-                border: none;
-                height: 40px;
-                alignment: center;
-            }
-            QTableWidget::item:selected {
-                background-color: #0984e3;
-                color: #ffffff;
-            }
-            QTableWidget {
-                gridline-color: transparent;
-            }
-            QPushButton {
-                background-color: #0984e3;
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 8px 12px;
-                font-size: 13px;
-                margin-top: 10px;
-            }
-            QPushButton:hover {
-                background-color: #0652dd;
-            }
-            QPushButton:pressed {
-                background-color: #0549b5;
-            }
-            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton {
-                background-color: #ffffff;
-                color: #0984e3;
-                border: 2px solid #dfe6e9;
-                padding: 0px;
-                font-size: 14px;
-                min-width: 32px;
-                max-width: 32px;
-                min-height: 32px;
-                max-height: 32px;
-                border-radius: 8px;
-                margin: 4px;
-            }
-            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled {
-                background-color: #e6f0fa;
-                color: #0652dd;
-                border: 2px solid #b3d4fc;
-            }
-            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled {
-                background-color: #cce0ff;
-                color: #0549b5;
-                border: 2px solid #b3d4fc;
-            }
-            QPushButton#speakerButton:disabled {
-                color: #b0b0b0;
-                border: 2px solid #dfe6e9;
-            }
-            QPushButton#backButton {
-                background-color: #ffffff;
-                color: #e17055;
-                border: 2px solid #dfe6e9;
-                padding: 4px 8px;
-                font-size: 12px;
-                margin: 0 5px;
-            }
-            QPushButton#backButton:hover {
-                background-color: #ffebee;
-                color: #d35400;
-                border: 2px solid #ffc1cc;
-            }
-            QPushButton#backButton:pressed {
-                background-color: #ffcdd2;
-                color: #b74700;
-                border: 2px solid #ffc1cc;
-            }
-            QPushButton#undoButton, QPushButton#redoButton {
-                background-color: #ffffff;
-                color: #0984e3;
-                border: 2px solid #dfe6e9;
-                padding: 4px 8px;
-                font-size: 12px;
-                margin: 4px;
-                border-radius: 8px;
-            }
-            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled {
-                background-color: #e6f0fa;
-                color: #0652dd;
-                border: 2px solid #b3d4fc;
-            }
-            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled {
-                background-color: #cce0ff;
-                color: #0549b5;
-                border: 2px solid #b3d4fc;
-            }
-            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled {
-                color: #b0b0b0;
-                border: 2px solid #dfe6e9;
-            }
-            QComboBox {
-                background-color: #ffffff;
-                border: 2px solid #dfe6e9;
-                border-radius: 12px;
-                padding: 6px;
-                font-size: 13px;
-            }
-            QComboBox#translateCombo {
-                max-width: 130px;
-                padding: 4px;
-                font-size: 12px;
-            }
-            QComboBox:hover {
-                background-color: #f8fafc;
-                border: 2px solid #b3d4fc;
-            }
-            QLabel {
-                font-weight: 600;
-                font-size: 13px;
-                color: #2d3436;
-                margin-right: 8px;
-                padding: 2px;
-            }
-            #titleLabel {
-                font-size: 14px;
-                font-weight: bold;
-                color: #0984e3;
-                padding: 8px;
-            }
-            #headerContainer {
-                background: transparent;
-                padding: 10px 15px;
-                margin: 0;
-            }
-            #exportContainer, #iaQueryContainer, #iaResponseContainer {
-                background-color: #f0f4f8;
-                border: 2px solid #dfe6e9;
-                border-radius: 12px;
-                margin-top: 10px;
-                padding: 12px;
-            }
-            QLineEdit {
-                background-color: #ffffff;
-                border: 2px solid #dfe6e9;
-                border-radius: 12px;
-                padding: 8px;
-                font-size: 13px;
-            }
-            QLineEdit:hover {
-                background-color: #f8fafc;
-                border: 2px solid #b3d4fc;
-            }
+            QWidget#MainWindow { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #f0f4f8, stop:1 #d9e2ec); border-radius: 15px; }
+            QWidget { font-family: 'Segoe UI', sans-serif; color: #2d3436; }
+            QTextEdit { background-color: #ffffff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 12px; font-size: 14px; border-top: none; }
+            QTableWidget { background-color: #ffffff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 8px; font-size: 13px; show-decoration-selected: 1; alternate-background-color: #f8fafc; border-top: none; }
+            QTableWidget::item { padding: 0px; border: none; height: 40px; alignment: center; }
+            QTableWidget::item:selected { background-color: #0984e3; color: #ffffff; }
+            QTableWidget { gridline-color: transparent; }
+            QPushButton { background-color: #0984e3; color: white; border: none; border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-top: 10px; }
+            QPushButton:hover { background-color: #0652dd; }
+            QPushButton:pressed { background-color: #0549b5; }
+            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton { background-color: #ffffff; color: #0984e3; border: 2px solid #dfe6e9; padding: 0px; font-size: 14px; min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px; border-radius: 8px; margin: 4px; border-top: none; }
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled { background-color: #e6f0fa; color: #0652dd; border: 2px solid #b3d4fc; }
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled { background-color: #cce0ff; color: #0549b5; border: 2px solid #b3d4fc; }
+            QPushButton#speakerButton:disabled { color: #b0b0b0; border: 2px solid #dfe6e9; }
+            QPushButton#backButton { background-color: #ffffff; color: #e17055; border: 2px solid #dfe6e9; padding: 4px 8px; font-size: 12px; margin: 0 5px; border-top: none; }
+            QPushButton#backButton:hover { background-color: #ffebee; color: #d35400; border: 2px solid #ffc1cc; }
+            QPushButton#backButton:pressed { background-color: #ffcdd2; color: #b74700; border: 2px solid #ffc1cc; }
+            QPushButton#undoButton, QPushButton#redoButton { background-color: #ffffff; color: #0984e3; border: 2px solid #dfe6e9; padding: 4px 8px; font-size: 12px; margin: 4px; border-radius: 8px; border-top: none; }
+            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled { background-color: #e6f0fa; color: #0652dd; border: 2px solid #b3d4fc; }
+            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled { background-color: #cce0ff; color: #0549b5; border: 2px solid #b3d4fc; }
+            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled { color: #b0b0b0; border: 2px solid #dfe6e9; }
+            QComboBox { background-color: #ffffff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 6px; font-size: 13px; border-top: none; }
+            QComboBox#translateCombo { max-width: 130px; padding: 4px; font-size: 12px; }
+            QComboBox:hover { background-color: #f8fafc; border: 2px solid #b3d4fc; }
+            QLabel { font-weight: 600; font-size: 13px; color: #2d3436; margin-right: 8px; padding: 2px; }
+            #titleLabel { font-size: 14px; font-weight: bold; color: #0984e3; padding: 8px; }
+            #headerContainer { background: transparent; padding: 10px 15px; margin: 0; border: none; }
+            #exportContainer, #iaQueryContainer, #iaResponseContainer { background-color: #f0f4f8; border: 2px solid #dfe6e9; border-radius: 12px; margin-top: 10px; padding: 12px; border-top: none; }
+            QLineEdit { background-color: #ffffff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 8px; font-size: 13px; border-top: none; }
+            QLineEdit:hover { background-color: #f8fafc; border: 2px solid #b3d4fc; }
         """
 
-        # Dark theme stylesheet
         self.dark_theme = """
-            QWidget#MainWindow {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3436, stop:1 #1e272e);
-                border-radius: 15px;
-            }
-            QWidget {
-                font-family: 'Segoe UI', sans-serif;
-                color: #dfe6e9;
-            }
-            QTextEdit {
-                background-color: #353b48;
-                border: 2px solid #4b5468;
-                border-radius: 12px;
-                padding: 12px;
-                font-size: 14px;
-                color: #dfe6e9;
-            }
-            QTableWidget {
-                background-color: #353b48;
-                border: 2px solid #4b5468;
-                border-radius: 12px;
-                padding: 8px;
-                font-size: 13px;
-                color: #dfe6e9;
-                show-decoration-selected: 1;
-                alternate-background-color: #3b434f;
-            }
-            QTableWidget::item {
-                padding: 0px;
-                border: none;
-                height: 40px;
-                alignment: center;
-            }
-            QTableWidget::item:selected {
-                background-color: #0984e3;
-                color: #ffffff;
-            }
-            QTableWidget {
-                gridline-color: transparent;
-            }
-            QPushButton {
-                background-color: #0984e3;
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 8px 12px;
-                font-size: 13px;
-                margin-top: 10px;
-            }
-            QPushButton:hover {
-                background-color: #0652dd;
-            }
-            QPushButton:pressed {
-                background-color: #0549b5;
-            }
-            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton {
-                background-color: #353b48;
-                color: #74b9ff;
-                border: 2px solid #4b5468;
-                padding: 0px;
-                font-size: 14px;
-                min-width: 32px;
-                max-width: 32px;
-                min-height: 32px;
-                max-height: 32px;
-                border-radius: 8px;
-                margin: 4px;
-            }
-            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled {
-                background-color: #34495e;
-                color: #54a0ff;
-                border: 2px solid #74b9ff;
-            }
-            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled {
-                background-color: #2c3e50;
-                color: #339af0;
-                border: 2px solid #74b9ff;
-            }
-            QPushButton#speakerButton:disabled {
-                color: #6b7280;
-                border: 2px solid #4b5468;
-            }
-            QPushButton#backButton {
-                background-color: #353b48;
-                color: #e17055;
-                border: 2px solid #4b5468;
-                padding: 4px 8px;
-                font-size: 12px;
-                margin: 0 5px;
-            }
-            QPushButton#backButton:hover {
-                background-color: #34495e;
-                color: #d35400;
-                border: 2px solid #ff8a80;
-            }
-            QPushButton#backButton:pressed {
-                background-color: #2c3e50;
-                color: #b74700;
-                border: 2px solid #ff8a80;
-            }
-            QPushButton#undoButton, QPushButton#redoButton {
-                background-color: #353b48;
-                color: #74b9ff;
-                border: 2px solid #4b5468;
-                padding: 4px 8px;
-                font-size: 12px;
-                margin: 4px;
-                border-radius: 8px;
-            }
-            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled {
-                background-color: #34495e;
-                color: #54a0ff;
-                border: 2px solid #74b9ff;
-            }
-            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled {
-                background-color: #2c3e50;
-                color: #339af0;
-                border: 2px solid #74b9ff;
-            }
-            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled {
-                color: #6b7280;
-                border: 2px solid #4b5468;
-            }
-            QComboBox {
-                background-color: #353b48;
-                border: 2px solid #4b5468;
-                border-radius: 12px;
-                padding: 6px;
-                font-size: 13px;
-                color: #dfe6e9;
-            }
-            QComboBox#translateCombo {
-                max-width: 130px;
-                padding: 4px;
-                font-size: 12px;
-            }
-            QComboBox:hover {
-                background-color: #3b434f;
-                border: 2px solid #74b9ff;
-            }
-            QLabel {
-                font-weight: 600;
-                font-size: 13px;
-                color: #dfe6e9;
-                margin-right: 8px;
-                padding: 2px;
-            }
-            #titleLabel {
-                font-size: 14px;
-                font-weight: bold;
-                color: #54a0ff;
-                padding: 8px;
-            }
-            #headerContainer {
-                background: transparent;
-                padding: 10px 15px;
-                margin: 0;
-            }
-            #exportContainer, #iaQueryContainer, #iaResponseContainer {
-                background-color: #2d3436;
-                border: 2px solid #4b5468;
-                border-radius: 12px;
-                margin-top: 10px;
-                padding: 12px;
-            }
-            QLineEdit {
-                background-color: #353b48;
-                border: 2px solid #4b5468;
-                border-radius: 12px;
-                padding: 8px;
-                font-size: 13px;
-                color: #dfe6e9;
-            }
-            QLineEdit:hover {
-                background-color: #3b434f;
-                border: 2px solid #74b9ff;
-            }
+            QWidget#MainWindow { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2d3436, stop:1 #1e272e); border-radius: 15px; }
+            QWidget { font-family: 'Segoe UI', sans-serif; color: #dfe6e9; }
+            QTextEdit { background-color: #353b48; border: 2px solid #4b5468; border-radius: 12px; padding: 12px; font-size: 14px; color: #dfe6e9; border-top: none; }
+            QTableWidget { background-color: #353b48; border: 2px solid #4b5468; border-radius: 12px; padding: 8px; font-size: 13px; color: #dfe6e9; show-decoration-selected: 1; alternate-background-color: #3b434f; border-top: none; }
+            QTableWidget::item { padding: 0px; border: none; height: 40px; alignment: center; }
+            QTableWidget::item:selected { background-color: #0984e3; color: #ffffff; }
+            QTableWidget { gridline-color: transparent; }
+            QPushButton { background-color: #0984e3; color: white; border: none; border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-top: 10px; }
+            QPushButton:hover { background-color: #0652dd; }
+            QPushButton:pressed { background-color: #0549b5; }
+            QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton { background-color: #353b48; color: #74b9ff; border: 2px solid #4b5468; padding: 0px; font-size: 14px; min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px; border-radius: 8px; margin: 4px; border-top: none; }
+            QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled { background-color: #34495e; color: #54a0ff; border: 2px solid #74b9ff; }
+            QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled { background-color: #2c3e50; color: #339af0; border: 2px solid #74b9ff; }
+            QPushButton#speakerButton:disabled { color: #6b7280; border: 2px solid #4b5468; }
+            QPushButton#backButton { background-color: #353b48; color: #e17055; border: 2px solid #4b5468; padding: 4px 8px; font-size: 12px; margin: 0 5px; border-top: none; }
+            QPushButton#backButton:hover { background-color: #34495e; color: #d35400; border: 2px solid #ff8a80; }
+            QPushButton#backButton:pressed { background-color: #2c3e50; color: #b74700; border: 2px solid #ff8a80; }
+            QPushButton#undoButton, QPushButton#redoButton { background-color: #353b48; color: #74b9ff; border: 2px solid #4b5468; padding: 4px 8px; font-size: 12px; margin: 4px; border-radius: 8px; border-top: none; }
+            QPushButton#undoButton:hover, QPushButton#redoButton:hover:enabled { background-color: #34495e; color: #54a0ff; border: 2px solid #74b9ff; }
+            QPushButton#undoButton:pressed, QPushButton#redoButton:pressed:enabled { background-color: #2c3e50; color: #339af0; border: 2px solid #74b9ff; }
+            QPushButton#undoButton:disabled, QPushButton#redoButton:disabled { color: #6b7280; border: 2px solid #4b5468; }
+            QComboBox { background-color: #353b48; border: 2px solid #4b5468; border-radius: 12px; padding: 6px; font-size: 13px; color: #dfe6e9; border-top: none; }
+            QComboBox#translateCombo { max-width: 130px; padding: 4px; font-size: 12px; }
+            QComboBox:hover { background-color: #3b434f; border: 2px solid #74b9ff; }
+            QLabel { font-weight: 600; font-size: 13px; color: #dfe6e9; margin-right: 8px; padding: 2px; }
+            #titleLabel { font-size: 14px; font-weight: bold; color: #54a0ff; padding: 8px; }
+            #headerContainer { background: transparent; padding: 10px 15px; margin: 0; border: none; }
+            #exportContainer, #iaQueryContainer, #iaResponseContainer { background-color: #2d3436; border: 2px solid #4b5468; border-radius: 12px; margin-top: 10px; padding: 12px; border-top: none; }
+            QLineEdit { background-color: #353b48; border: 2px solid #4b5468; border-radius: 12px; padding: 8px; font-size: 13px; color: #dfe6e9; border-top: none; }
+            QLineEdit:hover { background-color: #3b434f; border: 2px solid #74b9ff; }
         """
 
         self.setStyleSheet(self.light_theme)
@@ -470,6 +168,8 @@ class NuevaVentana(QWidget):
         main_layout.addLayout(layout)
 
         left_layout = QVBoxLayout()
+        left_layout.setSpacing(6)
+        left_layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(left_layout, 3)
 
         self.textbox = QTextEdit()
@@ -477,8 +177,8 @@ class NuevaVentana(QWidget):
         self.textbox.textChanged.connect(self.check_text_changes)
         left_layout.addWidget(self.textbox)
 
-        # Agregar botones para deshacer/rehacer
         edit_buttons_layout = QHBoxLayout()
+        edit_buttons_layout.setContentsMargins(0, 0, 0, 0)
         self.undo_button = QPushButton("↶ Deshacer")
         self.undo_button.setObjectName("undoButton")
         self.undo_button.clicked.connect(self.textbox.undo)
@@ -492,7 +192,6 @@ class NuevaVentana(QWidget):
         edit_buttons_layout.addStretch()
         left_layout.addLayout(edit_buttons_layout)
 
-        # Conectar señales para habilitar/deshabilitar botones
         self.textbox.undoAvailable.connect(self.undo_button.setEnabled)
         self.textbox.redoAvailable.connect(self.redo_button.setEnabled)
 
@@ -500,6 +199,7 @@ class NuevaVentana(QWidget):
         ia_response_container.setObjectName("iaResponseContainer")
         ia_response_layout = QVBoxLayout()
         ia_response_container.setLayout(ia_response_layout)
+        ia_response_layout.setContentsMargins(0, 0, 0, 0)
 
         self.ia_response_box = QTextEdit()
         self.ia_response_box.setReadOnly(True)
@@ -514,11 +214,7 @@ class NuevaVentana(QWidget):
         translate_layout.addWidget(QLabel("🈯 Traducir a:"))
         self.translate_combo = QComboBox()
         self.translate_combo.setObjectName("translateCombo")
-        self.translate_combo.addItems([
-            "Español (es)",
-            "Inglés (en)",
-            "Portugués (pt)"
-        ])
+        self.translate_combo.addItems(["Español (es)", "Inglés (en)", "Portugués (pt)"])
         self.translate_combo.currentIndexChanged.connect(self.handle_translation)
         translate_layout.addWidget(self.translate_combo)
 
@@ -779,7 +475,6 @@ class NuevaVentana(QWidget):
                 self.textbox.setPlainText(content)
                 self.original_text = content
                 self.current_file = filepath
-                # Reiniciar el resaltador con el nuevo texto original
                 self.highlighter = TextHighlighter(self.textbox.document(), self.original_text)
             self.ia_response_box.clear()
             self.ia_response_box.hide()
@@ -826,7 +521,6 @@ class NuevaVentana(QWidget):
                 content = self.textbox.toPlainText()
                 file.write(content)
                 self.original_text = content
-                # Reiniciar el resaltador después de guardar
                 self.highlighter = TextHighlighter(self.textbox.document(), self.original_text)
             self.save_button.hide()
             QMessageBox.information(self, "Éxito", f"Archivo guardado correctamente en: {os.path.basename(self.current_file)}")
@@ -947,6 +641,7 @@ class NuevaVentana(QWidget):
         menu = QMenu()
         rename_action = menu.addAction("Renombrar archivo")
         delete_action = menu.addAction("Eliminar archivo")
+        view_location_action = menu.addAction("Ver ubicación del archivo")
         
         action = menu.exec_(self.file_list.viewport().mapToGlobal(position))
 
@@ -954,6 +649,21 @@ class NuevaVentana(QWidget):
             self.rename_file(self.file_list.row(item), 0)
         elif action == delete_action:
             self.delete_file(item)
+        elif action == view_location_action:
+            self.open_file_location(item)
+
+    def open_file_location(self, item: QTableWidgetItem):
+        filename = item.data(Qt.UserRole)
+        if filename and filename != "⚠️ No se encontraron archivos.":
+            filepath = os.path.join(self.folder_path, filename)
+            if os.path.exists(filepath):
+                try:
+                    # Abrir la carpeta y seleccionar el archivo en Windows
+                    subprocess.Popen(['explorer.exe', '/select,', filepath])
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"No se pudo abrir la ubicación: {e}")
+            else:
+                QMessageBox.warning(self, "Advertencia", "El archivo no existe.")
 
     def delete_file(self, item: QTableWidgetItem):
         filename = item.data(Qt.UserRole)
