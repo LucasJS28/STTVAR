@@ -1,9 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from interfaz.grabadora import TranscriptionWindow
+from interfaz.launcher import Launcher  # Importa tu launcher personalizado
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ventana = TranscriptionWindow()  # ✅ Sin argumentos
-    ventana.show()
-    sys.exit(app.exec_())
+    launcher = Launcher(app)
+    launcher.start()
+    sys.exit(launcher.exec_())

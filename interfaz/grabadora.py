@@ -1,21 +1,22 @@
 from PyQt5.QtWidgets import (
     QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QLabel,
-    QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy, QApplication
+    QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy, QApplication, QProgressDialog, QProgressBar
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation  # Añadido QPropertyAnimation
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 import sounddevice as sd
 from transcripcion.transcriber import TranscriberThread
 import os
 import argostranslate.translate
 from datetime import datetime
 from interfaz.menu import NuevaVentana
-import sys
 
 class TranscriptionWindow(QWidget):
     transcription_status_changed = pyqtSignal(bool)
 
-    def __init__(self):
+    def __init__(self, model):
         super().__init__()
+        self.model = model  # Recibir el modelo desde el Launcher
         self.setWindowTitle("🎙 Transcriptor en Tiempo Real")
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setMinimumSize(650, 110)
@@ -35,7 +36,6 @@ class TranscriptionWindow(QWidget):
         self._initialize_ui_state()
 
         self.old_pos = None
-
         self._hide_button_timer = QTimer(self)
         self._hide_button_timer.setSingleShot(True)
         self._hide_button_timer.timeout.connect(self._fade_out_buttons)
@@ -61,10 +61,8 @@ class TranscriptionWindow(QWidget):
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        if self.transcription_active:
-            # No ocultar si el QComboBox tiene su menú desplegable abierto
-            if not self.language_combo.view().isVisible():
-                self._hide_button_timer.start(300)
+        if self.transcription_active and not self.language_combo.view().isVisible():
+            self._hide_button_timer.start(300)
         super().leaveEvent(event)
 
     def _setup_ui(self):
@@ -310,6 +308,31 @@ class TranscriptionWindow(QWidget):
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
             return
 
+        # Crear diálogo de carga simple
+        progress = QProgressDialog("Iniciando transcripción...", None, 0, 0, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowFlags(Qt.FramelessWindowHint)
+        progress.setMinimumDuration(0)
+        progress.setAutoClose(True)
+        progress.setStyleSheet("""
+            QProgressDialog {
+                background-color: #2a2a2a;
+                border: 2px solid #c0392b;
+                border-radius: 10px;
+                color: #dddddd;
+                font-size: 16px;
+                font-weight: bold;
+                padding: 10px;
+            }
+            QLabel {
+                color: #dddddd;
+                font-size: 16px;
+            }
+        """)
+        progress.setMinimumSize(300, 150)
+        progress.show()
+        QApplication.processEvents()
+
         output_dir = "stt_guardados"
         audio_output_dir = "sttaudio_guardados"
         os.makedirs(output_dir, exist_ok=True)
@@ -320,7 +343,7 @@ class TranscriptionWindow(QWidget):
         self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
 
         try:
-            self.transcriber_thread = TranscriberThread(device_index, self.current_transcription_filepath, self.current_audio_filepath)
+            self.transcriber_thread = TranscriberThread(self.model, device_index, self.current_transcription_filepath, self.current_audio_filepath)
             self.transcriber_thread.new_text.connect(self._update_text_area)
             self.transcriber_thread.finished.connect(self._on_transcription_finished)
             self.transcriber_thread.start()
@@ -329,11 +352,14 @@ class TranscriptionWindow(QWidget):
             self.transcription_active = True
             self.transcription_status_changed.emit(True)
             self.text_area.clear()
-
             self._already_stopped = False
 
         except Exception as e:
+            progress.close()
             QMessageBox.critical(self, "Error", str(e))
+            return
+
+        progress.close()
 
     def _stop_transcription(self):
         if self._already_stopped:
@@ -460,16 +486,9 @@ class TranscriptionWindow(QWidget):
             event.accept()
 
     def _open_settings_window(self):
-        from .menu import NuevaVentana
-        self.settings_window = NuevaVentana()
+        self.settings_window = NuevaVentana(self)  # Pasar la instancia actual
         self.settings_window.show()
-        self.close()
+        self.hide()  # Ocultar en lugar de cerrar
 
     def _on_language_changed(self, index):
         self.selected_language = self.language_combo.itemData(index)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = TranscriptionWindow()
-    window.show()
-    sys.exit(app.exec_())

@@ -1,3 +1,4 @@
+# interfaz/menu.py
 import subprocess
 import os
 import sys
@@ -41,8 +42,9 @@ class TextHighlighter(QSyntaxHighlighter):
             current_pos = start_idx + len(word)
 
 class NuevaVentana(QWidget):
-    def __init__(self):
+    def __init__(self, parent_transcription_window):
         super().__init__()
+        self.parent_transcription_window = parent_transcription_window  # Almacenar la ventana padre
         self.setObjectName("MainWindow")
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
@@ -328,9 +330,7 @@ class NuevaVentana(QWidget):
         self.file_list.setUpdatesEnabled(True)
 
     def back_to_transcription(self):
-        from interfaz.grabadora import TranscriptionWindow
-        self.main_window = TranscriptionWindow()
-        self.main_window.show()
+        self.parent_transcription_window.show()  # Mostrar la ventana original
         self.close()
 
     def get_code_from_selection(self):
@@ -529,7 +529,7 @@ class NuevaVentana(QWidget):
         except IOError as e:
             QMessageBox.critical(self, "Error", f"Error de E/S al guardar el archivo: {e}.")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo: {e}.")
+            QMessageBox.critical(self, "Error", f"No se pudo guardar el archivo: {e}")
 
     def export_selected_format(self):
         if not self.current_file:
@@ -800,13 +800,11 @@ class NuevaVentana(QWidget):
     def closeEvent(self, event):
         self.stop_text_to_speech()
         self.audio_player.stop()
-        from interfaz.grabadora import TranscriptionWindow
-        self.main_window = TranscriptionWindow()
-        self.main_window.show()
+        self.parent_transcription_window.show()  # Volver a la ventana original
         event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = NuevaVentana()
+    window = NuevaVentana(None)  # Solo para pruebas, normalmente se pasa desde TranscriptionWindow
     window.show()
     sys.exit(app.exec_())
