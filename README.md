@@ -7,13 +7,13 @@
 
 -----
 
-¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)\! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real**, la **grabación simultánea de audio**, el **análisis de texto inteligente** y la **traducción** en múltiples idiomas. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5**, **Ollama**, **pyttsx3** y **Argos Translate**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento, gestionar grabaciones de audio, traducir textos y escuchar el análisis de la IA.
+¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)\! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real** con **selección de idioma**, la **grabación simultánea de audio**, el **análisis de texto inteligente** y la **traducción** en múltiples idiomas. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5**, **Ollama**, **pyttsx3** y **Argos Translate**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento, gestionar grabaciones de audio, traducir textos y escuchar el análisis de la IA.
 
 -----
 
 ## ✨ Características Destacadas
 
-  * **🎤 Transcripción Instantánea:** Convierte tu voz en texto al momento gracias a la potencia de **Vosk**.
+  * **🎤 Transcripción Instantánea con Selección de Idioma:** Convierte tu voz en texto al momento, con la opción de elegir entre español o inglés para la transcripción en tiempo real, adaptando dinámicamente el motor de reconocimiento de voz.
   * **🎧 Grabación de Audio Concurrente:** Captura y guarda el audio original mientras se realiza la transcripción, permitiendo una revisión detallada.
   * **🖥️ Interfaz Intuitiva con PyQt5:** Explora, edita y gestiona tus transcripciones y grabaciones fácilmente con una UI moderna y responsiva.
   * **🤖 Análisis Inteligente con IA Local:** Integra **Ollama** con `mistral:7b-instruct-q4_K_M` para obtener insights, resúmenes o respuestas a tus preguntas directamente desde el texto transcrito, ¡todo offline\!
@@ -28,13 +28,18 @@
 
 Para poner STTVAR en marcha, sigue estos sencillos pasos:
 
-### 1\. Descarga el Modelo de Voz Vosk
+### 1\. Descarga los Modelos de Voz Vosk
 
-STTVAR utiliza un modelo de reconocimiento de voz local para la transcripción.
+STTVAR utiliza modelos de reconocimiento de voz locales para la transcripción. Necesitarás descargar al menos el modelo en español y el inglés.
 
-1.  Visita 🔗 [Vosk Model Small ES](https://alphacephei.com/vosk/models) (se recomienda `vosk-model-small-es-0.42`).
-2.  **Descomprime** el archivo ZIP descargado.
-3.  **Renombra** la carpeta resultante a `vosk-model-es-0.42` y colócala en el directorio raíz del proyecto (junto a `main.py`).
+1.  Visita 🔗 [Vosk Models](https://alphacephei.com/vosk/models)
+2.  **Descarga los siguientes modelos** (o sus versiones más recientes y pequeñas):
+      * Español: `vosk-model-small-es-0.42`
+      * Inglés: `vosk-model-small-en-us-0.22` (o similar, busca uno para "en-us" o "en")
+3.  **Descomprime** los archivos ZIP descargados.
+4.  **Renombra** las carpetas resultantes y colócalas en el directorio raíz del proyecto (junto a `main.py`). Asegúrate de que los nombres sean los que usa el programa, por ejemplo:
+      * `vosk-model-es-0.42`
+      * `vosk-model-en-us-0.22`
 
 ### 2\. Instala las Dependencias de Python
 
@@ -109,7 +114,8 @@ STTVAR/
 ├── interfaz/
 │   ├── grabadora.py         # 🎤 UI principal de grabación, transcripción en vivo y grabación de audio
 │   └── menu.py              # 📝 Menú para explorar, editar, consultar, traducir y reproducir audio
-├── stt_guardados/           # 📂 Carpeta con transcripciones y sus audios guardados (YYYY-MM-DD_HH-MM-SS.txt / .wav)
+├── stt_guardados/           # 📂 Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
+├── sttaudio_guardados/      # 🎧 Carpeta con los audios originales grabados (YYYY-MM-DD_HH-MM-SS.wav)
 ├── traduccion/              # 🌐 Módulo para la gestión y ejecución de traducciones
 │   ├── __pycache__
 │   ├── __init__.py
@@ -119,6 +125,7 @@ STTVAR/
 │   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
 │   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
 ├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk (¡recuerda renombrarlo!)
+├── vosk-model-en-us-0.22/   # 🗣️ Modelo de reconocimiento de voz de Vosk para inglés
 ├── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
 ├── main.py                  # ▶️ Punto de entrada principal de la aplicación
 ├── README.md                # 📖 Documentación del proyecto
@@ -141,17 +148,18 @@ STTVAR/
 
 3.  **Interfaz Principal (Grabadora):**
 
+      * **¡Nuevo\! Elige el idioma de transcripción:** Antes de iniciar la grabación, selecciona el idioma deseado para la transcripción (Español o Inglés) desde el selector de idioma en la interfaz. Esto cargará el modelo Vosk correspondiente.
       * **Selecciona tu dispositivo** de micrófono desde el menú desplegable.
-      * Haz clic en 🔴 **Iniciar Grabación** para que la transcripción en tiempo real comience a aparecer.
-          * **¡Nuevo\!** A la vez que se transcribe, el audio de tu micrófono será **grabado y guardado** automáticamente.
+      * Haz clic en 🔴 **Iniciar Grabación** para que la transcripción en tiempo real comience a aparecer en el idioma seleccionado.
+          * A la vez que se transcribe, el audio de tu micrófono será **grabado y guardado** automáticamente en la carpeta `sttaudio_guardados/`.
       * Usa 🔇/🎙️ para **silenciar/reactivar** tu micrófono sin detener la transcripción.
       * Presiona ■ **Detener Grabación** para finalizar y guardar la transcripción en `stt_guardados/`. Se te preguntará si deseas guardar o descartar. El audio se guardará con el mismo nombre y timestamp (ej. `YYYY-MM-DD_HH-MM-SS.wav`).
 
 4.  **Explorador de Transcripciones (Botón ⚙️):**
 
       * Accede a una lista de tus transcripciones guardadas (`.txt`).
-      * Al seleccionar una transcripción, si existe un archivo de audio (`.wav`) con el mismo nombre asociado, se cargará automáticamente.
-      * **¡Nuevo\! Reproducir Audio:** Verás un botón de **"Reproducir Audio"** (o similar) que te permitirá escuchar la grabación original asociada a la transcripción seleccionada.
+      * Al seleccionar una transcripción, la aplicación buscará automáticamente un archivo de audio (`.wav`) con el mismo nombre en la carpeta `sttaudio_guardados/` para vincularlo.
+      * **Reproducir Audio:** Verás un botón de **"Reproducir Audio"** (o similar) que te permitirá escuchar la grabación original asociada a la transcripción seleccionada.
       * **Edita** el texto directamente en un editor integrado.
       * **Exporta** tus transcripciones a **PDF**, **Word** o **Markdown**.
       * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz.
@@ -163,7 +171,8 @@ STTVAR/
 
 ## ⚠️ Consideraciones y Consejos
 
-  * **Mejora del Reconocimiento:** Si trabajas con español chileno, te animamos a personalizar el archivo `vocabulariocl.py` con modismos y términos locales para optimizar la precisión de Vosk.
+  * **Precisión del Reconocimiento de Voz:** Para una **precisión óptima en la transcripción**, es crucial que el idioma que elijas en la interfaz (Español o Inglés) coincida con el idioma que se está hablando. La selección de idioma cambia el modelo Vosk que se utiliza.
+  * **Mejora del Reconocimiento (Español Chileno):** Si trabajas con español chileno, te animamos a personalizar el archivo `vocabulariocl.py` con modismos y términos locales para optimizar la precisión de Vosk en este dialecto.
   * **Captura de Audio del Sistema:** Para transcribir y grabar audio que no provenga directamente de un micrófono (ej. YouTube, videollamadas), considera usar herramientas de audio virtual como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
   * **Personalización Visual:** Los estilos CSS para la interfaz están en `grabadora.py` y `menu.py`. ¡Siéntete libre de jugar con los colores y la tipografía\!
   * **Modelo de IA:** La ruta y el modelo de Ollama pueden cambiarse en `menu.py` si deseas experimentar con otros LLMs compatibles.
