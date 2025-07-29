@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation
 import sounddevice as sd
 from transcripcion.transcriber import TranscriberThread
 import os
+import argostranslate.translate
 from datetime import datetime
 from interfaz.menu import NuevaVentana
 import sys
@@ -24,8 +25,9 @@ class TranscriptionWindow(QWidget):
         self.transcriber_thread = None
         self.transcription_active = False
         self.current_transcription_filepath = None
-        self.current_audio_filepath = None  # Nuevo atributo para el archivo de audio
-        self._already_stopped = False  # Para evitar doble llamado
+        self.current_audio_filepath = None
+        self.selected_language = "es"
+        self._already_stopped = False
 
         self._setup_ui()
         self._populate_devices()
@@ -60,7 +62,9 @@ class TranscriptionWindow(QWidget):
 
     def leaveEvent(self, event):
         if self.transcription_active:
-            self._hide_button_timer.start(300)
+            # No ocultar si el QComboBox tiene su menú desplegable abierto
+            if not self.language_combo.view().isVisible():
+                self._hide_button_timer.start(300)
         super().leaveEvent(event)
 
     def _setup_ui(self):
@@ -125,6 +129,43 @@ class TranscriptionWindow(QWidget):
             }
         """)
 
+        self.language_combo = QComboBox()
+        self.language_combo.addItem("Español", "es")
+        self.language_combo.addItem("Inglés", "en")
+        self.language_combo.setToolTip("Selecciona el idioma de transcripción.")
+        self.language_combo.setFixedSize(100, 36)
+        self.language_combo.setCursor(Qt.PointingHandCursor)
+        self.language_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #444444;
+                border: 2px solid #666666;
+                border-radius: 18px;
+                color: #dddddd;
+                font-size: 14px;
+                padding: 8px;
+                font-weight: bold;
+            }
+            QComboBox:hover {
+                border-color: #e74c3c;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #3a3a3a;
+                selection-background-color: #557799;
+                color: #e0e0e0;
+                border: none;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                width: 12px;
+                height: 12px;
+            }
+        """)
+        self.language_combo.currentIndexChanged.connect(self._on_language_changed)
+
         self.toggle_recording_button = QPushButton("🔴 Iniciar Grabación")
         self.toggle_recording_button.setCursor(Qt.PointingHandCursor)
         self.toggle_recording_button.setStyleSheet("""
@@ -176,6 +217,7 @@ class TranscriptionWindow(QWidget):
         self.buttons_layout.setSpacing(10)
         self.buttons_layout.addWidget(self.toggle_recording_button)
         self.buttons_layout.addWidget(self.mute_button)
+        self.buttons_layout.addWidget(self.language_combo)
 
         self.settings_button = QPushButton("⚙️")
         self.settings_button.setFixedSize(32, 32)
@@ -240,6 +282,8 @@ class TranscriptionWindow(QWidget):
         self.toggle_recording_button.setWindowOpacity(1)
         self.mute_button.setVisible(False)
         self.mute_button.setWindowOpacity(0)
+        self.language_combo.setVisible(False)
+        self.language_combo.setWindowOpacity(0)
 
     def _populate_devices(self):
         try:
@@ -271,7 +315,6 @@ class TranscriptionWindow(QWidget):
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(audio_output_dir, exist_ok=True)
 
-        # Generar nombre base para ambos archivos
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"
         self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
@@ -313,24 +356,24 @@ class TranscriptionWindow(QWidget):
             self.transcriber_thread.set_mute(muted)
 
     def _fade_in_buttons(self):
-        for btn in [self.toggle_recording_button, self.mute_button]:
-            btn.setVisible(True)
-            anim = QPropertyAnimation(btn, b"windowOpacity")
+        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo]:
+            widget.setVisible(True)
+            anim = QPropertyAnimation(widget, b"windowOpacity")
             anim.setDuration(200)
-            anim.setStartValue(btn.windowOpacity() if btn.isVisible() else 0)
+            anim.setStartValue(widget.windowOpacity() if widget.isVisible() else 0)
             anim.setEndValue(1)
             anim.start()
-            setattr(btn, "_anim", anim)  # Evitar que el GC elimine animaciones
+            setattr(widget, "_anim", anim)
 
     def _fade_out_buttons(self):
-        for btn in [self.toggle_recording_button, self.mute_button]:
-            anim = QPropertyAnimation(btn, b"windowOpacity")
+        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo]:
+            anim = QPropertyAnimation(widget, b"windowOpacity")
             anim.setDuration(200)
-            anim.setStartValue(btn.windowOpacity())
+            anim.setStartValue(widget.windowOpacity())
             anim.setEndValue(0)
-            anim.finished.connect(lambda b=btn: b.setVisible(False))
+            anim.finished.connect(lambda w=widget: w.setVisible(False))
             anim.start()
-            setattr(btn, "_anim", anim)
+            setattr(widget, "_anim", anim)
 
     def _update_ui_for_transcription_status(self, active: bool):
         self.device_label.setVisible(not active)
@@ -343,21 +386,44 @@ class TranscriptionWindow(QWidget):
         if active:
             self.toggle_recording_button.setText("■ Detener Grabación")
             self.mute_button.setText("🎙️" if not self.mute_button.isChecked() else "🔇")
-            # Ocultamos ambos botones hasta que hover los muestre
             self.toggle_recording_button.setVisible(False)
             self.toggle_recording_button.setWindowOpacity(0)
             self.mute_button.setVisible(False)
             self.mute_button.setWindowOpacity(0)
+            self.language_combo.setVisible(False)
+            self.language_combo.setWindowOpacity(0)
         else:
             self.toggle_recording_button.setText("🔴 Iniciar Grabación")
             self.toggle_recording_button.setVisible(True)
             self.toggle_recording_button.setWindowOpacity(1)
             self.mute_button.setVisible(False)
             self.mute_button.setWindowOpacity(0)
+            self.language_combo.setVisible(False)
+            self.language_combo.setWindowOpacity(0)
 
-    def _update_text_area(self, text: str):
-        self.text_area.setPlainText(text)
-        self.text_area.verticalScrollBar().setValue(self.text_area.verticalScrollBar().maximum())
+    def _update_text_area(self, text_es: str):
+        if self.selected_language == "es":
+            self.text_area.setPlainText(text_es)
+        else:
+            try:
+                installed_languages = argostranslate.translate.get_installed_languages()
+                from_lang = next((lang for lang in installed_languages if lang.code == "es"), None)
+                to_lang = next((lang for lang in installed_languages if lang.code == "en"), None)
+
+                if from_lang and to_lang:
+                    translation = from_lang.get_translation(to_lang)
+                    text_en = translation.translate(text_es)
+                else:
+                    text_en = "[Modelos de traducción no disponibles] " + text_es
+
+            except Exception as e:
+                text_en = f"[Error al traducir] {str(e)}\nTexto original: {text_es}"
+
+            self.text_area.setPlainText(text_en)
+
+        self.text_area.verticalScrollBar().setValue(
+            self.text_area.verticalScrollBar().maximum()
+        )
 
     def _on_transcription_finished(self):
         self._stop_transcription()
@@ -398,6 +464,9 @@ class TranscriptionWindow(QWidget):
         self.settings_window = NuevaVentana()
         self.settings_window.show()
         self.close()
+
+    def _on_language_changed(self, index):
+        self.selected_language = self.language_combo.itemData(index)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
