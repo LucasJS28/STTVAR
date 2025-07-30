@@ -1,2 +1,10 @@
 # Ignorar modelo de Vosk
 vosk-model-es-0.42/
+
+# Ignorar todos los archivos y subcarpetas dentro de estas carpetas
+stt_guardados/*
+sttaudio_guardados/*
+
+# Pero no ignorar las carpetas mismas
+!stt_guardados/.gitkeep
+!sttaudio_guardados/.gitkeep
