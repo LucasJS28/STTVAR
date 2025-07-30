@@ -2,6 +2,7 @@
 import subprocess
 import os
 import sys
+import requests
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem,
     QPushButton, QMessageBox, QApplication, QLabel, QComboBox, QFileDialog,
@@ -741,25 +742,26 @@ class NuevaVentana(QWidget):
         self.tts_button.setText("🔊")
 
     def consultar_ollama(self, prompt: str) -> str:
-        ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
-        if not os.path.exists(ruta_ollama):
-            return "Error: No se encontró el ejecutable de Ollama."
-
         try:
-            process = subprocess.Popen(
-                [ruta_ollama, 'run', 'mistral:7b-instruct-q4_K_M'],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
+            # Enviar la consulta al servidor de Ollama (puerto predeterminado: 11434)
+            response = requests.post(
+                'http://localhost:11434/api/generate',
+                json={
+                    "model": "mistral:7b-instruct-q4_K_M",
+                    "prompt": prompt,
+                    "stream": False
+                },
+                timeout=60
             )
-            stdout, stderr = process.communicate(prompt + "\n", timeout=60)
-            if process.returncode != 0:
-                return f"Error al ejecutar Ollama: {stderr.strip()}"
-            return stdout.strip()
-        except subprocess.TimeoutExpired:
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("response", "Error: No se recibió respuesta válida.")
+            else:
+                return f"Error: Código de estado HTTP {response.status_code}"
+        except requests.exceptions.Timeout:
             return "Error: La consulta a Ollama excedió el tiempo límite."
+        except requests.exceptions.RequestException as e:
+            return f"Error al conectar con Ollama: {str(e)}"
         except Exception as e:
             return f"Error inesperado: {str(e)}"
 
