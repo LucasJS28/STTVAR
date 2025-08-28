@@ -112,8 +112,12 @@ Puedes usar el script `instalar_modelos.py` ubicado en la carpeta `traduccion/` 
 ```
 STTVAR/
 ├── interfaz/
+│   ├── __pycache__
+│   ├── __init__.py
 │   ├── grabadora.py         # 🎤 UI principal de grabación, transcripción en vivo y grabación de audio
-│   └── menu.py              # 📝 Menú para explorar, editar, consultar, traducir y reproducir audio
+│   ├── launcher.py          # ▶️ Script de inicio que verifica la aceptación de los términos y condiciones
+│   ├── menu.py              # 📝 Menú para explorar, editar, consultar, traducir y reproducir audio
+│   └── terminos.py          # 📄 Muestra los términos y condiciones de uso de la aplicación
 ├── stt_guardados/           # 📂 Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
 ├── sttaudio_guardados/      # 🎧 Carpeta con los audios originales grabados (YYYY-MM-DD_HH-MM-SS.wav)
 ├── traduccion/              # 🌐 Módulo para la gestión y ejecución de traducciones
@@ -122,18 +126,29 @@ STTVAR/
 │   ├── instalar_modelos.py  # 📥 Script para automatizar la descarga de modelos de traducción
 │   └── revisar_modelos.py   # 🔍 Script para verificar modelos de traducción instalados
 ├── transcripcion/
+│   ├── __pycache__
 │   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
 │   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
-├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk (¡recuerda renombrarlo!)
-├── vosk-model-en-us-0.22/   # 🗣️ Modelo de reconocimiento de voz de Vosk para inglés
+├── vocabularios/            # 💬 Carpeta que contiene archivos de vocabulario personalizados
+├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk para español
+├── vosk-model-en-us-0.22/   # 🗣️ (Opcional) Modelo de reconocimiento de voz de Vosk para inglés
 ├── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
 ├── main.py                  # ▶️ Punto de entrada principal de la aplicación
 ├── README.md                # 📖 Documentación del proyecto
 ├── requirements.txt         # 📦 Lista de dependencias de Python
-├── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
+└── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
 └── vocabulariocl.py         # 💬 (Opcional) Glosario de términos chilenos para mejorar el reconocimiento
 ```
 
+-----
+🔒 Términos y Condiciones de Uso
+Antes de usar la aplicación, se le presentará una pantalla de bienvenida que requiere la aceptación de los términos y condiciones. Estos términos están diseñados para garantizar la transparencia y el uso responsable de la herramienta.
+
+Uso Personal y Privacidad: La aplicación es para uso personal y no comercial. Todos los datos (grabaciones y transcripciones) se procesan de forma local en su dispositivo y nunca se envían a servidores externos.
+
+Responsabilidad del Usuario: Usted es el único responsable de cumplir con las leyes de privacidad y de obtener el consentimiento de todas las partes involucradas antes de grabar o transcribir una conversación. STTVAR no se hace responsable de ningún uso indebido o ilegal.
+
+La aplicación no se iniciará hasta que usted acepte estos términos.
 -----
 
 ## ▶️ Guía de Uso Rápido

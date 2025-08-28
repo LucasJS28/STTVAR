@@ -11,6 +11,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 from transcripcion.vosk_utils import cargar_modelo
 from .grabadora import TranscriptionWindow
+from .terminos import TermsAndConditionsDialog  # Importar la ventana de términos
 
 class ModelLoaderThread(QThread):
     progress = pyqtSignal(str, int)  # Señal para actualizar el texto y la barra de progreso
@@ -185,7 +186,17 @@ class Launcher:
     def _on_loading_finished(self):
         """Se ejecuta cuando la carga termina."""
         self.dialog.close()
-        self.open_main_window()
+
+        # Mostrar ventana de términos y condiciones
+        terms_dialog = TermsAndConditionsDialog()
+        if terms_dialog.exec_() == QDialog.Accepted:
+            # Si el usuario acepta, abrir la ventana principal
+            self.open_main_window()
+        else:
+            # Si el usuario no acepta, cerrar la aplicación
+            if self.ollama_process:
+                self.ollama_process.terminate()
+            sys.exit(0)
 
     def open_main_window(self):
         self.main_window = TranscriptionWindow(self.model)
