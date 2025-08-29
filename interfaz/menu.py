@@ -1,4 +1,3 @@
-# interfaz/menu.py
 import subprocess
 import os
 import sys
@@ -8,7 +7,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QMessageBox, QApplication, QLabel, QComboBox, QFileDialog,
     QLineEdit, QInputDialog, QMenu, QSizePolicy, QHeaderView
 )
-from PyQt5.QtCore import Qt, QPoint, QUrl, QSize
+from PyQt5.QtCore import Qt, QPoint, QUrl, QSize, QThread, pyqtSignal
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 from argostranslate import translate
@@ -42,10 +41,71 @@ class TextHighlighter(QSyntaxHighlighter):
                 self.setFormat(start_idx, len(word), self.new_word_format)
             current_pos = start_idx + len(word)
 
+class OllamaWorker(QThread):
+    result_signal = pyqtSignal(str)
+    error_signal = pyqtSignal(str)
+
+    def __init__(self, prompt):
+        super().__init__()
+        self.prompt = prompt
+
+    def run(self):
+        try:
+            response = requests.post(
+                'http://localhost:11434/api/generate',
+                json={
+                    "model": "mistral:7b-instruct-q4_K_M",
+                    "prompt": self.prompt,
+                    "stream": False
+                },
+                timeout=60
+            )
+            if response.status_code == 200:
+                result = response.json()
+                self.result_signal.emit(result.get("response", "Error: No se recibió respuesta válida."))
+            else:
+                self.error_signal.emit(f"Error: Código de estado HTTP {response.status_code}")
+        except requests.exceptions.Timeout:
+            self.error_signal.emit("Error: La consulta a Ollama excedió el tiempo límite.")
+        except requests.exceptions.RequestException as e:
+            self.error_signal.emit(f"Error al conectar con Ollama: {str(e)}")
+        except Exception as e:
+            self.error_signal.emit(f"Error inesperado: {str(e)}")
+
+class TranslationWorker(QThread):
+    result_signal = pyqtSignal(str)
+    error_signal = pyqtSignal(str)
+
+    def __init__(self, text, source_lang, target_lang, installed_languages):
+        super().__init__()
+        self.text = text
+        self.source_lang = source_lang
+        self.target_lang = target_lang
+        self.installed_languages = installed_languages
+
+    def run(self):
+        try:
+            source_lang_obj = next((lang for lang in self.installed_languages if lang.code == self.source_lang), None)
+            target_lang_obj = next((lang for lang in self.installed_languages if lang.code == self.target_lang), None)
+
+            if source_lang_obj is None or target_lang_obj is None:
+                self.error_signal.emit(f"No está instalado el paquete de traducción para: {self.source_lang} -> {self.target_lang}")
+                return
+
+            translator = source_lang_obj.get_translation(target_lang_obj)
+            if translator is None:
+                self.error_signal.emit(f"No existe traducción directa para: {self.source_lang} -> {self.target_lang}")
+                return
+
+            translated_text = translator.translate(self.text)
+            self.result_signal.emit(translated_text)
+        except Exception as e:
+            self.error_signal.emit(f"Error al traducir: {str(e)}")
+
 class NuevaVentana(QWidget):
     def __init__(self, parent_transcription_window):
         super().__init__()
-        self.parent_transcription_window = parent_transcription_window  # Almacenar la ventana padre
+        self.parent_transcription_window = parent_transcription_window
         self.setObjectName("MainWindow")
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
@@ -331,7 +391,7 @@ class NuevaVentana(QWidget):
         self.file_list.setUpdatesEnabled(True)
 
     def back_to_transcription(self):
-        self.parent_transcription_window.show()  # Mostrar la ventana original
+        self.parent_transcription_window.show()
         self.close()
 
     def get_code_from_selection(self):
@@ -357,35 +417,38 @@ class NuevaVentana(QWidget):
             self.translate_container.show()
             return
 
-        idioma_origen_obj = next((i for i in self.installed_languages if i.code == idioma_origen), None)
-        idioma_destino_obj = next((i for i in self.installed_languages if i.code == idioma_destino), None)
+        # Mostrar mensaje de carga
+        self.ia_response_box.setPlainText("Traduciendo, por favor espera...")
+        self.ia_response_box.show()
+        self.tts_button.hide()
+        self.translate_container.show()
+        QApplication.processEvents()
 
-        if idioma_origen_obj is None or idioma_destino_obj is None:
-            QMessageBox.critical(self, "Error", f"No está instalado el paquete de traducción para: {idioma_origen} -> {idioma_destino}")
-            self.ia_response_box.hide()
-            self.tts_button.hide()
-            self.translate_container.hide()
-            return
+        # Crear y ejecutar el hilo de traducción
+        self.translation_worker = TranslationWorker(self.texto_original, idioma_origen, idioma_destino, self.installed_languages)
+        self.translation_worker.result_signal.connect(self.handle_translation_result)
+        self.translation_worker.error_signal.connect(self.handle_translation_error)
+        self.translation_worker.start()
 
-        traductor = idioma_origen_obj.get_translation(idioma_destino_obj)
-        if traductor is None:
-            QMessageBox.critical(self, "Error", f"No existe traducción directa para: {idioma_origen} -> {idioma_destino}")
-            self.ia_response_box.hide()
-            self.tts_button.hide()
-            self.translate_container.hide()
-            return
+    def handle_translation_result(self, translated_text):
+        self.ia_response_box.setPlainText(translated_text)
+        self.ia_response_box.show()
+        self.tts_button.show()
+        self.translate_container.show()
+        self.stop_text_to_speech()
+        self.is_reading = False
+        self.tts_button.setText("🔊")
+        self.translation_worker = None
 
-        try:
-            traduccion = traductor.translate(self.texto_original)
-            self.ia_response_box.setPlainText(traduccion)
-            self.ia_response_box.show()
-            self.tts_button.show()
-            self.translate_container.show()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error al traducir: {e}")
-            self.ia_response_box.hide()
-            self.tts_button.hide()
-            self.translate_container.hide()
+    def handle_translation_error(self, error):
+        self.ia_response_box.setPlainText(error)
+        self.ia_response_box.show()
+        self.tts_button.hide()
+        self.translate_container.hide()
+        self.stop_text_to_speech()
+        self.is_reading = False
+        self.tts_button.setText("🔊")
+        self.translation_worker = None
 
     def load_file_list(self):
         self.file_list.clearContents()
@@ -659,7 +722,6 @@ class NuevaVentana(QWidget):
             filepath = os.path.join(self.folder_path, filename)
             if os.path.exists(filepath):
                 try:
-                    # Abrir la carpeta y seleccionar el archivo en Windows
                     subprocess.Popen(['explorer.exe', '/select,', filepath])
                 except Exception as e:
                     QMessageBox.critical(self, "Error", f"No se pudo abrir la ubicación: {e}")
@@ -731,39 +793,29 @@ class NuevaVentana(QWidget):
         self.translate_container.show()
         QApplication.processEvents()
 
-        respuesta = self.consultar_ollama(prompt)
-        self.texto_original = respuesta
-        self.ia_response_box.setPlainText(respuesta)
+        self.worker = OllamaWorker(prompt)
+        self.worker.result_signal.connect(self.handle_ia_response)
+        self.worker.error_signal.connect(self.handle_ia_error)
+        self.worker.start()
+
+    def handle_ia_response(self, response):
+        self.texto_original = response
+        self.ia_response_box.setPlainText(response)
         self.ia_query_input.clear()
         self.translate_combo.setCurrentIndex(0)
-
         self.stop_text_to_speech()
         self.is_reading = False
         self.tts_button.setText("🔊")
+        self.worker = None
 
-    def consultar_ollama(self, prompt: str) -> str:
-        try:
-            # Enviar la consulta al servidor de Ollama (puerto predeterminado: 11434)
-            response = requests.post(
-                'http://localhost:11434/api/generate',
-                json={
-                    "model": "mistral:7b-instruct-q4_K_M",
-                    "prompt": prompt,
-                    "stream": False
-                },
-                timeout=60
-            )
-            if response.status_code == 200:
-                result = response.json()
-                return result.get("response", "Error: No se recibió respuesta válida.")
-            else:
-                return f"Error: Código de estado HTTP {response.status_code}"
-        except requests.exceptions.Timeout:
-            return "Error: La consulta a Ollama excedió el tiempo límite."
-        except requests.exceptions.RequestException as e:
-            return f"Error al conectar con Ollama: {str(e)}"
-        except Exception as e:
-            return f"Error inesperado: {str(e)}"
+    def handle_ia_error(self, error):
+        self.ia_response_box.setPlainText(error)
+        self.ia_query_input.clear()
+        self.translate_combo.setCurrentIndex(0)
+        self.stop_text_to_speech()
+        self.is_reading = False
+        self.tts_button.setText("🔊")
+        self.worker = None
 
     def toggle_text_to_speech(self):
         text = self.ia_response_box.toPlainText().strip()
@@ -802,11 +854,11 @@ class NuevaVentana(QWidget):
     def closeEvent(self, event):
         self.stop_text_to_speech()
         self.audio_player.stop()
-        self.parent_transcription_window.show()  # Volver a la ventana original
+        self.parent_transcription_window.show()
         event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = NuevaVentana(None)  # Solo para pruebas, normalmente se pasa desde TranscriptionWindow
+    window = NuevaVentana(None)
     window.show()
     sys.exit(app.exec_())

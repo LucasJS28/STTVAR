@@ -1,15 +1,15 @@
 from PyQt5.QtWidgets import (
     QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QLabel,
-    QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy, QApplication, QProgressDialog, QProgressBar
+    QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy, QApplication, QProgressDialog
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation  # Añadido QPropertyAnimation
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation
 import sounddevice as sd
 from transcripcion.transcriber import TranscriberThread
 import os
 import argostranslate.translate
 from datetime import datetime
 from interfaz.menu import NuevaVentana
+import pyttsx3  # Librería para síntesis de voz
 
 class TranscriptionWindow(QWidget):
     transcription_status_changed = pyqtSignal(bool)
@@ -308,6 +308,16 @@ class TranscriptionWindow(QWidget):
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
             return
 
+        # Inicializar el motor de síntesis de voz
+        engine = pyttsx3.init()
+        engine.setProperty('voice', 'spanish')  # Configurar voz en español (puedes ajustar según el sistema)
+        engine.setProperty('rate', 150)  # Velocidad de la voz
+        engine.setProperty('volume', 0.9)  # Volumen (0.0 a 1.0)
+
+        # Reproducir la frase "Se iniciará la grabación"
+        engine.say("Se iniciará la grabación")
+        engine.runAndWait()
+
         # Crear diálogo de carga simple
         progress = QProgressDialog("Iniciando transcripción...", None, 0, 0, self)
         progress.setWindowModality(Qt.WindowModal)
@@ -456,19 +466,46 @@ class TranscriptionWindow(QWidget):
 
     def _prompt_save_or_discard(self):
         if self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath):
-            reply = QMessageBox.question(
+            # Preguntar si desea guardar la transcripción
+            reply_transcription = QMessageBox.question(
                 self, "Guardar Transcripción",
-                "¿Deseas guardar la transcripción y el audio?",
+                "¿Deseas guardar la transcripción?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
             )
-            if reply == QMessageBox.No:
+            
+            transcription_saved = False
+            if reply_transcription == QMessageBox.Yes:
+                transcription_saved = True
+            else:
                 try:
                     if os.path.exists(self.current_transcription_filepath):
                         os.remove(self.current_transcription_filepath)
-                    if self.current_audio_filepath and os.path.exists(self.current_audio_filepath):
-                        os.remove(self.current_audio_filepath)
                 except Exception as e:
-                    QMessageBox.warning(self, "Error al eliminar", str(e))
+                    QMessageBox.warning(self, "Error al eliminar transcripción", f"No se pudo eliminar la transcripción: {str(e)}")
+
+            # Preguntar si desea guardar el audio, con advertencia
+            if self.current_audio_filepath and os.path.exists(self.current_audio_filepath):
+                reply_audio = QMessageBox.question(
+                    self, "Guardar Audio",
+                    "Guardar la grabacion es bajo tu propia responsabilidad y debe cumplir con los términos de uso y las leyes aplicables.\n\n¿Deseas guardar el audio?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                )
+                
+                if reply_audio == QMessageBox.No:
+                    try:
+                        if os.path.exists(self.current_audio_filepath):
+                            os.remove(self.current_audio_filepath)
+                    except Exception as e:
+                        QMessageBox.warning(self, "Error al eliminar audio", f"No se pudo eliminar el audio: {str(e)}")
+            
+            # Mostrar mensaje de confirmación si se guardó algo
+            if transcription_saved and reply_audio == QMessageBox.Yes:
+                QMessageBox.information(self, "Guardado", "La transcripción y el audio han sido guardados.")
+            elif transcription_saved:
+                QMessageBox.information(self, "Guardado", "La transcripción ha sido guardada.")
+            elif reply_audio == QMessageBox.Yes:
+                QMessageBox.information(self, "Guardado", "El audio ha sido guardado.")
+        
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
 
@@ -477,7 +514,7 @@ class TranscriptionWindow(QWidget):
             reply = QMessageBox.question(self, "Transcripción Activa",
                                          "¿Detener y cerrar?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
+            if achieves == QMessageBox.Yes:
                 self._stop_transcription()
                 event.accept()
             else:
