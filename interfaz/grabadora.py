@@ -211,10 +211,33 @@ class TranscriptionWindow(QWidget):
             }
         """)
 
+        self.qr_button = QPushButton("🌐")  # Ícono para QR o página web
+        self.qr_button.setToolTip("Abrir QR o página web")
+        self.qr_button.setCursor(Qt.PointingHandCursor)
+        self.qr_button.setFixedSize(36, 36)
+        self.qr_button.setStyleSheet("""
+            QPushButton {
+                background-color: #444444;
+                border: 2px solid #666666;
+                border-radius: 18px;
+                color: #dddddd;
+                font-size: 18px;
+                padding: 0;
+            }
+            QPushButton:hover {
+                border-color: #e74c3c;
+            }
+            QPushButton:pressed {
+                background-color: #a8322a;
+                border-color: #911f1a;
+            }
+        """)
+
         self.buttons_layout = QHBoxLayout()
         self.buttons_layout.setSpacing(10)
         self.buttons_layout.addWidget(self.toggle_recording_button)
         self.buttons_layout.addWidget(self.mute_button)
+        self.buttons_layout.addWidget(self.qr_button)
         self.buttons_layout.addWidget(self.language_combo)
 
         self.settings_button = QPushButton("⚙️")
@@ -271,6 +294,7 @@ class TranscriptionWindow(QWidget):
         self.transcription_status_changed.connect(self._update_ui_for_transcription_status)
         self.settings_button.clicked.connect(self._open_settings_window)
         self.mute_button.clicked.connect(self._toggle_mute)
+        self.qr_button.clicked.connect(self._on_qr_button_clicked)
 
     def _initialize_ui_state(self):
         self.device_label.setVisible(True)
@@ -282,6 +306,8 @@ class TranscriptionWindow(QWidget):
         self.mute_button.setWindowOpacity(0)
         self.language_combo.setVisible(False)
         self.language_combo.setWindowOpacity(0)
+        self.qr_button.setVisible(False)
+        self.qr_button.setWindowOpacity(0)
 
     def _populate_devices(self):
         try:
@@ -391,8 +417,11 @@ class TranscriptionWindow(QWidget):
         if self.transcriber_thread:
             self.transcriber_thread.set_mute(muted)
 
+    def _on_qr_button_clicked(self):
+        print("Botón QR/Web presionado")
+
     def _fade_in_buttons(self):
-        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo]:
+        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo, self.qr_button]:
             widget.setVisible(True)
             anim = QPropertyAnimation(widget, b"windowOpacity")
             anim.setDuration(200)
@@ -402,7 +431,7 @@ class TranscriptionWindow(QWidget):
             setattr(widget, "_anim", anim)
 
     def _fade_out_buttons(self):
-        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo]:
+        for widget in [self.toggle_recording_button, self.mute_button, self.language_combo, self.qr_button]:
             anim = QPropertyAnimation(widget, b"windowOpacity")
             anim.setDuration(200)
             anim.setStartValue(widget.windowOpacity())
@@ -428,6 +457,8 @@ class TranscriptionWindow(QWidget):
             self.mute_button.setWindowOpacity(0)
             self.language_combo.setVisible(False)
             self.language_combo.setWindowOpacity(0)
+            self.qr_button.setVisible(False)
+            self.qr_button.setWindowOpacity(0)
         else:
             self.toggle_recording_button.setText("🔴 Iniciar Grabación")
             self.toggle_recording_button.setVisible(True)
@@ -436,6 +467,8 @@ class TranscriptionWindow(QWidget):
             self.mute_button.setWindowOpacity(0)
             self.language_combo.setVisible(False)
             self.language_combo.setWindowOpacity(0)
+            self.qr_button.setVisible(False)
+            self.qr_button.setWindowOpacity(0)
 
     def _update_text_area(self, text_es: str):
         if self.selected_language == "es":
@@ -514,7 +547,7 @@ class TranscriptionWindow(QWidget):
             reply = QMessageBox.question(self, "Transcripción Activa",
                                          "¿Detener y cerrar?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if achieves == QMessageBox.Yes:
+            if reply == QMessageBox.Yes:
                 self._stop_transcription()
                 event.accept()
             else:
