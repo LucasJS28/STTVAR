@@ -9,14 +9,259 @@ import os
 import argostranslate.translate
 from datetime import datetime
 from interfaz.menu import NuevaVentana
-import pyttsx3  # Librería para síntesis de voz
+import pyttsx3
+import sys
+import queue
+import json
+import time
+from flask import Flask, Response, render_template, request
+import threading
+import requests
+from docx import Document
+from io import StringIO, BytesIO
 
+# ---- Configuración de Flask y STTTVAR ----
+app = Flask(__name__, template_folder="templates")
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+# Variables globales para compartir datos con Flask
+transcripcion = ""  # Acumula todo el texto transcrito
+current_partial = ""  # Texto más reciente para subtítulos
+client_ai_responses = {}  # Respuestas de IA por cliente
+clientes_idioma = {}  # Idioma de subtítulos por cliente
+clientes_idioma_acumulado = {}  # Idioma de texto acumulado por cliente
+last_streamed = {}  # Último texto enviado por SSE
+translation_cache = {}  # Caché de traducciones
+qtextedit_buffer = ""  # Búfer para QTextEdit
+last_qtextedit_update = 0  # Última vez que se actualizó QTextEdit
+qtextedit_update_interval = 0.5  # Intervalo mínimo (segundos) para actualizar QTextEdit
+
+# Configuración de Vosk y traducción
+model = None  # Se pasa desde launcher.py
+q = queue.Queue(maxsize=20)
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "mistral:7b-instruct-q4_K_M"
+
+# Verificar Ollama
+def check_ollama():
+    try:
+        response = requests.get("http://localhost:11434/api/tags", timeout=5)
+        if response.status_code == 200 and any(model["name"] == MODEL_NAME for model in response.json().get("models", [])):
+            return True
+        return False
+    except:
+        return False
+
+ollama_available = check_ollama()
+
+# Configuración de traducción
+def setup_argos():
+    try:
+        argostranslate.package.update_package_index()
+        available_packages = argostranslate.package.get_available_packages()
+        for lang in ["en", "fr", "de"]:
+            package = next((p for p in available_packages if p.from_code == "es" and p.to_code == lang), None)
+            if package:
+                argostranslate.package.install_from_path(package.download())
+    except Exception as e:
+        print(f"Error al instalar paquetes de traducción: {e}")
+
+setup_argos()
+installed_languages = argostranslate.translate.get_installed_languages()
+source_lang = next((l for l in installed_languages if l.code == "es"), None)
+
+# ---- Rutas Flask (de STTTVAR) ----
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/stream")
+def stream():
+    def event_stream(client_id):
+        last_text = ""
+        while True:
+            idioma_sub = clientes_idioma.get(client_id, "es")
+            idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
+            subtitulo_text = current_partial
+            acumulado_text = transcripcion
+            ai_response_text = client_ai_responses.get(client_id, "")
+
+            cache_key_sub = f"{current_partial}:{idioma_sub}"
+            if cache_key_sub in translation_cache:
+                subtitulo_text = translation_cache[cache_key_sub]
+            elif current_partial.strip() and source_lang:
+                try:
+                    target_language = next((l for l in installed_languages if l.code == idioma_sub), None)
+                    if target_language:
+                        subtitulo_text = source_lang.get_translation(target_language).translate(current_partial)
+                        translation_cache[cache_key_sub] = subtitulo_text
+                except Exception as e:
+                    print(f"Error en traducción de subtítulo a {idioma_sub}: {e}")
+                    subtitulo_text = current_partial
+
+            cache_key_acum = f"{transcripcion}:{idioma_acum}"
+            if cache_key_acum in translation_cache:
+                acumulado_text = translation_cache[cache_key_acum]
+            elif transcripcion.strip() and source_lang and idioma_acum != "es":
+                try:
+                    target_language = next((l for l in installed_languages if l.code == idioma_acum), None)
+                    if target_language:
+                        acumulado_text = source_lang.get_translation(target_language).translate(transcripcion)
+                        translation_cache[cache_key_acum] = acumulado_text
+                except Exception as e:
+                    print(f"Error en traducción de acumulado a {idioma_acum}: {e}")
+                    acumulado_text = transcripcion
+
+            current_time = time.time()
+            if (transcripcion != last_text or subtitulo_text != last_streamed.get(client_id, "") or
+                ai_response_text != last_streamed.get(client_id + "_ai", "")) and \
+               (current_time - last_streamed.get(client_id + "_time", 0) > 0.3):
+                last_text = transcripcion
+                last_streamed[client_id] = subtitulo_text
+                last_streamed[client_id + "_ai"] = ai_response_text
+                last_streamed[client_id + "_time"] = current_time
+                data = {
+                    "subtitulo": subtitulo_text,
+                    "acumulado": acumulado_text,
+                    "ai_response": ai_response_text
+                }
+                yield f"data: {json.dumps(data)}\n\n"
+            time.sleep(0.05)
+
+    client_id = request.args.get("client_id", "default")
+    return Response(event_stream(client_id), mimetype="text/event-stream")
+
+@app.route("/set_language/<client_id>/<lang>", methods=['POST'])
+def set_language(client_id, lang):
+    clientes_idioma[client_id] = lang
+    return "OK"
+
+@app.route("/set_language_acumulado/<client_id>/<lang>", methods=['POST'])
+def set_language_acumulado(client_id, lang):
+    clientes_idioma_acumulado[client_id] = lang
+    return "OK"
+
+@app.route("/clear_text/<client_id>", methods=['POST'])
+def clear_text(client_id):
+    global transcripcion, current_partial, qtextedit_buffer
+    transcripcion = ""
+    current_partial = ""
+    qtextedit_buffer = ""
+    client_ai_responses[client_id] = ""
+    last_streamed[client_id] = ""
+    last_streamed[client_id + "_ai"] = ""
+    return "OK"
+
+@app.route("/ask_ai/<client_id>", methods=['POST'])
+def ask_ai(client_id):
+    data = request.get_json()
+    question = data.get("question", "")
+    process_ai_question(question, client_id)
+    return "OK"
+
+@app.route("/download_txt/<client_id>/<filename>", methods=['POST'])
+def download_txt(client_id, filename):
+    global transcripcion
+    idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
+    acumulado_text = transcripcion
+
+    if idioma_acum != "es":
+        cache_key = f"{transcripcion}:{idioma_acum}"
+        if cache_key in translation_cache:
+            acumulado_text = translation_cache[cache_key]
+        elif transcripcion.strip() and source_lang:
+            try:
+                target_language = next((l for l in installed_languages if l.code == idioma_acum), None)
+                if target_language:
+                    acumulado_text = source_lang.get_translation(target_language).translate(transcripcion)
+                    translation_cache[cache_key] = acumulado_text
+            except Exception as e:
+                print(f"Error en traducción para TXT a {idioma_acum}: {e}")
+
+    buffer = StringIO()
+    buffer.write(f"Transcripción de Subtítulos en Vivo\n\n")
+    buffer.write(f"Nombre del archivo: {filename}\n")
+    buffer.write(f"Fecha y hora de grabación: {datetime.now().strftime('%d de %B de %Y, %I:%M %p')}\n\n")
+    buffer.write("Transcripción:\n")
+    buffer.write(acumulado_text)
+    txt = buffer.getvalue()
+    buffer.close()
+    return Response(txt, mimetype='text/plain', headers={'Content-Disposition': f'attachment; filename={filename}.txt'})
+
+@app.route("/download_docx/<client_id>/<filename>", methods=['POST'])
+def download_docx(client_id, filename):
+    global transcripcion
+    idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
+    acumulado_text = transcripcion
+
+    if idioma_acum != "es":
+        cache_key = f"{transcripcion}:{idioma_acum}"
+        if cache_key in translation_cache:
+            acumulado_text = translation_cache[cache_key]
+        elif transcripcion.strip() and source_lang:
+            try:
+                target_language = next((l for l in installed_languages if l.code == idioma_acum), None)
+                if target_language:
+                    acumulado_text = source_lang.get_translation(target_language).translate(transcripcion)
+                    translation_cache[cache_key] = acumulado_text
+            except Exception as e:
+                print(f"Error en traducción para DOCX a {idioma_acum}: {e}")
+
+    doc = Document()
+    doc.add_heading("Transcripción de Subtítulos en Vivo", 0)
+    doc.add_paragraph(f"Nombre del archivo: {filename}")
+    doc.add_paragraph(f"Fecha y hora de grabación: {datetime.now().strftime('%d de %B de %Y, %I:%M %p')}")
+    doc.add_heading("Transcripción:", level=1)
+    doc.add_paragraph(acumulado_text)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    docx = buffer.getvalue()
+    buffer.close()
+    return Response(docx, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    headers={'Content-Disposition': f'attachment; filename={filename}.docx'})
+
+# ---- Procesar consultas a IA (de STTTVAR) ----
+def process_ai_question(question, client_id):
+    if not ollama_available:
+        client_ai_responses[client_id] = "Error: Ollama no está disponible."
+        return
+    if not question.strip():
+        client_ai_responses[client_id] = "Error: La pregunta está vacía."
+        return
+    try:
+        context = transcripcion.strip() or "No hay contexto disponible."
+        prompt = (
+            "Eres un asistente que responde en español de forma clara y concreta, "
+            f"usando el siguiente texto como referencia:\n\n{context}\n\n"
+            f"Pregunta: {question}\n"
+            "Respuesta:"
+        )
+        payload = {
+            "model": MODEL_NAME,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "max_tokens": 512
+            }
+        }
+        response = requests.post(OLLAMA_API_URL, json=payload, timeout=30)
+        if response.status_code == 200:
+            client_ai_responses[client_id] = response.json().get("response", "No se recibió respuesta válida.").strip()
+        else:
+            client_ai_responses[client_id] = f"Error en la API de Ollama: Código {response.status_code}."
+    except Exception as e:
+        client_ai_responses[client_id] = f"Error al procesar la pregunta: {str(e)}"
+
+# ---- Clase TranscriptionWindow Modificada ----
 class TranscriptionWindow(QWidget):
     transcription_status_changed = pyqtSignal(bool)
 
     def __init__(self, model):
         super().__init__()
-        self.model = model  # Recibir el modelo desde el Launcher
+        self.model = model
         self.setWindowTitle("🎙 Transcriptor en Tiempo Real")
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setMinimumSize(650, 110)
@@ -29,6 +274,11 @@ class TranscriptionWindow(QWidget):
         self.current_audio_filepath = None
         self.selected_language = "es"
         self._already_stopped = False
+
+        # Iniciar servidor Flask en un hilo
+        self.flask_thread = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 5000, 'debug': False, 'use_reloader': False})
+        self.flask_thread.daemon = True
+        self.flask_thread.start()
 
         self._setup_ui()
         self._populate_devices()
@@ -130,6 +380,8 @@ class TranscriptionWindow(QWidget):
         self.language_combo = QComboBox()
         self.language_combo.addItem("Español", "es")
         self.language_combo.addItem("Inglés", "en")
+        self.language_combo.addItem("Francés", "fr")
+        self.language_combo.addItem("Alemán", "de")
         self.language_combo.setToolTip("Selecciona el idioma de transcripción.")
         self.language_combo.setFixedSize(100, 36)
         self.language_combo.setCursor(Qt.PointingHandCursor)
@@ -162,7 +414,6 @@ class TranscriptionWindow(QWidget):
                 height: 12px;
             }
         """)
-        self.language_combo.currentIndexChanged.connect(self._on_language_changed)
 
         self.toggle_recording_button = QPushButton("🔴 Iniciar Grabación")
         self.toggle_recording_button.setCursor(Qt.PointingHandCursor)
@@ -211,7 +462,7 @@ class TranscriptionWindow(QWidget):
             }
         """)
 
-        self.qr_button = QPushButton("🌐")  # Ícono para QR o página web
+        self.qr_button = QPushButton("🌐")
         self.qr_button.setToolTip("Abrir QR o página web")
         self.qr_button.setCursor(Qt.PointingHandCursor)
         self.qr_button.setFixedSize(36, 36)
@@ -295,6 +546,7 @@ class TranscriptionWindow(QWidget):
         self.settings_button.clicked.connect(self._open_settings_window)
         self.mute_button.clicked.connect(self._toggle_mute)
         self.qr_button.clicked.connect(self._on_qr_button_clicked)
+        self.language_combo.currentIndexChanged.connect(self._on_language_changed)
 
     def _initialize_ui_state(self):
         self.device_label.setVisible(True)
@@ -329,22 +581,19 @@ class TranscriptionWindow(QWidget):
             self._start_transcription()
 
     def _start_transcription(self):
+        global qtextedit_buffer
         device_index = self.device_combo.currentData()
         if device_index is None:
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
             return
 
-        # Inicializar el motor de síntesis de voz
         engine = pyttsx3.init()
-        engine.setProperty('voice', 'spanish')  # Configurar voz en español (puedes ajustar según el sistema)
-        engine.setProperty('rate', 150)  # Velocidad de la voz
-        engine.setProperty('volume', 0.9)  # Volumen (0.0 a 1.0)
-
-        # Reproducir la frase "Se iniciará la grabación"
+        engine.setProperty('voice', 'spanish')
+        engine.setProperty('rate', 150)
+        engine.setProperty('volume', 0.9)
         engine.say("Se iniciará la grabación")
         engine.runAndWait()
 
-        # Crear diálogo de carga simple
         progress = QProgressDialog("Iniciando transcripción...", None, 0, 0, self)
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowFlags(Qt.FramelessWindowHint)
@@ -388,6 +637,7 @@ class TranscriptionWindow(QWidget):
             self.transcription_active = True
             self.transcription_status_changed.emit(True)
             self.text_area.clear()
+            qtextedit_buffer = ""
             self._already_stopped = False
 
         except Exception as e:
@@ -398,6 +648,7 @@ class TranscriptionWindow(QWidget):
         progress.close()
 
     def _stop_transcription(self):
+        global qtextedit_buffer
         if self._already_stopped:
             return
         self._already_stopped = True
@@ -410,6 +661,7 @@ class TranscriptionWindow(QWidget):
         self.transcription_active = False
         self.transcription_status_changed.emit(False)
         self._prompt_save_or_discard()
+        qtextedit_buffer = ""
 
     def _toggle_mute(self):
         muted = self.mute_button.isChecked()
@@ -418,7 +670,14 @@ class TranscriptionWindow(QWidget):
             self.transcriber_thread.set_mute(muted)
 
     def _on_qr_button_clicked(self):
-        print("Botón QR/Web presionado")
+        try:
+            import subprocess
+            qr_app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qr_app.py")
+            if not os.path.exists(qr_app_path):
+                raise FileNotFoundError(f"No se encontró el archivo {qr_app_path}")
+            subprocess.Popen([sys.executable, qr_app_path])
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo abrir el código QR: {str(e)}")
 
     def _fade_in_buttons(self):
         for widget in [self.toggle_recording_button, self.mute_button, self.language_combo, self.qr_button]:
@@ -470,36 +729,68 @@ class TranscriptionWindow(QWidget):
             self.qr_button.setVisible(False)
             self.qr_button.setWindowOpacity(0)
 
-    def _update_text_area(self, text_es: str):
-        if self.selected_language == "es":
-            self.text_area.setPlainText(text_es)
-        else:
-            try:
-                installed_languages = argostranslate.translate.get_installed_languages()
-                from_lang = next((lang for lang in installed_languages if lang.code == "es"), None)
-                to_lang = next((lang for lang in installed_languages if lang.code == "en"), None)
+    def _update_text_area(self, text_es: str, is_partial: bool):
+        global transcripcion, current_partial, qtextedit_buffer, last_qtextedit_update
+        if text_es.strip():
+            current_time = time.time()
+            if is_partial:
+                # Acumular en el búfer para QTextEdit y subtítulos
+                qtextedit_buffer = text_es
+                current_partial = text_es
+            else:
+                # Acumular solo resultados finales para transcripción completa
+                transcripcion += text_es + " "
+                current_partial = text_es
+                qtextedit_buffer = text_es  # Mostrar el resultado final como subtítulo
 
-                if from_lang and to_lang:
-                    translation = from_lang.get_translation(to_lang)
-                    text_en = translation.translate(text_es)
-                else:
-                    text_en = "[Modelos de traducción no disponibles] " + text_es
+            # Actualizar QTextEdit solo si ha pasado suficiente tiempo o es un resultado final
+            if is_partial and current_time - last_qtextedit_update < qtextedit_update_interval:
+                return  # No actualizar QTextEdit aún
 
-            except Exception as e:
-                text_en = f"[Error al traducir] {str(e)}\nTexto original: {text_es}"
+            # Mostrar solo el texto parcial más reciente en QTextEdit
+            text_to_display = qtextedit_buffer
+            if self.selected_language == "es":
+                self.text_area.setPlainText(text_to_display)
+            else:
+                try:
+                    installed_languages = argostranslate.translate.get_installed_languages()
+                    from_lang = next((lang for lang in installed_languages if lang.code == "es"), None)
+                    to_lang = next((lang for lang in installed_languages if lang.code == self.selected_language), None)
 
-            self.text_area.setPlainText(text_en)
+                    if from_lang and to_lang:
+                        translation = from_lang.get_translation(to_lang)
+                        cache_key = f"{text_to_display}:{self.selected_language}"
+                        if cache_key in translation_cache:
+                            text_translated = translation_cache[cache_key]
+                        else:
+                            text_translated = translation.translate(text_to_display)
+                            translation_cache[cache_key] = text_translated
+                    else:
+                        text_translated = "[Modelos de traducción no disponibles] " + text_to_display
 
-        self.text_area.verticalScrollBar().setValue(
-            self.text_area.verticalScrollBar().maximum()
-        )
+                except Exception as e:
+                    text_translated = f"[Error al traducir] {str(e)}\nTexto original: {text_to_display}"
+
+                self.text_area.setPlainText(text_translated)
+
+            self.text_area.verticalScrollBar().setValue(
+                self.text_area.verticalScrollBar().maximum()
+            )
+            last_qtextedit_update = current_time
+
+    def _on_language_changed(self, index):
+        """Actualiza el idioma seleccionado y refresca el texto si hay transcripción activa."""
+        global qtextedit_buffer
+        self.selected_language = self.language_combo.itemData(index)
+        if self.transcription_active and qtextedit_buffer.strip():
+            self._update_text_area(qtextedit_buffer, is_partial=True)  # Refresca el texto parcial con el nuevo idioma
 
     def _on_transcription_finished(self):
         self._stop_transcription()
 
     def _prompt_save_or_discard(self):
+        global transcripcion, qtextedit_buffer
         if self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath):
-            # Preguntar si desea guardar la transcripción
             reply_transcription = QMessageBox.question(
                 self, "Guardar Transcripción",
                 "¿Deseas guardar la transcripción?",
@@ -516,11 +807,10 @@ class TranscriptionWindow(QWidget):
                 except Exception as e:
                     QMessageBox.warning(self, "Error al eliminar transcripción", f"No se pudo eliminar la transcripción: {str(e)}")
 
-            # Preguntar si desea guardar el audio, con advertencia
             if self.current_audio_filepath and os.path.exists(self.current_audio_filepath):
                 reply_audio = QMessageBox.question(
                     self, "Guardar Audio",
-                    "Guardar la grabacion es bajo tu propia responsabilidad y debe cumplir con los términos de uso y las leyes aplicables.\n\n¿Deseas guardar el audio?",
+                    "Guardar la grabación es bajo tu propia responsabilidad y debe cumplir con los términos de uso y las leyes aplicables.\n\n¿Deseas guardar el audio?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                 )
                 
@@ -531,7 +821,6 @@ class TranscriptionWindow(QWidget):
                     except Exception as e:
                         QMessageBox.warning(self, "Error al eliminar audio", f"No se pudo eliminar el audio: {str(e)}")
             
-            # Mostrar mensaje de confirmación si se guardó algo
             if transcription_saved and reply_audio == QMessageBox.Yes:
                 QMessageBox.information(self, "Guardado", "La transcripción y el audio han sido guardados.")
             elif transcription_saved:
@@ -541,6 +830,8 @@ class TranscriptionWindow(QWidget):
         
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
+        transcripcion = ""
+        qtextedit_buffer = ""
 
     def closeEvent(self, event):
         if self.transcriber_thread and self.transcriber_thread.isRunning():
@@ -556,9 +847,6 @@ class TranscriptionWindow(QWidget):
             event.accept()
 
     def _open_settings_window(self):
-        self.settings_window = NuevaVentana(self)  # Pasar la instancia actual
+        self.settings_window = NuevaVentana(self)
         self.settings_window.show()
-        self.hide()  # Ocultar en lugar de cerrar
-
-    def _on_language_changed(self, index):
-        self.selected_language = self.language_combo.itemData(index)
+        self.hide()

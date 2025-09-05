@@ -6,12 +6,37 @@ import argostranslate.translate
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QLabel, QVBoxLayout, QMessageBox, QProgressBar
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QPoint
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QGraphicsDropShadowEffect
 from transcripcion.vosk_utils import cargar_modelo
 from .grabadora import TranscriptionWindow
 from .terminos import TermsAndConditionsDialog  # Importar la ventana de términos
+
+
+class DraggableDialog(QDialog):
+    """QDialog personalizado que se puede arrastrar."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._is_dragging = False
+        self._drag_position = QPoint()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._is_dragging = True
+            self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if self._is_dragging and event.buttons() & Qt.LeftButton:
+            self.move(event.globalPos() - self._drag_position)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._is_dragging = False
+            event.accept()
+
 
 class ModelLoaderThread(QThread):
     progress = pyqtSignal(str, int)  # Señal para actualizar el texto y la barra de progreso
@@ -40,6 +65,7 @@ class ModelLoaderThread(QThread):
         except Exception as e:
             self.error.emit(str(e))
 
+
 class Launcher:
     def __init__(self, app):
         self.app = app
@@ -49,7 +75,7 @@ class Launcher:
         self.dialog = None
 
     def create_loading_dialog(self):
-        dialog = QDialog()
+        dialog = DraggableDialog()  # 🔥 Ahora la ventana es arrastrable
         dialog.setWindowModality(Qt.WindowModal)
         dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         dialog.setStyleSheet("""
