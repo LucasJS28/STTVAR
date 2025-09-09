@@ -1,446 +1,298 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STTTVAR - Subtítulos en Vivo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #f5f7fa;
-            --bg-gradient: linear-gradient(135deg, #e6e9f0, #f5f7fa);
-            --text-color: #1a202c;
-            --subtitulo-color: #2b6cb0;
-            --container-bg: #ffffff;
-            --border-color: #e2e8f0;
-            --accent-color: #3182ce;
-            --button-hover: #2b6cb0;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            --mic-icon-color: #2b6cb0;
-            --panel-bg: #edf2f7;
-            --panel-hover: #e2e8f0;
-            --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
-            --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
-            --popup-bg: #ffffff;
-            --popup-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-        }
-        .dark-theme {
-            --bg-color: #121212;
-            --bg-gradient: linear-gradient(135deg, #1c2526, #121212);
-            --text-color: #e0e0e0;
-            --subtitulo-color: #4a90e2;
-            --container-bg: #1e1e1e;
-            --border-color: #333333;
-            --accent-color: #4a90e2;
-            --button-hover: #6ab0ff;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            --mic-icon-color: #4a90e2;
-            --panel-bg: #1e1e1e;
-            --panel-hover: #333333;
-            --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
-            --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
-            --popup-bg: #1e1e1e;
-            --popup-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            transition: background 0.3s ease, color 0.3s ease;
-        }
-        .container {
-            max-width: 900px;
-            width: 100%;
-            background: var(--container-bg);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--shadow);
-            transition: background 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-        }
-        h1 {
-            text-align: center;
-            font-size: 2.25rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            color: var(--text-color);
-            letter-spacing: -0.025em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        h1 i {
-            font-size: 1.5rem;
-            color: var(--mic-icon-color);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        #subtitulo {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: var(--subtitulo-color);
-            background: rgba(0, 0, 0, 0.05);
-            padding: 16px;
-            border-radius: 8px;
-            min-height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-        #acumulado, #ai_response {
-            font-size: 1.125rem;
-            font-weight: 400;
-            background: rgba(0, 0, 0, 0.03);
-            padding: 16px;
-            border-radius: 8px;
-            min-height: 150px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            white-space: pre-wrap;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        #ai_response.hidden {
-            display: none;
-        }
-        #ai_response.placeholder::before {
-            content: "Esperando respuesta...";
-            color: var(--text-color);
-            opacity: 0.5;
-            font-style: italic;
-        }
-        #ai_question {
-            width: 90%;
-            padding: 10px;
-            font-size: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-            height: 34px; /* Alto fijo para coincidir con el botón */
-            box-sizing: border-box;
-        }
-        #ai_question:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
-        }
-        .question-section {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        #sendQuestion {
-            width: 10%;
-            height: 34px; /* Mismo alto que #ai_question */
-            background: var(--button-gradient);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 6px 8px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            text-align: center;
-            transition: all 0.2s ease;
-        }
-        #sendQuestion i {
-            font-size: 0.9rem; /* Ícono más prominente */
-        }
-        #sendQuestion:hover {
-            background: var(--button-gradient-hover);
-            transform: scale(1.15);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            filter: brightness(1.1);
-        }
-        .copy-button {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: var(--button-gradient);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .copy-button i {
-            font-size: 0.9rem;
-        }
-        .copy-button:hover {
-            background: var(--button-gradient-hover);
-            transform: scale(1.05);
-        }
-        .top-right-buttons {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            display: flex;
-            gap: 8px;
-        }
-        .top-right-buttons button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            padding: 0;
-            background: var(--button-gradient);
-            color: #fff;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .top-right-buttons button:hover {
-            background: var(--button-gradient-hover);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        .popup-menu {
-            display: none;
-            position: absolute;
-            top: 60px;
-            right: 16px;
-            background: var(--popup-bg);
-            border-radius: 8px;
-            box-shadow: var(--popup-shadow);
-            padding: 16px;
-            z-index: 1000;
-            width: 300px;
-        }
-        .popup-menu.active {
-            display: block;
-        }
-        .popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .popup-header h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-        .close-popup {
-            background: var(--button-gradient);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #fff;
-            font-size: 1rem;
-            padding: 6px;
-            transition: all 0.15s ease;
-        }
-        .close-popup:hover {
-            background: var(--button-gradient-hover);
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .popup-content {
-            display: grid;
-            gap: 12px;
-        }
-        label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-color);
-            margin-bottom: 8px;
-            display: block;
-        }
-        select, button, input[type="text"] {
-            padding: 10px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--container-bg);
-            color: var(--text-color);
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        select:hover, button:hover, input[type="text"]:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 8px rgba(74, 144, 226, 0.2);
-        }
-        select:focus, input[type="text"]:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
-        }
-        button {
-            background: var(--button-gradient);
-            color: #fff;
-            border: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        button:hover {
-            background: var(--button-gradient-hover);
-            transform: translateY(-2px);
-        }
-        .export-section {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
-            margin-top: 8px;
-        }
-        .export-section.active {
-            display: flex;
-        }
-        .export-section input[type="text"] {
-            font-size: 0.9rem;
-        }
-        .export-section button {
-            padding: 10px;
-        }
-        .status {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #48bb78;
-            text-align: center;
-            margin-top: 16px;
-            opacity: 0;
-            animation: fadeIn 0.5s forwards;
-        }
-        .status.error {
-            color: #f56565;
-        }
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-        @media (max-width: 600px) {
-            h1 { font-size: 1.75rem; }
-            h1 i { font-size: 1.25rem; }
-            #subtitulo { font-size: 1.25rem; min-height: 60px; }
-            #acumulado, #ai_response { font-size: 1rem; min-height: 120px; }
-            .container { padding: 16px; }
-            .popup-menu { width: 90%; right: 5%; top: 70px; }
-            .top-right-buttons { top: 12px; right: 12px; }
-            .top-right-buttons button { width: 36px; height: 36px; font-size: 1rem; }
-            select, button, input[type="text"] { padding: 8px; font-size: 0.85rem; }
-            #ai_question { width: 100%; font-size: 0.9rem; height: 32px; }
-            #sendQuestion { width: 100%; font-size: 0.7rem; height: 32px; padding: 4px 6px; }
-            #sendQuestion i { font-size: 0.8rem; }
-            .copy-button { width: 24px; height: 24px; font-size: 0.8rem; }
-            .close-popup { width: 24px; height: 24px; font-size: 0.9rem; padding: 5px; }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STTTVAR - Subtítulos en Vivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    :root {
+        --bg-color: #f5f7fa;
+        --bg-gradient: linear-gradient(135deg, #e6e9f0, #f5f7fa);
+        --text-color: #1a202c;
+        --subtitulo-color: #2b6cb0;
+        --container-bg: #ffffff;
+        --border-color: #e2e8f0;
+        --accent-color: #3182ce;
+        --shadow: 0 6px 24px rgba(0,0,0,0.15);
+        --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
+        --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
+        --input-bg: #f9fafc;
+        --input-border: #d1d5db;
+        --input-focus: #4a90e2;
+        --popup-bg: #ffffff;
+        --popup-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .dark-theme {
+        --bg-color: #121212;
+        --bg-gradient: linear-gradient(135deg, #1c2526, #121212);
+        --text-color: #e0e0e0;
+        --subtitulo-color: #4a90e2;
+        --container-bg: #1e1e1e;
+        --border-color: #333333;
+        --accent-color: #4a90e2;
+        --shadow: 0 6px 24px rgba(0,0,0,0.5);
+        --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
+        --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
+        --input-bg: #2a2a2a;
+        --input-border: #555;
+        --input-focus: #4a90e2;
+        --popup-bg: #1e1e1e;
+        --popup-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-gradient);
+        color: var(--text-color);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+    .container {
+        max-width: 900px;
+        width: 100%;
+        background: var(--container-bg);
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: var(--shadow);
+        transition: background 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+    }
+    h1 {
+        text-align: center;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+    h1 i {
+        font-size: 1.7rem;
+        color: var(--subtitulo-color);
+        animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.15);} }
+    #subtitulo {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--subtitulo-color);
+        background: rgba(0,0,0,0.05);
+        padding: 18px;
+        border-radius: 12px;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    #acumulado, #ai_response {
+        font-size: 1.125rem;
+        font-weight: 400;
+        background: var(--input-bg);
+        padding: 16px;
+        border-radius: 12px;
+        min-height: 150px;
+        max-height: 320px;
+        overflow-y: auto;
+        border: 1px solid var(--input-border);
+        white-space: pre-wrap;
+        margin-bottom: 20px;
+        position: relative;
+    }
+    #ai_response.hidden { display: none; }
+    #ai_response.placeholder::before {
+        content: "Esperando respuesta...";
+        color: var(--text-color);
+        opacity: 0.5;
+        font-style: italic;
+    }
+    #ai_question {
+        flex: 1;
+        padding: 12px 16px;
+        font-size: 1rem;
+        border: 1px solid var(--input-border);
+        border-radius: 12px;
+        background: var(--input-bg);
+        color: var(--text-color);
+        transition: all 0.3s ease;
+    }
+    #ai_question:focus {
+        outline: none;
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 3px rgba(74,144,226,0.3);
+    }
+    .question-section {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    #sendQuestion {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--button-gradient);
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+        min-width: 150px;
+    }
+    #sendQuestion i { font-size: 1rem; }
+    #sendQuestion:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        background: var(--button-gradient-hover);
+    }
+    .copy-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: var(--button-gradient);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .copy-button:hover { transform: scale(1.1); background: var(--button-gradient-hover); }
+    .top-right-buttons { position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; }
+    .top-right-buttons button {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; padding: 0; border: none;
+        background: var(--button-gradient); color: #fff;
+        cursor: pointer; transition: all 0.3s ease;
+    }
+    .top-right-buttons button:hover { background: var(--button-gradient-hover); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .popup-menu {
+        display: none;
+        position: fixed;
+        top: 10%;
+        right: 50%;
+        transform: translateX(50%);
+        background: var(--popup-bg);
+        border-radius: 16px;
+        box-shadow: var(--popup-shadow);
+        padding: 24px;
+        z-index: 1000;
+        width: 90%;
+        max-width: 400px;
+        transition: all 0.3s ease;
+    }
+    .popup-menu.active { display: block; }
+    .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .popup-header h2 { font-size: 1.25rem; font-weight: 600; }
+    .close-popup { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--button-gradient); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; }
+    .close-popup:hover { transform: scale(1.05); background: var(--button-gradient-hover); }
+    .popup-content { display: flex; flex-direction: column; gap: 14px; }
+    select, button, input[type="text"] { padding: 12px; font-size: 0.95rem; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); cursor: pointer; transition: all 0.3s ease; }
+    select:hover, input[type="text"]:hover, button:hover { border-color: var(--accent-color); box-shadow: 0 0 8px rgba(74,144,226,0.2); }
+    select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(74,144,226,0.3); }
+    .export-section { display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(0,0,0,0.05); border-radius: 12px; margin-top: 12px; }
+    .export-section.active { display: flex; }
+    .status { font-size: 0.9rem; font-weight: 500; text-align: center; margin-top: 16px; opacity: 0; animation: fadeIn 0.5s forwards; }
+    .status.error { color: #f56565; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    @media (max-width: 700px) {
+        h1 { font-size: 2rem; }
+        #subtitulo { font-size: 1.25rem; min-height: 60px; }
+        #acumulado, #ai_response { font-size: 1rem; min-height: 120px; }
+        .container { padding: 20px; }
+        .question-section { flex-direction: column; gap: 10px; }
+        #ai_question { width: 100%; }
+        #sendQuestion { width: 100%; }
+        .popup-menu { width: 90%; top: 5%; right: 50%; transform: translateX(50%); }
+    }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-right-buttons">
-            <button id="themeToggle" onclick="toggleTheme()" title="Cambiar tema"><span class="theme-icon">☀️</span></button>
-            <button class="settings-button" onclick="togglePopup()" title="Opciones"><i class="fas fa-cog"></i></button>
-        </div>
-        <h1><i class="fas fa-microphone"></i> STTTVAR</h1>
-        <div id="subtitulo"></div>
-        <div id="acumulado" style="position: relative;">
-            <button class="copy-button" onclick="copyText('acumulado')" title="Copiar texto acumulado"><i class="fas fa-copy"></i></button>
-        </div>
-        <div class="question-section">
-            <input type="text" id="ai_question" placeholder="Haz una pregunta a la IA basada en el texto acumulado">
-            <button id="sendQuestion"><i class="fas fa-paper-plane"></i> Enviar</button>
-        </div>
-        <div id="ai_response" class="hidden" style="position: relative;">
-            <button class="copy-button" onclick="copyText('ai_response')" title="Copiar respuesta de IA"><i class="fas fa-copy"></i></button>
-        </div>
-        <div class="popup-menu" id="popupMenu">
-            <div class="popup-header">
-                <h2>Opciones</h2>
-                <button class="close-popup" onclick="togglePopup()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="popup-content">
-                <div>
-                    <label for="idioma">Idioma de Subtítulos</label>
-                    <select id="idioma" onchange="cambiarIdioma(this.value)">
-                        <option value="es">Español</option>
-                        <option value="en">Inglés</option>
-                        <option value="fr">Francés</option>
-                        <option value="de">Alemán</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="idiomaAcumulado">Idioma de Texto Acumulado</label>
-                    <select id="idiomaAcumulado" onchange="cambiarIdiomaAcumulado(this.value)">
-                        <option value="es">Español</option>
-                        <option value="en">Inglés</option>
-                        <option value="fr">Francés</option>
-                        <option value="de">Alemán</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="fontSize">Tamaño de Fuente</label>
-                    <select id="fontSize" onchange="adjustFontSize(this.value)">
-                        <option value="12">12</option>
-                        <option value="14">14</option>
-                        <option value="16">16</option>
-                        <option value="18">18</option>
-                        <option value="20">20</option>
-                        <option value="24" selected>24</option>
-                        <option value="28">28</option>
-                        <option value="32">32</option>
-                        <option value="36">36</option>
-                    </select>
-                </div>
-                <button onclick="limpiarTexto()"><i class="fas fa-eraser"></i> Limpiar Texto</button>
-                <button onclick="toggleExportSection()"><i class="fas fa-download"></i> Exportar a:</button>
-                <div class="export-section" id="exportSection">
-                    <label for="exportFormat">Formato</label>
-                    <select id="exportFormat">
-                        <option value="txt">TXT</option>
-                        <option value="docx">DOCX</option>
-                    </select>
-                    <label for="exportFilename">Nombre del archivo</label>
-                    <input type="text" id="exportFilename" placeholder="transcripcion">
-                    <button onclick="descargarTranscripcion()"><i class="fas fa-save"></i> Exportar</button>
-                </div>
-            </div>
-        </div>
-        <div class="status" id="status">Conectado</div>
+<div class="container">
+    <div class="top-right-buttons">
+        <button id="themeToggle" onclick="toggleTheme()" title="Cambiar tema"><span class="theme-icon">☀️</span></button>
+        <button class="settings-button" onclick="togglePopup()" title="Opciones"><i class="fas fa-cog"></i></button>
     </div>
-
+    <h1><i class="fas fa-microphone"></i> STTTVAR</h1>
+    <div id="subtitulo"></div>
+    <div id="acumulado" style="position: relative;">
+        <button class="copy-button" onclick="copyText('acumulado')" title="Copiar texto acumulado"><i class="fas fa-copy"></i></button>
+    </div>
+    <div class="question-section">
+        <input type="text" id="ai_question" placeholder="Haz una pregunta a la IA basada en el texto acumulado">
+        <button id="sendQuestion"><i class="fas fa-paper-plane"></i> Preguntar</button>
+    </div>
+    <div id="ai_response" class="hidden" style="position: relative;">
+        <button class="copy-button" onclick="copyText('ai_response')" title="Copiar respuesta de IA"><i class="fas fa-copy"></i></button>
+    </div>
+    <div class="popup-menu" id="popupMenu">
+        <div class="popup-header">
+            <h2>Opciones</h2>
+            <button class="close-popup" onclick="togglePopup()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="popup-content">
+            <label for="idioma">Idioma de Subtítulos</label>
+            <select id="idioma" onchange="cambiarIdioma(this.value)">
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+                <option value="fr">Francés</option>
+                <option value="de">Alemán</option>
+            </select>
+            <label for="idiomaAcumulado">Idioma de Texto Acumulado</label>
+            <select id="idiomaAcumulado" onchange="cambiarIdiomaAcumulado(this.value)">
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+                <option value="fr">Francés</option>
+                <option value="de">Alemán</option>
+            </select>
+            <label for="fontSize">Tamaño de Fuente</label>
+            <select id="fontSize" onchange="adjustFontSize(this.value)">
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18">18</option>
+                <option value="20">20</option>
+                <option value="24" selected>24</option>
+                <option value="28">28</option>
+                <option value="32">32</option>
+                <option value="36">36</option>
+            </select>
+            <button onclick="limpiarTexto()"><i class="fas fa-eraser"></i> Limpiar Texto</button>
+            <button onclick="toggleExportSection()"><i class="fas fa-download"></i> Exportar a:</button>
+            <div class="export-section" id="exportSection">
+                <label for="exportFormat">Formato</label>
+                <select id="exportFormat">
+                    <option value="txt">TXT</option>
+                    <option value="docx">DOCX</option>
+                </select>
+                <label for="exportFilename">Nombre del archivo</label>
+                <input type="text" id="exportFilename" placeholder="transcripcion">
+                <button onclick="descargarTranscripcion()"><i class="fas fa-save"></i> Exportar</button>
+            </div>
+        </div>
+    </div>
+    <div class="status" id="status">Conectado</div>
+</div>
     <script>
         let client_id = Math.random().toString(36).substr(2, 9);
         let source = new EventSource("/stream?client_id=" + client_id);

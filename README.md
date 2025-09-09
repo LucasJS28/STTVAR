@@ -15,11 +15,14 @@
 
   * **🎤 Transcripción Instantánea con Selección de Idioma:** Convierte tu voz en texto al momento, con la opción de elegir entre español o inglés para la transcripción en tiempo real, adaptando dinámicamente el motor de reconocimiento de voz.
   * **🎧 Grabación de Audio Concurrente:** Captura y guarda el audio original mientras se realiza la transcripción, permitiendo una revisión detallada.
-  * **🖥️ Interfaz Intuitiva con PyQt5:** Explora, edita y gestiona tus transcripciones y grabaciones fácilmente con una UI moderna y responsiva.
-  * **🤖 Análisis Inteligente con IA Local:** Integra **Ollama** con `mistral:7b-instruct-q4_K_M` para obtener insights, resúmenes o respuestas a tus preguntas directamente desde el texto transcrito, ¡todo offline\!
+  * **🌐 Interfaz Web Integrada:** Accede a la transcripción en vivo desde cualquier dispositivo en tu red local escaneando un código QR. Esta interfaz web ofrece:
+      * **Subtítulos en Tiempo Real:** Visualiza la transcripción parcial mientras hablas.
+      * **Traducción en Vivo:** Traduce los subtítulos a múltiples idiomas usando Argos Translate.
+      * **Asistente de IA (Mistral 7B):** Haz preguntas sobre el texto acumulado y obtén respuestas generadas localmente por Ollama.
+  * **🖥️ Interfaz de Escritorio con PyQt5:** Explora, edita y gestiona tus transcripciones y grabaciones fácilmente con una UI moderna y responsiva.
   * **🗣️ Lectura de Texto con Voz (TTS):** Utiliza **pyttsx3** para escuchar los resultados generados por la IA en diversos idiomas, mejorando la accesibilidad y la revisión.
-  * **🌐 Traducción de Texto Integrada:** Soporte para traducción a múltiples idiomas gracias a **Argos Translate**, con herramientas para gestionar los modelos de idioma.
   * **📝 Gestión Completa de Transcripciones:** Guarda, edita y exporta tus documentos en formatos populares como PDF, Word y Markdown.
+  * **🔒 Aceptación de Términos:** La aplicación requiere la aceptación de los términos y condiciones de uso para garantizar la privacidad y el uso responsable.
   * **⚙️ Personalizable y Extensible:** Adapta el vocabulario, la configuración de audio y los estilos visuales a tus necesidades.
 
 -----
@@ -61,6 +64,8 @@ python-docx
 ollama
 pyttsx3
 argostranslate
+Flask
+qrcode
 # Posiblemente necesites PyAudio o similar si sounddevice no es suficiente para la grabación/reproducción
 # pip install pyaudio
 ```
@@ -70,40 +75,16 @@ argostranslate
 Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
 
 1.  **Instala Ollama:** Sigue las instrucciones para tu sistema operativo en 🔗 [ollama.com](https://ollama.com/).
+
 2.  **Descarga el Modelo:** Abre tu terminal y ejecuta:
+
     ```bash
     ollama pull mistral:7b-instruct-q4_K_M
     ```
+
     *(Este modelo es ideal para análisis y conversaciones rápidas.)*
+
 3.  **Verifica la Ruta:** Asegúrate de que la ruta al ejecutable `ollama.exe` esté configurada correctamente dentro del archivo `interfaz/menu.py` si es necesario.
-
-### 4\. Configuración Adicional para pyttsx3 (Sistemas Operativos)
-
-`pyttsx3` utiliza los motores de texto a voz nativos de tu sistema operativo.
-
-  * **Windows:** Generalmente funciona sin configuración adicional.
-  * **macOS:** Funciona de inmediato con `NSSpeechSynthesizer`.
-  * **Linux:** Asegúrate de tener `espeak` y/o `festival` instalados. Por ejemplo, en Ubuntu/Debian:
-    ```bash
-    sudo apt-get update
-    sudo apt-get install espeak
-    # o sudo apt-get install festival
-    ```
-
-### 5\. Configuración de Modelos de Traducción (Argos Translate)
-
-Para que la traducción funcione, necesitas instalar los modelos de idioma de Argos Translate.
-Puedes usar el script `instalar_modelos.py` ubicado en la carpeta `traduccion/` o hacerlo manualmente:
-
-1.  **Instala los idiomas deseados** desde tu consola. Por ejemplo, para Español (spa), Inglés (eng), Chino (zho), Alemán (deu) y Portugués (por) hacia/desde español:
-    ```bash
-    argos-translate-cli --install eng spa
-    argos-translate-cli --install zho spa
-    argos-translate-cli --install deu spa
-    argos-translate-cli --install por spa
-    # Puedes usar: argos-translate-cli --list-languages para ver todas las opciones.
-    ```
-2.  Puedes ejecutar el script `traduccion/revisar_modelos.py` para verificar qué modelos tienes instalados.
 
 -----
 
@@ -114,41 +95,38 @@ STTVAR/
 ├── interfaz/
 │   ├── __pycache__
 │   ├── __init__.py
-│   ├── grabadora.py         # 🎤 UI principal de grabación, transcripción en vivo y grabación de audio
+│   ├── grabadora.py         # 🎤 UI de escritorio y servidor web integrado (Flask)
 │   ├── launcher.py          # ▶️ Script de inicio que verifica la aceptación de los términos y condiciones
 │   ├── menu.py              # 📝 Menú para explorar, editar, consultar, traducir y reproducir audio
-│   └── terminos.py          # 📄 Muestra los términos y condiciones de uso de la aplicación
+│   ├── terminos.py          # 📄 Muestra los términos y condiciones de uso de la aplicación
+│   └── templates/             # 💻 Carpeta con archivos HTML para la interfaz web (index.html)
 ├── stt_guardados/           # 📂 Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
 ├── sttaudio_guardados/      # 🎧 Carpeta con los audios originales grabados (YYYY-MM-DD_HH-MM-SS.wav)
 ├── traduccion/              # 🌐 Módulo para la gestión y ejecución de traducciones
-│   ├── __pycache__
-│   ├── __init__.py
-│   ├── instalar_modelos.py  # 📥 Script para automatizar la descarga de modelos de traducción
-│   └── revisar_modelos.py   # 🔍 Script para verificar modelos de traducción instalados
 ├── transcripcion/
 │   ├── __pycache__
 │   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
 │   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
 ├── vocabularios/            # 💬 Carpeta que contiene archivos de vocabulario personalizados
 ├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk para español
-├── vosk-model-en-us-0.22/   # 🗣️ (Opcional) Modelo de reconocimiento de voz de Vosk para inglés
 ├── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
 ├── main.py                  # ▶️ Punto de entrada principal de la aplicación
 ├── README.md                # 📖 Documentación del proyecto
 ├── requirements.txt         # 📦 Lista de dependencias de Python
 └── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
-└── vocabulariocl.py         # 💬 (Opcional) Glosario de términos chilenos para mejorar el reconocimiento
 ```
 
 -----
-🔒 Términos y Condiciones de Uso
+
+## 🔒 Términos y Condiciones de Uso
+
 Antes de usar la aplicación, se le presentará una pantalla de bienvenida que requiere la aceptación de los términos y condiciones. Estos términos están diseñados para garantizar la transparencia y el uso responsable de la herramienta.
 
-Uso Personal y Privacidad: La aplicación es para uso personal y no comercial. Todos los datos (grabaciones y transcripciones) se procesan de forma local en su dispositivo y nunca se envían a servidores externos.
-
-Responsabilidad del Usuario: Usted es el único responsable de cumplir con las leyes de privacidad y de obtener el consentimiento de todas las partes involucradas antes de grabar o transcribir una conversación. STTVAR no se hace responsable de ningún uso indebido o ilegal.
+  * **Uso Personal y Privacidad:** La aplicación es para uso personal y no comercial. Todos los datos (grabaciones y transcripciones) se procesan de forma local en su dispositivo y nunca se envían a servidores externos.
+  * **Responsabilidad del Usuario:** Usted es el único responsable de cumplir con las leyes de privacidad y de obtener el consentimiento de todas las partes involucradas antes de grabar o transcribir una conversación. STTVAR no se hace responsable de ningún uso indebido o ilegal.
 
 La aplicación no se iniciará hasta que usted acepte estos términos.
+
 -----
 
 ## ▶️ Guía de Uso Rápido
@@ -161,12 +139,18 @@ La aplicación no se iniciará hasta que usted acepte estos términos.
     python main.py
     ```
 
+      * Al iniciar por primera vez, se mostrará una ventana con los términos y condiciones. **Debe leerlos y aceptarlos** para poder acceder a la funcionalidad principal de la aplicación.
+
 3.  **Interfaz Principal (Grabadora):**
 
-      * **¡Nuevo\! Elige el idioma de transcripción:** Antes de iniciar la grabación, selecciona el idioma deseado para la transcripción (Español o Inglés) desde el selector de idioma en la interfaz. Esto cargará el modelo Vosk correspondiente.
+      * **Elige el idioma de transcripción:** Antes de iniciar la grabación, selecciona el idioma deseado para la transcripción (Español o Inglés) desde el selector en la interfaz. Esto cargará el modelo Vosk correspondiente.
       * **Selecciona tu dispositivo** de micrófono desde el menú desplegable.
       * Haz clic en 🔴 **Iniciar Grabación** para que la transcripción en tiempo real comience a aparecer en el idioma seleccionado.
           * A la vez que se transcribe, el audio de tu micrófono será **grabado y guardado** automáticamente en la carpeta `sttaudio_guardados/`.
+      * **¡Nuevo\! Interfaz Web:** La aplicación generará un **código QR** que, al escanearse con un teléfono o tablet conectado a la misma red, te permitirá acceder a la interfaz web con las siguientes funciones:
+          * Ver subtítulos en tiempo real.
+          * Traducir el texto en vivo.
+          * Interactuar con la IA para obtener resúmenes o respuestas.
       * Usa 🔇/🎙️ para **silenciar/reactivar** tu micrófono sin detener la transcripción.
       * Presiona ■ **Detener Grabación** para finalizar y guardar la transcripción en `stt_guardados/`. Se te preguntará si deseas guardar o descartar. El audio se guardará con el mismo nombre y timestamp (ej. `YYYY-MM-DD_HH-MM-SS.wav`).
 
@@ -178,7 +162,7 @@ La aplicación no se iniciará hasta que usted acepte estos términos.
       * **Edita** el texto directamente en un editor integrado.
       * **Exporta** tus transcripciones a **PDF**, **Word** o **Markdown**.
       * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz.
-          * Ahora verás un botón o una opción para **"Leer Respuesta"** que usará `pyttsx3` para vocalizar el texto generado por la IA, independientemente del idioma detectado.
+          * Ahora verás un botón o una opción para **"Leer Respuesta"** que usará `pyttsx3` para vocalizar el texto generado por la IA.
       * **Traduce el Texto:** Selecciona un fragmento de texto o la transcripción completa para traducirla a los idiomas para los que hayas instalado los modelos de Argos Translate.
       * *Nota: Cambiar de archivo limpiará automáticamente los campos de consulta IA y traducción, y cargará el nuevo audio asociado.*
 
@@ -186,13 +170,11 @@ La aplicación no se iniciará hasta que usted acepte estos términos.
 
 ## ⚠️ Consideraciones y Consejos
 
-  * **Precisión del Reconocimiento de Voz:** Para una **precisión óptima en la transcripción**, es crucial que el idioma que elijas en la interfaz (Español o Inglés) coincida con el idioma que se está hablando. La selección de idioma cambia el modelo Vosk que se utiliza.
-  * **Mejora del Reconocimiento (Español Chileno):** Si trabajas con español chileno, te animamos a personalizar el archivo `vocabulariocl.py` con modismos y términos locales para optimizar la precisión de Vosk en este dialecto.
+  * **Precisión del Reconocimiento de Voz:** Para una **precisión óptima en la transcripción**, es crucial que el idioma que elijas en la interfaz (Español o Inglés) coincida con el idioma que se está hablando.
+  * **Mejora del Reconocimiento (Español Chileno):** Si trabajas con español chileno, puedes adaptar el archivo en la carpeta `vocabularios/` con modismos y términos locales para optimizar la precisión de Vosk en este dialecto.
   * **Captura de Audio del Sistema:** Para transcribir y grabar audio que no provenga directamente de un micrófono (ej. YouTube, videollamadas), considera usar herramientas de audio virtual como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
   * **Personalización Visual:** Los estilos CSS para la interfaz están en `grabadora.py` y `menu.py`. ¡Siéntete libre de jugar con los colores y la tipografía\!
-  * **Modelo de IA:** La ruta y el modelo de Ollama pueden cambiarse en `menu.py` si deseas experimentar con otros LLMs compatibles.
-  * **Voces de pyttsx3:** La calidad y variedad de las voces disponibles con `pyttsx3` dependen de los motores TTS instalados en tu sistema operativo. Puedes explorar y seleccionar diferentes voces si tu OS las ofrece.
-  * **Modelos de Traducción:** Los modelos de Argos Translate pueden ser grandes. Asegúrate de tener suficiente espacio en disco al instalarlos. La precisión de la traducción dependerá de la calidad de los modelos instalados.
+  * **Modelos de Traducción:** Los modelos de Argos Translate pueden ser grandes. Asegúrate de tener suficiente espacio en disco al instalarlos.
   * **Tamaño de Archivos de Audio:** Grabar audio en formato WAV puede generar archivos de gran tamaño rápidamente, especialmente en grabaciones largas. Considera la duración de tus sesiones para gestionar el espacio de almacenamiento.
 
 -----
@@ -221,6 +203,6 @@ Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `L
 
 -----
 
-**Desarrollado con 💖 por Lucas Jimenez Sepulveda**  
-📧 Contacto: lucasjimenezsepulveda@gmail.com  
+**Desarrollado con 💖 por Lucas Jimenez Sepulveda**
+📧 Contacto: lucasjimenezsepulveda@gmail.com
 🌐 Repositorio: [https://github.com/LucasJS28/STTVAR](https://github.com/LucasJS28/STTVAR)
