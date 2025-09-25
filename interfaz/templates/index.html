@@ -1,478 +1,1435 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STTTVAR - Subtítulos en Vivo</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<style>
-    :root {
-        --bg-color: #f5f7fa;
-        --bg-gradient: linear-gradient(135deg, #e6e9f0, #f5f7fa);
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STTTVAR - Funcionalidad Completa v16.10</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      :root {
+        --bg-color: #f0f4f8;
         --text-color: #1a202c;
-        --subtitulo-color: #2b6cb0;
         --container-bg: #ffffff;
         --border-color: #e2e8f0;
+        --input-bg: #f7fafc;
+        --shadow-color: rgba(0, 0, 0, 0.08);
         --accent-color: #3182ce;
-        --shadow: 0 6px 24px rgba(0,0,0,0.15);
-        --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
-        --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
-        --input-bg: #f9fafc;
-        --input-border: #d1d5db;
-        --input-focus: #4a90e2;
-        --popup-bg: #ffffff;
-        --popup-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    }
-    .dark-theme {
-        --bg-color: #121212;
-        --bg-gradient: linear-gradient(135deg, #1c2526, #121212);
-        --text-color: #e0e0e0;
-        --subtitulo-color: #4a90e2;
-        --container-bg: #1e1e1e;
-        --border-color: #333333;
-        --accent-color: #4a90e2;
-        --shadow: 0 6px 24px rgba(0,0,0,0.5);
-        --button-gradient: linear-gradient(135deg, #4a90e2, #00c4cc);
-        --button-gradient-hover: linear-gradient(135deg, #00c4cc, #4a90e2);
-        --input-bg: #2a2a2a;
-        --input-border: #555;
-        --input-focus: #4a90e2;
-        --popup-bg: #1e1e1e;
-        --popup-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-        font-family: 'Inter', sans-serif;
-        background: var(--bg-gradient);
+        --accent-gradient: linear-gradient(135deg, #4a90e2, #56c1c7);
+        --accent-gradient-hover: linear-gradient(135deg, #56c1c7, #4a90e2);
+        --subtitle-color: #2b6cb0;
+        --border-radius: 16px;
+        --transition-speed: 0.3s;
+      }
+      .dark-theme {
+        --bg-color: #1a202c;
+        --text-color: #e2e8f0;
+        --container-bg: #2d3748;
+        --border-color: #4a5568;
+        --input-bg: #1a202c;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --subtitle-color: #63b3ed;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg-color);
         color: var(--text-color);
         min-height: 100vh;
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-        transition: background 0.3s ease, color 0.3s ease;
-    }
-    .container {
+        justify-content: center;
+        align-items: flex-start;
+        padding: 2rem 1rem;
+        transition: background-color var(--transition-speed),
+          color var(--transition-speed);
+      }
+      .container {
         max-width: 900px;
         width: 100%;
-        background: var(--container-bg);
-        border-radius: 16px;
-        padding: 28px;
-        box-shadow: var(--shadow);
-        transition: background 0.3s ease, box-shadow 0.3s ease;
-        position: relative;
-    }
-    h1 {
-        text-align: center;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 24px;
+        background-color: var(--container-bg);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: 0 10px 30px var(--shadow-color);
+        border: 1px solid var(--border-color);
+        transition: all var(--transition-speed);
+      }
+      .notes-active .container {
+        max-width: 1400px;
+      }
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        transition: grid-template-columns var(--transition-speed);
+      }
+      .notes-active .main-content {
+        grid-template-columns: 1fr 1fr;
+      }
+      .main-column {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #notes-wrapper {
+        display: none;
+      }
+      .notes-active #notes-wrapper {
+        display: flex;
+        flex-direction: column;
+        animation: slideIn 0.5s ease-out;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      .main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      h1 {
+        font-family: "Poppins", sans-serif;
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: var(--text-color);
+        margin: 0;
+        flex-shrink: 1;
+      }
+      h1 i {
+        color: var(--accent-color);
+        animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+      }
+      .header-buttons {
+        display: flex;
+        gap: 0.8rem;
+        flex-shrink: 0;
+      }
+      .icon-button {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-    }
-    h1 i {
-        font-size: 1.7rem;
-        color: var(--subtitulo-color);
-        animation: pulse 1.8s infinite;
-    }
-    @keyframes pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.15);} }
-    #subtitulo {
-        font-size: 1.75rem;
-        font-weight: 600;
-        color: var(--subtitulo-color);
-        background: rgba(0,0,0,0.05);
-        padding: 18px;
+        font-size: 1.1rem;
+        border: none;
+        background: var(--input-bg);
+        color: var(--text-color);
+        cursor: pointer;
+        transition: all var(--transition-speed);
+        box-shadow: 0 2px 8px var(--shadow-color);
+      }
+      .icon-button:hover {
+        transform: scale(1.1);
+        background: var(--accent-gradient);
+        color: #fff;
+      }
+      .text-area-wrapper {
+        position: relative;
+        margin-bottom: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      #subtitulo,
+      #acumulado,
+      #ai_response,
+      #notes-area {
+        padding: 1.5rem;
         border-radius: 12px;
+        border: 1px solid var(--border-color);
+        background-color: var(--input-bg);
+        width: 100%;
+        overflow-wrap: break-word;
+        color: var(--text-color);
+      }
+      #subtitulo {
+        font-size: clamp(1.2rem, 3vw, 1.75rem);
+        font-weight: 600;
+        color: var(--subtitle-color);
         min-height: 80px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
         text-align: center;
-    }
-    #acumulado, #ai_response {
-        font-size: 1.125rem;
-        font-weight: 400;
-        background: var(--input-bg);
-        padding: 16px;
-        border-radius: 12px;
+      }
+      #acumulado,
+      #ai_response {
         min-height: 150px;
-        max-height: 320px;
+        max-height: 350px;
         overflow-y: auto;
-        border: 1px solid var(--input-border);
         white-space: pre-wrap;
-        margin-bottom: 20px;
-        position: relative;
-    }
-    #ai_response.hidden { display: none; }
-    #ai_response.placeholder::before {
-        content: "Esperando respuesta...";
-        color: var(--text-color);
-        opacity: 0.5;
-        font-style: italic;
-    }
-    #ai_question {
-        flex: 1;
-        padding: 12px 16px;
-        font-size: 1rem;
-        border: 1px solid var(--input-border);
-        border-radius: 12px;
-        background: var(--input-bg);
-        color: var(--text-color);
-        transition: all 0.3s ease;
-    }
-    #ai_question:focus {
-        outline: none;
-        border-color: var(--input-focus);
-        box-shadow: 0 0 0 3px rgba(74,144,226,0.3);
-    }
-    .question-section {
+        line-height: 1.6;
+        font-size: 1.05rem;
+      }
+      #notes-area {
+        min-height: 150px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        font-size: 1.05rem;
+        resize: vertical;
+        flex-grow: 1;
+      }
+      .counter {
+        font-size: 0.8rem;
+        color: #718096;
+        text-align: right;
+        padding-right: 0.5rem;
+        margin-bottom: 1.25rem;
+        height: 1em;
+      }
+      .dark-theme .counter {
+        color: #a0aec0;
+      }
+      #notes-header {
         display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
         justify-content: space-between;
-    }
-    #sendQuestion {
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      #notes-header .header-buttons {
+        flex-shrink: 1;
+      }
+      #notes-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--subtitle-color);
+      }
+      .hidden {
+        display: none !important;
+      }
+      .copy-button {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 36px;
+        height: 36px;
+        background-color: var(--container-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        padding: 12px 24px;
+        opacity: 0.6;
+        transition: all var(--transition-speed);
+        z-index: 10;
+      }
+      .copy-button:hover {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+      .copy-button .fa-check {
+        color: #38a169;
+      }
+      .quick-actions-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+      }
+      .quick-action-btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 0.6rem 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid var(--border-color);
+        background: var(--input-bg);
+        color: var(--text-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all var(--transition-speed);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      .quick-action-btn:hover {
+        background: var(--accent-gradient);
+        color: #fff;
+        border-color: transparent;
+      }
+      .question-section {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+      .ai-question-wrapper {
+        position: relative;
+        flex-grow: 1;
+      }
+      #ai_question {
+        width: 100%;
+        padding: 0.8rem 3rem 0.8rem 1rem;
+        font-size: 1rem;
+        border-radius: 10px;
+        background: var(--input-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+      }
+      #questionHistoryBtn {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+      #questionHistoryBtn:hover {
+        transform: translateY(-50%) scale(1.1);
+        opacity: 1;
+      }
+      #questionHistoryPopup {
+        position: absolute;
+        bottom: 105%;
+        left: 0;
+        right: 0;
+        background-color: var(--container-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px var(--shadow-color);
+        z-index: 100;
+        max-height: 250px;
+        overflow-y: auto;
+      }
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 1rem;
+        cursor: pointer;
+        transition: background-color var(--transition-speed);
+        border-bottom: 1px solid var(--border-color);
+      }
+      .history-item:last-child {
+        border-bottom: none;
+      }
+      .history-item:hover {
+        background-color: var(--input-bg);
+      }
+      .history-item span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex-grow: 1;
+        margin-right: 1rem;
+        font-size: 0.95rem;
+      }
+      .history-delete-btn {
+        background: none;
+        border: none;
+        color: #c53030;
+        cursor: pointer;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        padding: 0.2rem;
+      }
+      #sendQuestion {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.8rem 1.5rem;
         font-size: 1rem;
         font-weight: 600;
         color: #fff;
-        background: var(--button-gradient);
+        background: var(--accent-gradient);
         border: none;
-        border-radius: 14px;
+        border-radius: 10px;
         cursor: pointer;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-        transition: all 0.3s ease;
-        min-width: 150px;
-    }
-    #sendQuestion i { font-size: 1rem; }
-    #sendQuestion:hover {
-        transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        background: var(--button-gradient-hover);
-    }
-    .copy-button {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: var(--button-gradient);
+        transition: all var(--transition-speed);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        min-width: 130px;
+      }
+      #sendQuestion:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        background: var(--accent-gradient-hover);
+      }
+      .status {
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-align: center;
+        margin-top: 2rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        transition: all var(--transition-speed);
+        opacity: 0;
+      }
+      .status.visible {
+        opacity: 1;
+      }
+      .status.success {
+        background-color: #c6f6d5;
+        color: #22543d;
+        border-color: #9ae6b4;
+      }
+      .status.error {
+        background-color: #fed7d7;
+        color: #742a2a;
+        border-color: #feb2b2;
+      }
+      .dark-theme ::placeholder {
+        color: rgba(226, 232, 240, 0.4);
+      }
+      #zen-mode-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #111;
         color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--transition-speed);
+      }
+      body.zen-active #zen-mode-container {
+        opacity: 1;
+        visibility: visible;
+      }
+      #zen-subtitulo-wrapper {
+        transition: transform var(--transition-speed) ease-in-out;
+      }
+      #zen-subtitulo {
+        font-size: 6rem;
+        font-weight: 600;
+        padding: 2rem;
+        text-align: center;
+        line-height: 1.4;
+        max-width: 90vw;
+        transition: font-size var(--transition-speed);
+      }
+      #zen-acumulado {
+        font-size: 2.2rem;
+        line-height: 1.6;
+        text-align: left;
+        white-space: pre-wrap;
+        padding: 2rem 3rem;
+        max-width: 90vw;
+        max-height: 85vh;
+        overflow-y: auto;
+        background-color: rgba(20, 20, 20, 0.5);
+        border-radius: var(--border-radius);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: font-size var(--transition-speed);
+      }
+      body.zen-active #zen-acumulado {
+        display: none;
+      }
+      body.zen-active #zen-subtitulo-wrapper {
+        display: block;
+      }
+      body.zen-active.zen-view-acumulado #zen-subtitulo-wrapper {
+        display: none;
+      }
+      body.zen-active.zen-view-acumulado #zen-acumulado {
+        display: block;
+      }
+      #zen-controls {
+        position: absolute;
+        top: 1.5rem;
+        right: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 1rem;
+      }
+      .zen-control-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+        background-color: rgba(255, 255, 255, 0.15);
         border: none;
+        color: #fff;
         border-radius: 50%;
-        width: 28px;
-        height: 28px;
+        cursor: pointer;
+        transition: all var(--transition-speed);
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .copy-button:hover { transform: scale(1.1); background: var(--button-gradient-hover); }
-    .top-right-buttons { position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; }
-    .top-right-buttons button {
-        width: 42px; height: 42px;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.2rem; padding: 0; border: none;
-        background: var(--button-gradient); color: #fff;
-        cursor: pointer; transition: all 0.3s ease;
-    }
-    .top-right-buttons button:hover { background: var(--button-gradient-hover); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    .popup-menu {
-        display: none;
+      }
+      .zen-control-btn:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+      .font-controls {
+        display: flex;
+        gap: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.15);
+        padding: 0 0.5rem;
+        border-radius: 50px;
+      }
+      .font-controls .zen-control-btn {
+        background: transparent;
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+      }
+      .popup-overlay {
         position: fixed;
-        top: 10%;
-        right: 50%;
-        transform: translateX(50%);
-        background: var(--popup-bg);
-        border-radius: 16px;
-        box-shadow: var(--popup-shadow);
-        padding: 24px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        backdrop-filter: blur(4px);
+        transition: opacity 0.3s, visibility 0.3s;
+      }
+      .popup-overlay.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      .popup-menu {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+        background: var(--container-bg);
+        border-radius: var(--border-radius);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        padding: 0;
         z-index: 1000;
         width: 90%;
+        max-width: 450px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        visibility: hidden;
+        transition: transform 0.3s, opacity 0.3s, visibility 0.3s;
+      }
+      .popup-overlay.active .popup-menu {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        visibility: visible;
+      }
+      #previewModalOverlay .popup-menu,
+      #sharedNotesModalOverlay .popup-menu {
+        max-width: 800px;
+      }
+      .popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0;
+      }
+      .popup-header h2 {
+        font-size: 1.2rem;
+      }
+      .popup-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding: 1.5rem;
+        overflow-y: auto;
+      }
+      .popup-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+      }
+      #previewContent,
+      #sharedNotesContent {
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        max-height: 50vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: "Inter", sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--text-color);
+      }
+      .setting-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 1rem;
+      }
+      .setting-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--subtitle-color);
+        opacity: 0.7;
+        margin: 1rem 0 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .select-wrapper {
+        position: relative;
+      }
+      .select-wrapper::after {
+        content: "\f078";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        position: absolute;
+        top: 50%;
+        right: 1rem;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+      .popup-content select,
+      .popup-content input[type="text"] {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        background: var(--input-bg);
+        color: var(--text-color);
+        margin-top: 0.25rem;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+      .action-button {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.9rem;
+        border-radius: 10px;
+        border: none;
+        background: var(--accent-gradient);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .popup-content .action-button, .popup-footer .action-button {
+        margin-top: 0;
+      }
+      .action-button.secondary {
+        background: transparent;
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+      }
+      .action-button.secondary:hover {
+        background: var(--input-bg);
+        border-color: var(--accent-color);
+      }
+      .export-section {
+        display: none;
+        flex-direction: column;
+        gap: 1.25rem;
+        margin-top: 1rem;
+        background-color: var(--input-bg);
+        padding: 1rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+      }
+      .export-section.active {
+        display: flex;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--border-color);
+        transition: 0.4s;
+        border-radius: 28px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+      input:checked + .slider {
+        background-color: var(--accent-color);
+      }
+      input:checked + .slider:before {
+        transform: translateX(22px);
+      }
+
+      /* ================== ESTILOS MEJORADOS PARA EL CHAT ================== */
+      #chatModalOverlay .popup-menu {
         max-width: 400px;
-        transition: all 0.3s ease;
-    }
-    .popup-menu.active { display: block; }
-    .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .popup-header h2 { font-size: 1.25rem; font-weight: 600; }
-    .close-popup { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--button-gradient); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease; }
-    .close-popup:hover { transform: scale(1.05); background: var(--button-gradient-hover); }
-    .popup-content { display: flex; flex-direction: column; gap: 14px; }
-    select, button, input[type="text"] { padding: 12px; font-size: 0.95rem; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-color); cursor: pointer; transition: all 0.3s ease; }
-    select:hover, input[type="text"]:hover, button:hover { border-color: var(--accent-color); box-shadow: 0 0 8px rgba(74,144,226,0.2); }
-    select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(74,144,226,0.3); }
-    .export-section { display: none; flex-direction: column; gap: 10px; padding: 14px; background: rgba(0,0,0,0.05); border-radius: 12px; margin-top: 12px; }
-    .export-section.active { display: flex; }
-    .status { font-size: 0.9rem; font-weight: 500; text-align: center; margin-top: 16px; opacity: 0; animation: fadeIn 0.5s forwards; }
-    .status.error { color: #f56565; }
-    @keyframes fadeIn { to { opacity: 1; } }
-    @media (max-width: 700px) {
-        h1 { font-size: 2rem; }
-        #subtitulo { font-size: 1.25rem; min-height: 60px; }
-        #acumulado, #ai_response { font-size: 1rem; min-height: 120px; }
-        .container { padding: 20px; }
-        .question-section { flex-direction: column; gap: 10px; }
-        #ai_question { width: 100%; }
-        #sendQuestion { width: 100%; }
-        .popup-menu { width: 90%; top: 5%; right: 50%; transform: translateX(50%); }
-    }
-</style>
+        height: 70vh;
+        right: 2rem;
+        left: auto;
+        top: auto;
+        bottom: 2rem;
+        transform: translateY(calc(100% + 2rem));
+      }
+      #chatModalOverlay.active .popup-menu {
+        transform: translateY(0);
+      }
+      #chat-current-user {
+        font-size: 0.8rem;
+        font-weight: normal;
+        color: var(--text-color);
+        opacity: 0.7;
+        margin-left: 0.5rem;
+      }
+      #chat-messages {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        flex-grow: 1;
+      }
+      .chat-message {
+        padding: 0.5rem 0.8rem;
+        border-radius: 12px;
+        max-width: 85%;
+        line-height: 1.4;
+        word-wrap: break-word;
+      }
+      .chat-message strong {
+        display: block;
+        font-size: 0.8rem;
+        margin-bottom: 0.2rem;
+        color: var(--accent-color);
+      }
+      .chat-message.other {
+        background-color: var(--input-bg);
+        align-self: flex-start;
+      }
+      .chat-message.own {
+        background-color: var(--accent-color);
+        color: white;
+        align-self: flex-end;
+      }
+      .chat-message.own strong {
+        color: rgba(255, 255, 255, 0.8);
+      }
+      .chat-note-message {
+        border: 1px dashed var(--accent-color);
+        background-color: color-mix(in srgb, var(--accent-color) 10%, transparent);
+        padding: 0.8rem;
+      }
+      .chat-note-message p {
+        margin-bottom: 0.8rem;
+        font-style: italic;
+        opacity: 0.9;
+      }
+      .chat-note-message button {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+      }
+      #chat-name-prompt {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      #chat-name-prompt button {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+      }
+      #chat-message-area {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      #chat-message-input {
+        flex-grow: 1;
+        margin-top: 0 !important;
+      }
+      #chat-send-btn {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        font-size: 1rem;
+      }
+
+      @media (max-width: 1024px) {
+        .notes-active .main-content {
+          grid-template-columns: 1fr;
+        }
+        .container {
+          padding: 1.5rem;
+        }
+      }
+      @media (max-width: 480px) {
+        .container {
+          padding: 1rem;
+        }
+        .main-header {
+          justify-content: center;
+        }
+        .question-section {
+          flex-direction: column;
+        }
+        #chatModalOverlay .popup-menu {
+          left: 1rem;
+          right: 1rem;
+          bottom: 1rem;
+          width: auto;
+          max-width: none;
+          height: 60vh;
+        }
+      }
+    </style>
 </head>
 <body>
-<div class="container">
-    <div class="top-right-buttons">
-        <button id="themeToggle" onclick="toggleTheme()" title="Cambiar tema"><span class="theme-icon">☀️</span></button>
-        <button class="settings-button" onclick="togglePopup()" title="Opciones"><i class="fas fa-cog"></i></button>
-    </div>
-    <h1><i class="fas fa-microphone"></i> STTTVAR</h1>
-    <div id="subtitulo"></div>
-    <div id="acumulado" style="position: relative;">
-        <button class="copy-button" onclick="copyText('acumulado')" title="Copiar texto acumulado"><i class="fas fa-copy"></i></button>
-    </div>
-    <div class="question-section">
-        <input type="text" id="ai_question" placeholder="Haz una pregunta a la IA basada en el texto acumulado">
-        <button id="sendQuestion"><i class="fas fa-paper-plane"></i> Preguntar</button>
-    </div>
-    <div id="ai_response" class="hidden" style="position: relative;">
-        <button class="copy-button" onclick="copyText('ai_response')" title="Copiar respuesta de IA"><i class="fas fa-copy"></i></button>
-    </div>
-    <div class="popup-menu" id="popupMenu">
-        <div class="popup-header">
-            <h2>Opciones</h2>
-            <button class="close-popup" onclick="togglePopup()"><i class="fas fa-times"></i></button>
+    <div class="container">
+      <header class="main-header">
+        <h1><i class="fas fa-microphone-alt"></i> STTTVAR</h1>
+        <div class="header-buttons">
+          <button id="chatToggleBtn" class="icon-button" title="Chat Global">
+            <i class="fas fa-comments"></i>
+          </button>
+          <button
+            id="notesToggleBtn"
+            class="icon-button"
+            title="Mostrar/Ocultar Apuntes"
+          >
+            <i class="fas fa-clipboard"></i>
+          </button>
+          <button
+            id="zenModeBtn"
+            class="icon-button"
+            title="Modo Pantalla Completa"
+          >
+            <i class="fas fa-expand"></i>
+          </button>
+          <button id="themeToggle" class="icon-button" title="Cambiar tema">
+            <i class="fas fa-moon"></i>
+          </button>
+          <button id="settingsBtn" class="icon-button" title="Opciones">
+            <i class="fas fa-cog"></i>
+          </button>
         </div>
-        <div class="popup-content">
-            <label for="idioma">Idioma de Subtítulos</label>
-            <select id="idioma" onchange="cambiarIdioma(this.value)">
-                <option value="es">Español</option>
-                <option value="en">Inglés</option>
-                <option value="fr">Francés</option>
-                <option value="de">Alemán</option>
-            </select>
-            <label for="idiomaAcumulado">Idioma de Texto Acumulado</label>
-            <select id="idiomaAcumulado" onchange="cambiarIdiomaAcumulado(this.value)">
-                <option value="es">Español</option>
-                <option value="en">Inglés</option>
-                <option value="fr">Francés</option>
-                <option value="de">Alemán</option>
-            </select>
-            <label for="fontSize">Tamaño de Fuente</label>
-            <select id="fontSize" onchange="adjustFontSize(this.value)">
-                <option value="12">12</option>
-                <option value="14">14</option>
-                <option value="16">16</option>
-                <option value="18">18</option>
-                <option value="20">20</option>
-                <option value="24" selected>24</option>
-                <option value="28">28</option>
-                <option value="32">32</option>
-                <option value="36">36</option>
-            </select>
-            <button onclick="limpiarTexto()"><i class="fas fa-eraser"></i> Limpiar Texto</button>
-            <button onclick="toggleExportSection()"><i class="fas fa-download"></i> Exportar a:</button>
-            <div class="export-section" id="exportSection">
-                <label for="exportFormat">Formato</label>
-                <select id="exportFormat">
-                    <option value="txt">TXT</option>
-                    <option value="docx">DOCX</option>
-                </select>
-                <label for="exportFilename">Nombre del archivo</label>
-                <input type="text" id="exportFilename" placeholder="transcripcion">
-                <button onclick="descargarTranscripcion()"><i class="fas fa-save"></i> Exportar</button>
+      </header>
+      <div class="main-content">
+        <div class="main-column">
+          <div id="subtitulo">Esperando transmisión...</div>
+          <div class="text-area-wrapper">
+            <div id="acumulado"></div>
+            <button
+              class="copy-button"
+              onclick="copyText('acumulado', this)"
+              title="Copiar texto acumulado"
+            >
+              <i class="fas fa-copy"></i><i class="fas fa-check hidden"></i>
+            </button>
+          </div>
+          <div id="acumulado-counter" class="counter"></div>
+          <div class="quick-actions-section">
+            <button class="quick-action-btn" onclick="quickAction('summarize')">
+              <i class="fas fa-align-left"></i> Resumir
+            </button>
+            <button class="quick-action-btn" onclick="quickAction('keywords')">
+              <i class="fas fa-key"></i> Puntos Clave
+            </button>
+            <button class="quick-action-btn" onclick="quickAction('correct')">
+              <i class="fas fa-check-double"></i> Corregir
+            </button>
+          </div>
+          <div class="question-section">
+            <div class="ai-question-wrapper">
+              <input
+                type="text"
+                id="ai_question"
+                placeholder="O haz una pregunta personalizada..."
+              />
+              <button
+                id="questionHistoryBtn"
+                class="icon-button"
+                title="Historial de preguntas"
+              >
+                <i class="fas fa-history"></i>
+              </button>
+              <div id="questionHistoryPopup" class="hidden"></div>
+            </div>
+            <button id="sendQuestion">
+              <span class="button-content"
+                ><i class="fas fa-paper-plane"></i> Preguntar</span
+              ><span class="button-loader hidden"
+                ><i class="fas fa-spinner fa-spin"></i
+              ></span>
+            </button>
+          </div>
+          <div class="text-area-wrapper hidden" id="aiResponseWrapper">
+            <div id="ai_response"></div>
+            <button
+              class="copy-button"
+              onclick="copyText('ai_response', this)"
+              title="Copiar respuesta"
+            >
+              <i class="fas fa-copy"></i><i class="fas fa-check hidden"></i>
+            </button>
+          </div>
+          <div class="status" id="status">Conectado</div>
+        </div>
+        <div id="notes-wrapper">
+          <div id="notes-header">
+            <h2 id="notes-title">
+              <i class="fas fa-pencil-alt"></i> Mis Apuntes
+            </h2>
+            <div class="header-buttons">
+              <button id="shareNotesBtn" class="icon-button" title="Compartir Apuntes en el Chat"><i class="fas fa-share-alt"></i></button>
+              <button id="exportNotesBtn" class="icon-button" title="Exportar Apuntes"><i class="fas fa-save"></i></button>
+            </div>
+          </div>
+          <div class="text-area-wrapper">
+            <textarea
+              id="notes-area"
+              placeholder="Escribe tus notas aquí..."
+            ></textarea>
+            <button
+              class="copy-button"
+              onclick="copyText('notes-area', this)"
+              title="Copiar apuntes"
+            >
+              <i class="fas fa-copy"></i><i class="fas fa-check hidden"></i>
+            </button>
+          </div>
+          <div id="notes-counter" class="counter"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="zen-mode-container">
+      <div id="zen-controls">
+        <div class="font-controls">
+          <button
+            id="zen-font-decrease-btn"
+            class="zen-control-btn"
+            title="Disminuir Tamaño"
+          >
+            <i class="fas fa-font" style="font-size: 0.8em"></i>-
+          </button>
+          <button
+            id="zen-font-increase-btn"
+            class="zen-control-btn"
+            title="Aumentar Tamaño"
+          >
+            <i class="fas fa-font" style="font-size: 0.8em"></i>+
+          </button>
+        </div>
+        <button
+          id="zen-view-toggle-btn"
+          class="zen-control-btn"
+          title="Ver Texto Acumulado"
+        >
+          <i class="fas fa-file-alt"></i>
+        </button>
+        <button
+          id="zen-orientation-btn"
+          class="zen-control-btn"
+          title="Girar Texto"
+        >
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button id="zen-close-btn" class="zen-control-btn" title="Cerrar">
+          <i class="fas fa-compress"></i>
+        </button>
+      </div>
+      <div id="zen-subtitulo-wrapper"><div id="zen-subtitulo"></div></div>
+      <div id="zen-acumulado"></div>
+    </div>
+
+    <div class="popup-overlay" id="chatModalOverlay">
+      <div class="popup-menu">
+        <div class="popup-header">
+          <h2>
+            <i class="fas fa-globe"></i> Chat Global
+            <span id="chat-current-user"></span>
+          </h2>
+          <button id="closeChatBtn" class="icon-button">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div
+          class="popup-content"
+          id="chat-messages"
+          style="flex-grow: 1; padding-bottom: 0"
+        ></div>
+        <div class="popup-content" style="flex-shrink: 0; padding-top: 1rem">
+          <div id="chat-name-prompt">
+            <input
+              type="text"
+              id="chat-username-input"
+              placeholder="Elige un nombre para el chat..."
+            />
+            <button id="chat-save-name-btn" class="action-button">
+              Guardar y Entrar
+            </button>
+          </div>
+          <div id="chat-message-area" class="hidden">
+            <input
+              type="text"
+              id="chat-message-input"
+              placeholder="Escribe un mensaje..."
+            />
+            <button
+              id="chat-send-btn"
+              class="icon-button"
+              title="Enviar Mensaje"
+            >
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="popup-overlay" id="sharedNotesModalOverlay">
+        <div class="popup-menu">
+            <div class="popup-header">
+                <h2>Apuntes Compartidos por <span id="sharedNotesUser"></span></h2>
+                <button id="closeSharedNotesBtn" class="icon-button"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="popup-content">
+                <pre id="sharedNotesContent"></pre>
+            </div>
+            <div class="popup-footer">
+                <button id="downloadSharedNotesTxtBtn" class="action-button secondary"><i class="fas fa-file-alt"></i> Descargar .txt</button>
+                <button id="downloadSharedNotesDocxBtn" class="action-button"><i class="fas fa-file-word"></i> Descargar .docx</button>
             </div>
         </div>
     </div>
-    <div class="status" id="status">Conectado</div>
-</div>
+    
+    <div class="popup-overlay" id="settingsModalOverlay">
+      <div class="popup-menu" id="popupMenu">
+        <div class="popup-header">
+          <h2>Opciones</h2>
+          <button id="closePopupBtn" class="icon-button">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="popup-content">
+          <div class="setting-title">General</div>
+          <div class="setting-item">
+            <label for="autoScrollToggle">Scroll Automático</label>
+            <label class="switch"
+              ><input type="checkbox" id="autoScrollToggle" checked /><span
+                class="slider"
+              ></span
+            ></label>
+          </div>
+          <div class="setting-title">Idiomas</div>
+          <label for="idioma">Idioma de Subtítulos</label>
+          <div class="select-wrapper">
+            <select id="idioma">
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+            </select>
+          </div>
+          <label for="idiomaAcumulado">Idioma de Texto Acumulado</label>
+          <div class="select-wrapper">
+            <select id="idiomaAcumulado">
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+            </select>
+          </div>
+          <div class="setting-title">Apariencia</div>
+          <label for="fontSize">Tamaño de Fuente (Subtítulo)</label>
+          <div class="select-wrapper">
+            <select id="fontSize">
+              <option value="16">Pequeño</option>
+              <option value="24" selected>Normal</option>
+              <option value="32">Grande</option>
+              <option value="40">Extra Grande</option>
+            </select>
+          </div>
+          <div class="setting-title">Acciones</div>
+          <button id="clearTextBtn" class="action-button secondary">
+            <i class="fas fa-eraser"></i> Limpiar Transcripción
+          </button>
+          <button id="exportBtn" class="action-button secondary">
+            <i class="fas fa-download"></i> Exportar Contenido
+          </button>
+          <div class="export-section" id="exportSection">
+            <label>¿Qué deseas exportar?</label>
+            <div class="select-wrapper">
+              <select id="exportSource">
+                <option value="transcript">Solo Transcripción</option>
+                <option value="notes">Solo Apuntes</option>
+                <option value="both">Ambos</option>
+              </select>
+            </div>
+            <label>Formato</label>
+            <div class="select-wrapper">
+              <select id="exportFormat">
+                <option value="txt">TXT</option>
+                <option value="md">Markdown</option>
+                <option value="docx">DOCX</option>
+              </select>
+            </div>
+            <label>Nombre del archivo</label
+            ><input
+              type="text"
+              id="exportFilename"
+              placeholder="mi_archivo"
+            /><button id="previewAndExportBtn" class="action-button">
+              <i class="fas fa-eye"></i> Vista Previa y Exportar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="popup-overlay" id="exportNotesModalOverlay"> 
+        <div class="popup-menu">
+            <div class="popup-header">
+                <h2>Exportar Apuntes</h2>
+                <button id="closeNotesExportBtn" class="icon-button"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="popup-content">
+                <label for="notesExportFormat">Formato</label>
+                <div class="select-wrapper">
+                    <select id="notesExportFormat">
+                        <option value="txt">TXT</option>
+                        <option value="md">Markdown</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+                <label for="notesExportFilename">Nombre del Archivo</label>
+                <input type="text" id="notesExportFilename" placeholder="mis_apuntes">
+                <button id="confirmExportNotesBtn" class="action-button"><i class="fas fa-download"></i> Exportar</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="popup-overlay" id="previewModalOverlay">
+        <div class="popup-menu">
+            <div class="popup-header">
+                <h2>Vista Previa de Exportación</h2>
+                <button id="closePreviewBtn" class="icon-button"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="popup-content">
+                <pre id="previewContent"></pre>
+                <button id="confirmExportBtn" class="action-button"><i class="fas fa-download"></i> Confirmar y Descargar</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        let client_id = Math.random().toString(36).substr(2, 9);
-        let source = new EventSource("/stream?client_id=" + client_id);
-        source.onmessage = function(event) {
-            let data = JSON.parse(event.data);
-            document.getElementById("subtitulo").textContent = data.subtitulo;
-            document.getElementById("acumulado").textContent = data.acumulado;
-            let aiResponseDiv = document.getElementById("ai_response");
-            if (data.ai_response) {
-                aiResponseDiv.classList.remove("hidden", "placeholder");
-                aiResponseDiv.textContent = data.ai_response;
-                document.getElementById("status").textContent = data.ai_response.startsWith("Error") ? data.ai_response : "Respuesta recibida";
-                document.getElementById("status").classList.toggle("error", data.ai_response.startsWith("Error"));
-                document.getElementById("status").style.animation = "fadeIn 0.5s";
-            }
-            if (!data.ai_response) {
-                document.getElementById("status").textContent = "Conectado";
-                document.getElementById("status").classList.remove("error");
-                document.getElementById("status").style.animation = "fadeIn 0.5s";
-            }
-        };
-        source.onerror = function() {
-            document.getElementById("status").textContent = "Desconectado. Reconectando...";
-            document.getElementById("status").classList.add("error");
-            document.getElementById("status").style.animation = "fadeIn 0.5s";
-        };
-
-        function cambiarIdioma(value) {
-            fetch("/set_language/" + client_id + "/" + value, { method: 'POST' })
-                .then(response => {
-                    console.log("Idioma de subtítulos cambiado a: " + value);
-                    document.getElementById("status").textContent = `Idioma subtítulos: ${value}`;
-                    document.getElementById("status").classList.remove("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                })
-                .catch(error => console.error("Error al cambiar idioma de subtítulos:", error));
+      const { jsPDF } = window.jspdf;
+      const clientId = Math.random().toString(36).substr(2, 9);
+      
+      const clientState = {
+        isAutoScrollActive: true,
+        zenRotation: 0,
+        zenFontSize: 6,
+        questionHistory: [],
+      };
+      
+      const elements = {
+        subtitulo: document.getElementById("subtitulo"),
+        acumulado: document.getElementById("acumulado"),
+        aiResponse: document.getElementById("ai_response"),
+        aiResponseWrapper: document.getElementById('aiResponseWrapper'),
+        status: document.getElementById("status"),
+        aiQuestion: document.getElementById("ai_question"),
+        sendQuestionBtn: document.getElementById("sendQuestion"),
+        themeToggle: document.getElementById("themeToggle"),
+        settingsModalOverlay: document.getElementById("settingsModalOverlay"),
+        closePopupBtn: document.getElementById('closePopupBtn'),
+        exportSection: document.getElementById("exportSection"),
+        autoScrollToggle: document.getElementById('autoScrollToggle'),
+        idiomaSelect: document.getElementById('idioma'),
+        idiomaAcumuladoSelect: document.getElementById('idiomaAcumulado'),
+        fontSizeSelect: document.getElementById('fontSize'),
+        settingsBtn: document.getElementById('settingsBtn'),
+        clearTextBtn: document.getElementById('clearTextBtn'),
+        exportBtn: document.getElementById('exportBtn'),
+        previewAndExportBtn: document.getElementById('previewAndExportBtn'),
+        questionHistoryBtn: document.getElementById('questionHistoryBtn'),
+        questionHistoryPopup: document.getElementById('questionHistoryPopup'),
+        notesToggleBtn: document.getElementById('notesToggleBtn'),
+        notesArea: document.getElementById('notes-area'),
+        exportNotesBtn: document.getElementById('exportNotesBtn'),
+        exportNotesModalOverlay: document.getElementById('exportNotesModalOverlay'),
+        closeNotesExportBtn: document.getElementById('closeNotesExportBtn'),
+        confirmExportNotesBtn: document.getElementById('confirmExportNotesBtn'),
+        previewModalOverlay: document.getElementById('previewModalOverlay'),
+        closePreviewBtn: document.getElementById('closePreviewBtn'),
+        previewContent: document.getElementById('previewContent'),
+        confirmExportBtn: document.getElementById('confirmExportBtn'),
+        acumuladoCounter: document.getElementById('acumulado-counter'),
+        notesCounter: document.getElementById('notes-counter'),
+        
+        zenModeContainer: document.getElementById('zen-mode-container'),
+        zenSubtitulo: document.getElementById('zen-subtitulo'),
+        zenSubtituloWrapper: document.getElementById('zen-subtitulo-wrapper'),
+        zenAcumulado: document.getElementById('zen-acumulado'),
+        zenModeBtn: document.getElementById('zenModeBtn'),
+        zenCloseBtn: document.getElementById('zen-close-btn'),
+        zenOrientationBtn: document.getElementById('zen-orientation-btn'),
+        zenViewToggleBtn: document.getElementById('zen-view-toggle-btn'),
+        zenFontIncreaseBtn: document.getElementById('zen-font-increase-btn'),
+        zenFontDecreaseBtn: document.getElementById('zen-font-decrease-btn'),
+        
+        chatToggleBtn: document.getElementById('chatToggleBtn'),
+        chatModalOverlay: document.getElementById('chatModalOverlay'),
+        closeChatBtn: document.getElementById('closeChatBtn'),
+        chatMessages: document.getElementById('chat-messages'),
+        chatCurrentUser: document.getElementById('chat-current-user'),
+        chatNamePrompt: document.getElementById('chat-name-prompt'),
+        chatUsernameInput: document.getElementById('chat-username-input'),
+        chatSaveNameBtn: document.getElementById('chat-save-name-btn'),
+        chatMessageArea: document.getElementById('chat-message-area'),
+        chatMessageInput: document.getElementById('chat-message-input'),
+        chatSendBtn: document.getElementById('chat-send-btn'),
+        
+        shareNotesBtn: document.getElementById('shareNotesBtn'),
+        sharedNotesModalOverlay: document.getElementById('sharedNotesModalOverlay'),
+        closeSharedNotesBtn: document.getElementById('closeSharedNotesBtn'),
+        sharedNotesUser: document.getElementById('sharedNotesUser'),
+        sharedNotesContent: document.getElementById('sharedNotesContent'),
+        downloadSharedNotesTxtBtn: document.getElementById('downloadSharedNotesTxtBtn'),
+        downloadSharedNotesDocxBtn: document.getElementById('downloadSharedNotesDocxBtn'),
+      };
+      
+      let statusTimeout;
+      const source = new EventSource(`/stream?client_id=${clientId}`);
+      source.onmessage = event => {
+        const payload = JSON.parse(event.data);
+        if (payload.type === 'transcript') {
+          const data = payload.data;
+          elements.subtitulo.textContent = data.subtitulo;
+          elements.acumulado.textContent = data.acumulado;
+          elements.zenSubtitulo.textContent = data.subtitulo;
+          elements.zenAcumulado.textContent = data.acumulado;
+          updateCounters('acumulado');
+          if (clientState.isAutoScrollActive) { elements.acumulado.scrollTop = elements.acumulado.scrollHeight; elements.zenAcumulado.scrollTop = elements.zenAcumulado.scrollHeight; }
+          if (data.ai_response && data.ai_response.trim()) {
+            elements.aiResponseWrapper.classList.remove('hidden');
+            elements.aiResponse.textContent = data.ai_response;
+          }
+        } else if (payload.type === 'chat') {
+          renderChatMessage(payload.data);
         }
+      };
+      source.onerror = () => updateStatus("Desconectado. Reconectando...", "error");
 
-        function cambiarIdiomaAcumulado(value) {
-            fetch("/set_language_acumulado/" + client_id + "/" + value, { method: 'POST' })
-                .then(response => {
-                    console.log("Idioma de texto acumulado cambiado a: " + value);
-                    document.getElementById("status").textContent = `Idioma acumulado: ${value}`;
-                    document.getElementById("status").classList.remove("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                })
-                .catch(error => console.error("Error al cambiar idioma de acumulado:", error));
-        }
-
-        function limpiarTexto() {
-            fetch("/clear_text/" + client_id, { method: 'POST' })
-                .then(response => {
-                    console.log("Texto limpiado");
-                    document.getElementById("status").textContent = "Texto limpiado";
-                    document.getElementById("status").classList.remove("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                    let aiResponseDiv = document.getElementById("ai_response");
-                    aiResponseDiv.classList.add("hidden");
-                    aiResponseDiv.textContent = "";
-                })
-                .catch(error => console.error("Error al limpiar texto:", error));
-        }
-
-        function copyText(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                document.getElementById("status").textContent = "Texto copiado al portapapeles";
-                document.getElementById("status").classList.remove("error");
-                document.getElementById("status").style.animation = "fadeIn 0.5s";
-            }).catch(error => {
-                console.error("Error al copiar texto:", error);
-                document.getElementById("status").textContent = "Error al copiar texto";
-                document.getElementById("status").classList.add("error");
-                document.getElementById("status").style.animation = "fadeIn 0.5s";
-            });
-        }
-
-        function toggleExportSection() {
-            const exportSection = document.getElementById("exportSection");
-            exportSection.classList.toggle("active");
-        }
-
-        function descargarTranscripcion() {
-            const format = document.getElementById("exportFormat").value;
-            const nombreArchivo = document.getElementById("exportFilename").value || "transcripcion";
-            fetch(`/download_${format}/` + client_id + "/" + encodeURIComponent(nombreArchivo), { method: 'POST' })
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = nombreArchivo + "." + format;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    document.getElementById("status").textContent = `${format.toUpperCase()} descargado`;
-                    document.getElementById("status").classList.remove("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                    toggleExportSection();
-                })
-                .catch(error => {
-                    console.error(`Error al descargar ${format}:`, error);
-                    document.getElementById("status").textContent = `Error al descargar ${format}`;
-                    document.getElementById("status").classList.add("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                });
-        }
-
-        function toggleTheme() {
-            document.body.classList.toggle('dark-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById("status").textContent = `Tema ${isDark ? 'oscuro' : 'claro'} activado`;
-            document.getElementById("status").classList.remove("error");
-            document.getElementById("status").style.animation = "fadeIn 0.5s";
-            document.querySelector('#themeToggle .theme-icon').textContent = isDark ? '☀️' : '🌙';
-        }
-
-        function adjustFontSize(size) {
-            document.getElementById("subtitulo").style.fontSize = `${size}px`;
-            document.getElementById("acumulado").style.fontSize = `${Math.max(12, size * 0.7)}px`;
-            document.getElementById("ai_response").style.fontSize = `${Math.max(12, size * 0.7)}px`;
-            document.getElementById("status").textContent = `Tamaño de fuente: ${size}px`;
-            document.getElementById("status").classList.remove("error");
-            document.getElementById("status").style.animation = "fadeIn 0.5s";
-        }
-
-        function togglePopup() {
-            const popup = document.getElementById('popupMenu');
-            popup.classList.toggle('active');
-            document.getElementById("exportSection").classList.remove("active");
-        }
-
-        function sendQuestion() {
-            const question = document.getElementById("ai_question").value;
-            if (question.trim()) {
-                let aiResponseDiv = document.getElementById("ai_response");
-                aiResponseDiv.classList.remove("hidden");
-                aiResponseDiv.classList.add("placeholder");
-                aiResponseDiv.textContent = "";
-                fetch("/ask_ai/" + client_id, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
-                })
-                .then(response => {
-                    console.log("Pregunta enviada a la IA");
-                    document.getElementById("status").textContent = "Pregunta enviada a la IA";
-                    document.getElementById("status").classList.remove("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                })
-                .catch(error => {
-                    console.error("Error al enviar pregunta:", error);
-                    document.getElementById("status").textContent = "Error al enviar pregunta";
-                    document.getElementById("status").classList.add("error");
-                    document.getElementById("status").style.animation = "fadeIn 0.5s";
-                });
-            } else {
-                document.getElementById("status").textContent = "Por favor, escribe una pregunta";
-                document.getElementById("status").classList.add("error");
-                document.getElementById("status").style.animation = "fadeIn 0.5s";
-            }
-        }
-
-        // Enviar pregunta al presionar Enter
-        document.getElementById("ai_question").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendQuestion();
-            }
-        });
-
-        // Enviar pregunta al hacer clic en el botón
-        document.getElementById("sendQuestion").addEventListener("click", sendQuestion);
-
-        // Cargar tema guardado
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-theme');
-            document.querySelector('#themeToggle .theme-icon').textContent = '☀️';
+      function renderChatMessage(data) {
+        const msgDiv = document.createElement('div');
+        const currentUser = localStorage.getItem('stttvar_username');
+        msgDiv.classList.add('chat-message', currentUser && data.user === currentUser ? 'own' : 'other');
+        if (data.isNote) {
+          msgDiv.classList.add('chat-note-message');
+          msgDiv.innerHTML = `
+            <strong>Apuntes compartidos por ${data.user}</strong>
+            <p>Se ha compartido un conjunto de apuntes en el chat.</p>
+            <button class="action-button view-shared-notes-btn">Ver y Descargar</button>
+          `;
+          msgDiv.querySelector('.view-shared-notes-btn').dataset.notesContent = data.content;
+          msgDiv.querySelector('.view-shared-notes-btn').dataset.notesUser = data.user;
         } else {
-            document.querySelector('#themeToggle .theme-icon').textContent = '🌙';
+          msgDiv.innerHTML = `<strong></strong><p></p>`;
+          msgDiv.querySelector('strong').textContent = data.user;
+          msgDiv.querySelector('p').textContent = data.message;
         }
+        const wasScrolledToBottom = elements.chatMessages.scrollHeight - elements.chatMessages.clientHeight <= elements.chatMessages.scrollTop + 10;
+        elements.chatMessages.appendChild(msgDiv);
+        if(wasScrolledToBottom) elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      }
+
+      function sendChatMessage(payload) {
+        fetch('/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => {
+                if (!res.ok) updateStatus("Error al enviar.", "error");
+                else if (payload.message) elements.chatMessageInput.value = '';
+                else if (payload.isNote) updateStatus("Apuntes compartidos en el chat.", "success");
+            })
+            .catch(() => updateStatus("Error de red.", "error"))
+            .finally(() => { if(payload.message) elements.chatMessageInput.focus(); });
+      }
+      
+      function initializeChat() {
+        const savedUsername = localStorage.getItem('stttvar_username');
+        if (savedUsername) {
+            elements.chatCurrentUser.textContent = `(Tú: ${savedUsername})`;
+            elements.chatNamePrompt.classList.add('hidden');
+            elements.chatMessageArea.classList.remove('hidden');
+            elements.chatMessageInput.focus();
+        } else {
+            elements.chatCurrentUser.textContent = '';
+            elements.chatNamePrompt.classList.remove('hidden');
+            elements.chatMessageArea.classList.add('hidden');
+            elements.chatUsernameInput.focus();
+        }
+      }
+
+      function openSharedNotesModal(content, user) {
+        elements.sharedNotesUser.textContent = user;
+        elements.sharedNotesContent.textContent = content;
+        elements.sharedNotesModalOverlay.classList.add('active');
+        elements.downloadSharedNotesTxtBtn.onclick = () => downloadFile(content, 'txt', `apuntes_de_${user}`);
+        elements.downloadSharedNotesDocxBtn.onclick = () => downloadFile(content, 'docx', `apuntes_de_${user}`);
+      }
+      
+      function downloadFile(content, format, filename) {
+        if (!content || !content.trim()) { updateStatus("No hay contenido para descargar", "error"); return; }
+        if (format === 'txt') {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${filename}.txt`; a.click(); URL.revokeObjectURL(url);
+        } else if (format === 'docx') {
+            alert("La descarga de DOCX del lado del cliente requiere una librería adicional (ej. docx.js) y no está implementada en esta demo.");
+        }
+      }
+
+      function sendQuestion(customPrompt) {
+        const question = customPrompt || elements.aiQuestion.value.trim();
+        if (!question) { updateStatus("Por favor, escribe una pregunta", "error"); return; }
+        const btnContent = elements.sendQuestionBtn.querySelector('.button-content'), btnLoader = elements.sendQuestionBtn.querySelector('.button-loader');
+        elements.sendQuestionBtn.disabled = true;
+        btnContent.classList.add('hidden'); btnLoader.classList.remove('hidden');
+        elements.aiResponseWrapper.classList.remove('hidden'); elements.aiResponse.textContent = "Procesando...";
+        if (!customPrompt) addQuestionToHistory(question);
+        
+        fetch(`/ask_ai/${clientId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
+            .then(res => { if (!res.ok) throw new Error("Error en servidor"); updateStatus("Pregunta enviada", "success"); })
+            .catch(err => { updateStatus("Error al enviar pregunta a la IA", "error"); console.error(err); })
+            .finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.classList.add('hidden'); });
+        if (!customPrompt) elements.aiQuestion.value = "";
+      }
+
+      function quickAction(type){const text=elements.acumulado.textContent;if(!text.trim()){updateStatus("No hay texto para procesar","error");return}const prompts={summarize:"Resume el texto:\n\n",keywords:"Extrae 5 puntos clave:\n\n",correct:"Corrige la gramática:\n\n"};sendQuestion(prompts[type]+text)}
+      function addQuestionToHistory(question){clientState.questionHistory=clientState.questionHistory.filter(i=>i!==question);clientState.questionHistory.unshift(question);if(clientState.questionHistory.length>10)clientState.questionHistory.pop();localStorage.setItem("stttvar_q_history",JSON.stringify(clientState.questionHistory))}
+      function updateStatus(e,t="normal",n=3e3){clearTimeout(statusTimeout),elements.status.textContent=e,elements.status.className=`status visible ${t}`,statusTimeout=setTimeout(()=>elements.status.classList.remove("visible","success","error"),n)}
+      function makeRequest(e,t,n){fetch(e,{method:"POST"}).then(res=>res.ok||(n?updateStatus(n,"error"):0))}
+
+      document.addEventListener('DOMContentLoaded', () => { updateStatus("Listo", "success", 1500); });
+      
+      elements.chatToggleBtn.addEventListener('click', () => { elements.chatModalOverlay.classList.add('active'); initializeChat(); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; });
+      elements.closeChatBtn.addEventListener('click', () => elements.chatModalOverlay.classList.remove('active'));
+      elements.chatModalOverlay.addEventListener('click', e => { if (e.target === elements.chatModalOverlay) elements.chatModalOverlay.classList.remove('active'); });
+      elements.chatSaveNameBtn.addEventListener('click', () => { const user = elements.chatUsernameInput.value.trim(); if (user) { localStorage.setItem('stttvar_username', user); initializeChat(); } else { updateStatus("Introduce un nombre.", "error"); } });
+      elements.chatUsernameInput.addEventListener('keypress', e => { if(e.key === 'Enter') elements.chatSaveNameBtn.click(); });
+      elements.chatSendBtn.addEventListener('click', () => sendChatMessage({ user: localStorage.getItem('stttvar_username'), message: elements.chatMessageInput.value.trim() }));
+      elements.chatMessageInput.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); elements.chatSendBtn.click(); } });
+      
+      elements.shareNotesBtn.addEventListener('click', () => {
+        const user = localStorage.getItem('stttvar_username');
+        const notesContent = elements.notesArea.value.trim();
+        if (!user) { updateStatus("Define tu nombre en el chat antes de compartir.", "error"); elements.chatToggleBtn.click(); return; }
+        if (!notesContent) { updateStatus("No hay apuntes para compartir.", "error"); return; }
+        sendChatMessage({ user: user, isNote: true, content: notesContent });
+      });
+
+      elements.chatMessages.addEventListener('click', e => {
+        const button = e.target.closest('.view-shared-notes-btn');
+        if (button) {
+            openSharedNotesModal(button.dataset.notesContent, button.dataset.notesUser);
+        }
+      });
+      elements.closeSharedNotesBtn.addEventListener('click', () => elements.sharedNotesModalOverlay.classList.remove('active'));
+      elements.sharedNotesModalOverlay.addEventListener('click', e => {
+        if(e.target === elements.sharedNotesModalOverlay) elements.sharedNotesModalOverlay.classList.remove('active');
+      });
+      
+      elements.idiomaSelect.addEventListener('change', () => makeRequest(`/set_language/${clientId}/${elements.idiomaSelect.value}`));
+      elements.idiomaAcumuladoSelect.addEventListener('change', () => makeRequest(`/set_language_acumulado/${clientId}/${elements.idiomaAcumuladoSelect.value}`));
+      
+      elements.themeToggle.addEventListener('click', () => document.body.classList.toggle('dark-theme'));
+      elements.settingsBtn.addEventListener('click', () => elements.settingsModalOverlay.classList.toggle('active'));
+      elements.closePopupBtn.addEventListener('click', () => elements.settingsModalOverlay.classList.remove('active'));
+      elements.sendQuestionBtn.addEventListener("click", () => sendQuestion());
+      elements.aiQuestion.addEventListener("keypress", e => { if (e.key === "Enter") sendQuestion(); });
+      
+      elements.notesToggleBtn.addEventListener('click', () => document.body.classList.toggle('notes-active'));
+      elements.exportNotesBtn.addEventListener('click', () => elements.exportNotesModalOverlay.classList.toggle('active'));
+      elements.closeNotesExportBtn.addEventListener('click', () => elements.exportNotesModalOverlay.classList.remove('active'));
+      elements.confirmExportNotesBtn.addEventListener('click', () => {
+          const notes = elements.notesArea.value;
+          const format = document.getElementById('notesExportFormat').value;
+          const filename = document.getElementById('notesExportFilename').value || 'mis_apuntes';
+          downloadFile(notes, format, filename);
+      });
+      elements.exportBtn.addEventListener('click', () => elements.exportSection.classList.toggle("active"));
+      elements.previewAndExportBtn.addEventListener('click', () => {
+          // This logic now needs to be defined if it's separate
+          alert("La vista previa y exportación desde el menú de opciones necesita ser definida.");
+      });
+
+
+      elements.zenModeBtn.addEventListener('click',toggleZenMode);elements.zenCloseBtn.addEventListener('click',toggleZenMode);elements.zenOrientationBtn.addEventListener('click',()=>{clientState.zenRotation=(clientState.zenRotation+90)%360;elements.zenSubtituloWrapper.style.transform=`rotate(${clientState.zenRotation}deg)`});elements.zenViewToggleBtn.addEventListener('click',()=>{document.body.classList.toggle('zen-view-acumulado');const i=document.body.classList.contains('zen-view-acumulado');elements.zenViewToggleBtn.innerHTML=i?'<i class="fas fa-quote-left"></i>':'<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title=i?"Ver Subtítulo Actual":"Ver Texto Acumulado";if(i)elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight});elements.zenFontIncreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize<15){clientState.zenFontSize+=0.5;applyZenFontSize()}});elements.zenFontDecreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize>2){clientState.zenFontSize-=0.5;applyZenFontSize()}});
+      
+      function updateCounters(s){let t,c;if(s==='acumulado'){t=elements.acumulado.textContent||"";c=document.getElementById('acumulado-counter')}else if(s==='notes'){t=elements.notesArea.value||"";c=document.getElementById('notes-counter')}else{return}const a=t.length;const o=t.trim().split(/\s+/).filter(w=>w.length>0);const l=t.trim()===''?0:o.length;c.textContent=`Caracteres: ${a} | Palabras: ${l}`}
+      function copyText(e,t){const n=document.getElementById(e),o=n.tagName==="TEXTAREA"||n.tagName==="INPUT"?n.value:n.textContent;o&&o.trim()&&navigator.clipboard?navigator.clipboard.writeText(o).then(()=>{updateStatus("Copiado al portapapeles","success");const e=t.querySelector(".fa-copy"),o=t.querySelector(".fa-check");e&&o&&(e.classList.add("hidden"),o.classList.remove("hidden"),setTimeout(()=>{e.classList.remove("hidden"),o.classList.add("hidden")},2e3))}).catch(e=>{console.error("Error al copiar texto:",e),updateStatus("Error al copiar texto","error")}):updateStatus("Error: No hay nada que copiar.","error")}
+      function applyZenFontSize(){elements.zenSubtitulo.style.fontSize=`${clientState.zenFontSize}vmin`;elements.zenAcumulado.style.fontSize=`${Math.max(2,clientState.zenFontSize*.4)}vmin`}
+      function toggleZenMode(){document.body.classList.toggle("zen-active");if(document.body.classList.contains("zen-active")){document.body.classList.remove("zen-view-acumulado");elements.zenViewToggleBtn.innerHTML='<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title="Ver Texto Acumulado";clientState.zenFontSize=6;applyZenFontSize();clientState.zenRotation=0;elements.zenSubtituloWrapper.style.transform=`rotate(${clientState.zenRotation}deg)`}}
     </script>
 </body>
 </html>
