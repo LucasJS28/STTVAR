@@ -22,15 +22,14 @@ import requests
 from docx import Document
 from io import StringIO, BytesIO
 import socket
-
-# ==================== NUEVAS IMPORTACIONES PARA NGROK ====================
 from pyngrok import ngrok, conf
 
-# ---- Configuración de Flask y STTTVAR ----
+# (El resto del código de Flask y las variables globales permanecen sin cambios)
+# ... (todo el código hasta la clase TranscriptionWindow) ...
+# =====================================================================
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# (El resto de las variables globales se mantienen igual)
 transcripcion = ""
 current_partial = ""
 client_ai_responses = {}
@@ -47,7 +46,6 @@ q = queue.Queue(maxsize=20)
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "mistral:7b-instruct-q4_K_M"
 
-# (El resto de las funciones de setup y Flask se mantienen igual)
 def check_ollama():
     try:
         response = requests.get("http://localhost:11434/api/tags", timeout=5)
@@ -172,8 +170,9 @@ def process_ai_question(question, client_id):
             client_ai_responses[client_id] = response.json().get("response", "No se recibió respuesta válida.").strip()
         else: client_ai_responses[client_id] = f"Error en la API de Ollama: Código {response.status_code}."
     except Exception as e: client_ai_responses[client_id] = f"Error al procesar la pregunta: {str(e)}"
+# =====================================================================
 
-# ---- Clase TranscriptionWindow Modificada ----
+
 class TranscriptionWindow(QWidget):
     transcription_status_changed = pyqtSignal(bool)
 
@@ -191,9 +190,9 @@ class TranscriptionWindow(QWidget):
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
         self.selected_language = "es"
+        # SOLUCIÓN: Añadir una bandera para evitar que _stop_transcription se ejecute dos veces
         self._already_stopped = False
 
-        # ==================== NUEVAS VARIABLES PARA NGROK ====================
         self.ngrok_tunnel = None
         self.public_url = None
         self.config_file = 'config.json'
@@ -212,7 +211,7 @@ class TranscriptionWindow(QWidget):
         self._hide_button_timer.setSingleShot(True)
         self._hide_button_timer.timeout.connect(self._fade_out_buttons)
 
-    # (Las funciones de movimiento de ventana y eventos de mouse/hover no cambian)
+    # ... (Todas las funciones de UI, ngrok, eventos de ratón, etc., se mantienen igual) ...
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = event.globalPos()
     def mouseMoveEvent(self, event):
@@ -225,8 +224,6 @@ class TranscriptionWindow(QWidget):
     def leaveEvent(self, event):
         if self.transcription_active and not self.language_combo.view().isVisible(): self._hide_button_timer.start(300)
         super().leaveEvent(event)
-
-    # ==================== NUEVAS FUNCIONES PARA NGROK ====================
     def _get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -237,7 +234,6 @@ class TranscriptionWindow(QWidget):
         finally:
             s.close()
         return IP
-
     def _setup_ngrok_authtoken(self):
         token = None
         if os.path.exists(self.config_file):
@@ -265,15 +261,11 @@ class TranscriptionWindow(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error de Ngrok", f"No se pudo configurar el token de Ngrok: {e}")
             return False
-
-    # ==================== BOTÓN DE COMPARTIR MODIFICADO ====================
     def _on_qr_button_clicked(self):
-        # Si el túnel ya está activo, simplemente muestra la ventana
         if self.ngrok_tunnel:
             self._show_qr_window()
             return
             
-        # Si no, crea el túnel
         if not self._setup_ngrok_authtoken():
             QMessageBox.warning(self, "Cancelado", "La configuración del Authtoken es necesaria para compartir públicamente.")
             return
@@ -284,9 +276,7 @@ class TranscriptionWindow(QWidget):
         QApplication.processEvents()
 
         try:
-            # Mata cualquier proceso de ngrok anterior por si quedó colgado
             ngrok.kill()
-            # Crear el túnel HTTP al puerto 5000 donde corre Flask
             self.ngrok_tunnel = ngrok.connect(5000)
             self.public_url = self.ngrok_tunnel.public_url
             progress.close()
@@ -294,19 +284,20 @@ class TranscriptionWindow(QWidget):
         except Exception as e:
             progress.close()
             QMessageBox.critical(self, "Error de Ngrok", f"No se pudo crear el túnel de Ngrok.\nAsegúrate de tener conexión a internet.\n\nError: {e}")
-
     def _show_qr_window(self):
         local_ip = self._get_local_ip()
         try:
             import subprocess
-            qr_app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qr_app.py")
-            # Pasar ambas URLs como argumentos
+            # Asumiendo que qr_app.py está en el mismo directorio que grabadora.py
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            qr_app_path = os.path.join(current_dir, "qr_app.py")
+            if not os.path.exists(qr_app_path): # Fallback si está en un subdirectorio
+                 qr_app_path = os.path.join(os.path.dirname(current_dir), "interfaz", "qr_app.py")
+            
             subprocess.Popen([sys.executable, qr_app_path, f"http://{local_ip}:5000", self.public_url])
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo abrir la ventana de QR: {str(e)}")
-
-
-    # (El resto de la clase no cambia, solo el closeEvent para cerrar el túnel)
     def _setup_ui(self):
         self.base_widget = QWidget(self); self.base_widget.setObjectName("baseWidget"); self.base_widget.setMouseTracking(True); self.setMouseTracking(True)
         self.base_widget.setStyleSheet("#baseWidget { background-color: rgba(30, 30, 30, 200); border: 1px solid rgba(70, 70, 70, 150); border-radius: 10px; }")
@@ -352,13 +343,21 @@ class TranscriptionWindow(QWidget):
             if not input_devices: self.device_combo.addItem("No se encontraron dispositivos."); self.toggle_recording_button.setEnabled(False); return
             for idx, name in input_devices: self.device_combo.addItem(name, idx)
         except Exception as e: QMessageBox.critical(self, "Error al detectar dispositivos", str(e))
+
     def _toggle_recording(self):
-        if self.transcription_active: self._stop_transcription()
-        else: self._start_transcription()
+        if self.transcription_active:
+            self._stop_transcription()
+        else:
+            self._start_transcription()
+
     def _start_transcription(self):
         global qtextedit_buffer
-        device_index = self.device_combo.currentData();
-        if device_index is None: QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono."); return
+        device_index = self.device_combo.currentData()
+        if device_index is None:
+            QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
+            return
+
+        # ... (código de pyttsx3, QProgressDialog, creación de directorios, etc. sin cambios) ...
         engine = pyttsx3.init(); engine.setProperty('voice', 'spanish'); engine.setProperty('rate', 150); engine.setProperty('volume', 0.9)
         engine.say("Se iniciará la grabación"); engine.runAndWait()
         progress = QProgressDialog("Iniciando transcripción...", None, 0, 0, self); progress.setWindowModality(Qt.WindowModal); progress.setWindowFlags(Qt.FramelessWindowHint); progress.setMinimumDuration(0)
@@ -366,18 +365,52 @@ class TranscriptionWindow(QWidget):
         progress.setMinimumSize(300, 150); progress.show(); QApplication.processEvents()
         output_dir = "stt_guardados"; audio_output_dir = "sttaudio_guardados"; os.makedirs(output_dir, exist_ok=True); os.makedirs(audio_output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S"); self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"; self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
+        
         try:
             self.transcriber_thread = TranscriberThread(self.model, device_index, self.current_transcription_filepath, self.current_audio_filepath)
-            self.transcriber_thread.new_text.connect(self._update_text_area); self.transcriber_thread.finished.connect(self._on_transcription_finished); self.transcriber_thread.start()
-            self.transcriber_thread.set_mute(self.mute_button.isChecked()); self.transcription_active = True; self.transcription_status_changed.emit(True); self.text_area.clear()
-            qtextedit_buffer = ""; self._already_stopped = False
-        except Exception as e: progress.close(); QMessageBox.critical(self, "Error", str(e)); return
+            self.transcriber_thread.new_text.connect(self._update_text_area)
+            self.transcriber_thread.finished.connect(self._on_transcription_finished)
+            self.transcriber_thread.start()
+            self.transcriber_thread.set_mute(self.mute_button.isChecked())
+
+            self.transcription_active = True
+            self.transcription_status_changed.emit(True)
+            self.text_area.clear()
+            qtextedit_buffer = ""
+            # SOLUCIÓN: Reiniciar la bandera cada vez que se inicia una nueva grabación
+            self._already_stopped = False
+
+        except Exception as e:
+            progress.close()
+            QMessageBox.critical(self, "Error", str(e))
+            return
         progress.close()
+
     def _stop_transcription(self):
-        global qtextedit_buffer;
-        if self._already_stopped: return; self._already_stopped = True
-        if self.transcriber_thread: self.transcriber_thread.stop(); self.transcriber_thread.wait(); self.transcriber_thread = None
-        self.transcription_active = False; self.transcription_status_changed.emit(False); self._prompt_save_or_discard(); qtextedit_buffer = ""
+        global qtextedit_buffer
+        # SOLUCIÓN: La guarda para prevenir la doble ejecución
+        if self._already_stopped:
+            return
+        self._already_stopped = True
+
+        if self.transcriber_thread:
+            self.transcriber_thread.stop()
+            self.transcriber_thread.wait() # Esperar a que el hilo termine limpiamente
+            self.transcriber_thread = None
+
+        self.transcription_active = False
+        self.transcription_status_changed.emit(False)
+        self._prompt_save_or_discard()
+        
+        # Limpiar variables globales
+        qtextedit_buffer = ""
+
+    def _on_transcription_finished(self):
+        # Esta señal se emite cuando el hilo termina por su cuenta.
+        # Simplemente llamamos a _stop_transcription(), que ahora es seguro gracias a la bandera.
+        self._stop_transcription()
+        
+    # ... (funciones de UI como _toggle_mute, _fade_in/out, _update_ui_for_transcription_status, etc. sin cambios)...
     def _toggle_mute(self):
         muted = self.mute_button.isChecked(); self.mute_button.setText("🔇" if muted else "🎙️")
         if self.transcriber_thread: self.transcriber_thread.set_mute(muted)
@@ -424,28 +457,62 @@ class TranscriptionWindow(QWidget):
         global qtextedit_buffer
         self.selected_language = self.language_combo.itemData(index)
         if self.transcription_active and qtextedit_buffer.strip(): self._update_text_area(qtextedit_buffer, is_partial=True)
-    def _on_transcription_finished(self):
-        self._stop_transcription()
+
+    # SOLUCIÓN: Lógica de guardado completamente reescrita para ser más clara y robusta.
     def _prompt_save_or_discard(self):
         global transcripcion, qtextedit_buffer
-        if self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath):
-            reply_transcription = QMessageBox.question(self, "Guardar Transcripción", "¿Deseas guardar la transcripción?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            transcription_saved = (reply_transcription == QMessageBox.Yes)
-            if not transcription_saved:
-                try: 
-                    if os.path.exists(self.current_transcription_filepath): os.remove(self.current_transcription_filepath)
-                except Exception as e: QMessageBox.warning(self, "Error al eliminar", str(e))
-            if self.current_audio_filepath and os.path.exists(self.current_audio_filepath):
-                reply_audio = QMessageBox.question(self, "Guardar Audio", "Guardar la grabación es bajo tu propia responsabilidad.\n\n¿Deseas guardar el audio?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply_audio == QMessageBox.No:
-                    try: 
-                        if os.path.exists(self.current_audio_filepath): os.remove(self.current_audio_filepath)
-                    except Exception as e: QMessageBox.warning(self, "Error al eliminar", str(e))
-                if transcription_saved: QMessageBox.information(self, "Guardado", "La transcripción" + (" y el audio han sido guardados." if reply_audio == QMessageBox.Yes else " ha sido guardada."))
-                elif reply_audio == QMessageBox.Yes: QMessageBox.information(self, "Guardado", "El audio ha sido guardado.")
-        self.current_transcription_filepath = None; self.current_audio_filepath = None; transcripcion = ""; qtextedit_buffer = ""
+        
+        # Verificar si hay archivos válidos para preguntar
+        has_transcription = self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)
+        has_audio = self.current_audio_filepath and os.path.exists(self.current_audio_filepath)
+
+        if not has_transcription and not has_audio:
+            return # No hay nada que guardar o descartar
+
+        # 1. Tomar decisiones primero
+        save_transcription = False
+        if has_transcription:
+            reply_transcription = QMessageBox.question(self, "Guardar Transcripción",
+                                                       "¿Deseas guardar la transcripción de texto?",
+                                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            save_transcription = (reply_transcription == QMessageBox.Yes)
+
+        save_audio = False
+        if has_audio:
+            reply_audio = QMessageBox.question(self, "Guardar Audio",
+                                               "Guardar la grabación es bajo tu propia responsabilidad.\n\n¿Deseas guardar el archivo de audio?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            save_audio = (reply_audio == QMessageBox.Yes)
+
+        # 2. Actuar sobre los archivos
+        try:
+            if not save_transcription and has_transcription:
+                os.remove(self.current_transcription_filepath)
+            if not save_audio and has_audio:
+                os.remove(self.current_audio_filepath)
+        except Exception as e:
+            QMessageBox.warning(self, "Error al eliminar archivo", str(e))
+
+        # 3. Informar al usuario del resultado final
+        messages = []
+        if save_transcription:
+            messages.append("La transcripción ha sido guardada.")
+        if save_audio:
+            messages.append("El audio ha sido guardado.")
+
+        if messages:
+            QMessageBox.information(self, "Proceso completado", "\n".join(messages))
+        else:
+            # Dar feedback si el usuario descartó todo
+            QMessageBox.information(self, "Proceso completado", "La transcripción y el audio no han sido guardados.")
+        
+        # Limpiar rutas y variables globales al final
+        self.current_transcription_filepath = None
+        self.current_audio_filepath = None
+        transcripcion = ""
+        qtextedit_buffer = ""
+
     def closeEvent(self, event):
-        # ==================== AÑADIDO: CERRAR NGROK AL SALIR ====================
         if self.ngrok_tunnel:
             print("Cerrando túnel de Ngrok...")
             ngrok.disconnect(self.public_url)
@@ -453,10 +520,18 @@ class TranscriptionWindow(QWidget):
             self.ngrok_tunnel = None
 
         if self.transcriber_thread and self.transcriber_thread.isRunning():
-            reply = QMessageBox.question(self, "Transcripción Activa", "¿Detener y cerrar?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes: self._stop_transcription(); event.accept()
-            else: event.ignore()
+            reply = QMessageBox.question(self, "Transcripción Activa",
+                                           "La transcripción está en curso. ¿Deseas detenerla y cerrar la aplicación?",
+                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self._stop_transcription()
+                event.accept()
+            else:
+                event.ignore()
         else:
             event.accept()
+
     def _open_settings_window(self):
-        self.settings_window = NuevaVentana(self); self.settings_window.show(); self.hide()
+        self.settings_window = NuevaVentana(self)
+        self.settings_window.show()
+        self.hide()

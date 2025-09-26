@@ -4,60 +4,54 @@ import subprocess
 import os
 import argostranslate.translate
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QLabel, QVBoxLayout, QMessageBox, QProgressBar
+    QApplication, QDialog, QLabel, QVBoxLayout, QMessageBox, QProgressBar,
+    QWidget, QGraphicsDropShadowEffect
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QPoint
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QGraphicsDropShadowEffect
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QPoint, QPropertyAnimation, QEasingCurve
+from PyQt5.QtGui import QFont, QColor
 from transcripcion.vosk_utils import cargar_modelo
 from .grabadora import TranscriptionWindow
-from .terminos import TermsAndConditionsDialog  # Importar la ventana de términos
+from .terminos import TermsAndConditionsDialog
 
 
 class DraggableDialog(QDialog):
     """QDialog personalizado que se puede arrastrar."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._is_dragging = False
-        self._drag_position = QPoint()
+        self.old_pos = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self._is_dragging = True
-            self._drag_position = event.globalPos() - self.frameGeometry().topLeft()
-            event.accept()
+            self.old_pos = event.globalPos()
 
     def mouseMoveEvent(self, event):
-        if self._is_dragging and event.buttons() & Qt.LeftButton:
-            self.move(event.globalPos() - self._drag_position)
-            event.accept()
+        if self.old_pos and event.buttons() & Qt.LeftButton:
+            delta = QPoint(event.globalPos() - self.old_pos)
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.old_pos = event.globalPos()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self._is_dragging = False
-            event.accept()
+            self.old_pos = None
 
 
 class ModelLoaderThread(QThread):
-    progress = pyqtSignal(str, int)  # Señal para actualizar el texto y la barra de progreso
-    error = pyqtSignal(str)  # Señal para errores
-    finished = pyqtSignal()  # Señal para indicar que la carga terminó
+    progress = pyqtSignal(str, int)
+    error = pyqtSignal(str)
+    finished = pyqtSignal()
 
     def __init__(self, launcher):
-        super().__init__(None)  # No pasar un parent, usar None
-        self.launcher = launcher  # Almacenar referencia al objeto Launcher
+        super().__init__(None)
+        self.launcher = launcher
 
     def run(self):
         try:
-            # Cargar modelo de Vosk
             self.progress.emit("Cargando modelo de Vosk...", 33)
             self.launcher.model = cargar_modelo()
 
-            # Iniciar Ollama
             self.progress.emit("Iniciando Ollama...", 66)
             self.launcher._start_ollama()
 
-            # Cargar modelos de traducción
             self.progress.emit("Cargando modelos de traducción...", 100)
             self.launcher._load_translation_models()
 
@@ -75,101 +69,115 @@ class Launcher:
         self.dialog = None
 
     def create_loading_dialog(self):
-        dialog = DraggableDialog()  # 🔥 Ahora la ventana es arrastrable
-        dialog.setWindowModality(Qt.WindowModal)
+        dialog = DraggableDialog()
         dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        dialog.setStyleSheet("""
-            QDialog {
-                background: qlineargradient(
-                    x1: 0, y1: 0, x2: 1, y2: 1,
-                    stop: 0 #2a2a2a, stop: 1 #4a4a4a
-                );
-                border: 2px solid #c0392b;
-                border-radius: 15px;
-                padding: 15px;
-            }
-        """)
+        dialog.setAttribute(Qt.WA_TranslucentBackground) # Importante para la sombra
+        dialog.setFixedSize(400, 280)
 
-        layout = QVBoxLayout(dialog)
+        # Contenedor principal para aplicar sombra y bordes
+        container = QWidget(dialog)
+        container.setObjectName("containerWidget")
+        
+        # Sombra sutil para un efecto elevado
+        shadow = QGraphicsDropShadowEffect(dialog)
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(4)
+        shadow.setColor(QColor(0, 0, 0, 180))
+        container.setGraphicsEffect(shadow)
+
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(30, 30, 30, 30)
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(10)
+        layout.setSpacing(15)
 
-        icon_label = QLabel("🎙️", dialog)
-        icon_label.setStyleSheet("font-size: 48px; color: #e74c3c; background: transparent;")
+        icon_label = QLabel("🎙️", container)
+        icon_label.setObjectName("iconLabel")
         icon_label.setAlignment(Qt.AlignCenter)
-        icon_shadow = QGraphicsDropShadowEffect()
-        icon_shadow.setBlurRadius(15)
-        icon_shadow.setColor(Qt.black)
-        icon_shadow.setOffset(3, 3)
-        icon_label.setGraphicsEffect(icon_shadow)
 
-        text_label = QLabel("STTVAR", dialog)
-        text_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #dddddd; background: transparent;")
+        text_label = QLabel("STTVAR", container)
+        text_label.setObjectName("titleLabel")
         text_label.setAlignment(Qt.AlignCenter)
-        text_shadow = QGraphicsDropShadowEffect()
-        text_shadow.setBlurRadius(10)
-        text_shadow.setColor(Qt.black)
-        text_shadow.setOffset(2, 2)
-        text_label.setGraphicsEffect(text_shadow)
 
-        self.loading_label = QLabel("Cargando modelos...", dialog)
-        self.loading_label.setStyleSheet("font-size: 14px; color: #bbbbbb; background: transparent;")
+        self.loading_label = QLabel("Iniciando...", container)
+        self.loading_label.setObjectName("statusLabel")
         self.loading_label.setAlignment(Qt.AlignCenter)
-        loading_shadow = QGraphicsDropShadowEffect()
-        loading_shadow.setBlurRadius(8)
-        loading_shadow.setColor(Qt.black)
-        loading_shadow.setOffset(1, 1)
-        self.loading_label.setGraphicsEffect(loading_shadow)
 
-        self.progress_bar = QProgressBar(dialog)
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                border: 2px solid #c0392b;
-                border-radius: 5px;
-                text-align: center;
-                background: #4a4a4a;
-                color: #dddddd;
-            }
-            QProgressBar::chunk {
-                background-color: #e74c3c;
-            }
-        """)
-        self.progress_bar.setMinimum(0)
-        self.progress_bar.setMaximum(100)
+        self.progress_bar = QProgressBar(container)
+        self.progress_bar.setObjectName("progressBar")
+        self.progress_bar.setTextVisible(False) # Ocultamos el texto por defecto
+        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        
+        # --- NUEVO: Animación para la barra de progreso ---
+        self.progress_animation = QPropertyAnimation(self.progress_bar, b"value")
+        self.progress_animation.setDuration(400) # Duración de la animación en ms
+        self.progress_animation.setEasingCurve(QEasingCurve.InOutCubic)
 
         layout.addWidget(icon_label)
         layout.addWidget(text_label)
+        layout.addSpacing(10)
         layout.addWidget(self.loading_label)
         layout.addWidget(self.progress_bar)
 
-        dialog.setLayout(layout)
-        dialog.setMinimumSize(250, 200)
-        dialog.setMaximumSize(300, 250)
+        # Layout principal para el diálogo (necesario para la sombra)
+        main_layout = QVBoxLayout(dialog)
+        main_layout.addWidget(container)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
+        self._apply_styles(dialog)
         self.dialog = dialog
 
+    def _apply_styles(self, dialog):
+        dialog.setStyleSheet("""
+            #containerWidget {
+                background-color: #2c2c2c;
+                border-radius: 22px;
+                border: 2px solid #E74C3C;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            #iconLabel {
+                font-size: 48px;
+                background: transparent;
+            }
+            #titleLabel {
+                color: #f0f0f0;
+                font-size: 28px;
+                font-weight: 600;
+                background: transparent;
+            }
+            #statusLabel {
+                color: #a0a0a0;
+                font-size: 14px;
+                background: transparent;
+            }
+            #progressBar {
+                border: 1px solid #4a4a4a;
+                border-radius: 9px;
+                background-color: #212121;
+                height: 18px; /* Altura fija para un mejor look */
+            }
+            #progressBar::chunk {
+                background-color: #E74C3C;
+                border-radius: 8px;
+            }
+        """)
+
     def _start_ollama(self):
-        """Inicia el proceso de Ollama en segundo plano."""
         ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
         if not os.path.exists(ruta_ollama):
             raise Exception("No se encontró el ejecutable de Ollama.")
-
         try:
             self.ollama_process = subprocess.Popen(
-                [ruta_ollama, 'serve'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
+                [ruta_ollama, 'serve'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW
             )
-            time.sleep(3)  # Esperar a que el servidor esté activo
+            time.sleep(3)
             return True
         except Exception as e:
             raise Exception(f"Error al iniciar Ollama: {str(e)}")
 
     def _load_translation_models(self):
-        """Precarga los modelos de traducción de Argos Translate."""
         try:
             installed_languages = argostranslate.translate.get_installed_languages()
             language_codes = ["es", "en", "pt"]
@@ -188,7 +196,6 @@ class Launcher:
         self.dialog.show()
         self.app.processEvents()
 
-        # Iniciar la carga asíncrona
         self.loader_thread = ModelLoaderThread(self)
         self.loader_thread.progress.connect(self.update_progress)
         self.loader_thread.error.connect(self.handle_error)
@@ -196,13 +203,14 @@ class Launcher:
         self.loader_thread.start()
 
     def update_progress(self, text, value):
-        """Actualiza el texto y el valor de la barra de progreso."""
         self.loading_label.setText(text)
-        self.progress_bar.setValue(value)
+        # Inicia la animación hacia el nuevo valor
+        self.progress_animation.setStartValue(self.progress_bar.value())
+        self.progress_animation.setEndValue(value)
+        self.progress_animation.start()
         self.app.processEvents()
 
     def handle_error(self, error_message):
-        """Maneja errores durante la carga."""
         self.dialog.close()
         if self.ollama_process:
             self.ollama_process.terminate()
@@ -210,16 +218,11 @@ class Launcher:
         sys.exit(1)
 
     def _on_loading_finished(self):
-        """Se ejecuta cuando la carga termina."""
         self.dialog.close()
-
-        # Mostrar ventana de términos y condiciones
         terms_dialog = TermsAndConditionsDialog()
         if terms_dialog.exec_() == QDialog.Accepted:
-            # Si el usuario acepta, abrir la ventana principal
             self.open_main_window()
         else:
-            # Si el usuario no acepta, cerrar la aplicación
             if self.ollama_process:
                 self.ollama_process.terminate()
             sys.exit(0)
