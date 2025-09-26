@@ -6,7 +6,7 @@
     <title>Proyecto STTVAR - Presentación Definitiva</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -51,7 +51,14 @@
         .cursor-glow { display: none; position: fixed; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, var(--color-glow) 0%, transparent 70%); pointer-events: none; transform: translate(-50%, -50%); z-index: 9998; }
         @media (pointer: fine) { body:hover .cursor, body:hover .cursor-glow { display: block; } a:hover ~ .cursor, button:hover ~ .cursor, .card:hover ~ .cursor, .bento-card:hover ~ .cursor { width: 40px; height: 40px; opacity: 0.2; } }
 
-        .background-aurora { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(300deg, var(--color-accent-start), var(--color-accent-end), #0d1117, #082f49); background-size: 300% 300%; animation: gradientAnimation 25s ease infinite; filter: blur(80px) opacity(0.15); z-index: -2; }
+        /* === AJUSTE REALIZADO AQUÍ === */
+        .background-aurora { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: linear-gradient(300deg, var(--color-accent-start), var(--color-accent-end), #0d1117, #082f49); 
+            background-size: 300% 300%; animation: gradientAnimation 25s ease infinite; 
+            filter: blur(80px) opacity(0.1); /* <--- VALOR BAJADO DE 0.15 A 0.1 */
+            z-index: -2; 
+        }
         body.light-mode .background-aurora { display: none; }
         @keyframes gradientAnimation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
@@ -69,9 +76,8 @@
 
         h1, h2, h3 { font-family: 'Poppins', sans-serif; color: var(--color-primary); font-weight: 700; }
         
-        h2 { font-size: clamp(2rem, 5vw, 2.8rem); margin-bottom: 60px; text-align: center; position: relative; }
-        h2.subtitle { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 400; margin-bottom: 25px; color: var(--color-secondary); }
-        h2::after { content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 70px; height: 4px; background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end)); border-radius: 2px; }
+        h2.section-title { font-size: clamp(2rem, 5vw, 2.8rem); margin-bottom: 60px; text-align: center; position: relative; }
+        h2.section-title::after { content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 70px; height: 4px; background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end)); border-radius: 2px; }
         h3 { font-size: 1.3rem; margin-bottom: 15px; font-weight: 600; }
         .text-gradient { background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end)); -webkit-background-clip: text; background-clip: text; color: transparent; }
         p.section-subtitle { text-align: center; max-width: 800px; margin: -40px auto 50px auto; font-size: 1.15rem; line-height: 1.8; }
@@ -81,6 +87,9 @@
         body.light-mode .navbar.scrolled { background-color: rgba(255, 255, 255, 0.85); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07); }
         .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
         .nav-logo .soundwave-icon { width: 30px; height: 30px; color: var(--color-accent-start); transition: color 0.4s ease, transform 0.4s ease; }
+        @keyframes pulse { 0%, 100% { transform: scaleY(0.2); } 50% { transform: scaleY(1); } }
+        .soundwave-bar { fill: currentColor; transform-origin: bottom; animation: pulse 1.5s infinite ease-in-out; }
+        .soundwave-bar:nth-child(2) { animation-delay: -0.2s; } .soundwave-bar:nth-child(3) { animation-delay: -0.4s; } .soundwave-bar:nth-child(4) { animation-delay: -0.6s; }
         .nav-logo:hover .soundwave-icon { color: var(--color-accent-end); transform: rotate(-5deg) scale(1.1); }
         .nav-logo span { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.7rem; }
         .nav-right-group { display: flex; align-items: center; gap: 15px; }
@@ -98,53 +107,31 @@
         body.light-mode .theme-toggle .fa-sun { transform: translateY(0) rotate(0); opacity: 1; }
         body.light-mode .theme-toggle .fa-moon { transform: translateY(-150%) rotate(-45deg); opacity: 0; }
 
-        .hero { text-align: center; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding-top: 100px; }
-        .hero-logo { width: 100px; height: 100px; background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end)); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; position: relative; box-shadow: 0 0 40px -5px var(--color-glow); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease; color: white; }
-        .hero-logo:hover { transform: scale(1.1); box-shadow: 0 0 60px 5px var(--color-glow); }
-        .soundwave-icon { width: 50px; height: 50px; }
-        .soundwave-bar { fill: currentColor; transform-origin: bottom; animation: pulse 1.5s infinite ease-in-out; }
-        .soundwave-bar:nth-child(2) { animation-delay: -0.2s; } .soundwave-bar:nth-child(3) { animation-delay: -0.4s; } .soundwave-bar:nth-child(4) { animation-delay: -0.6s; }
-        @keyframes pulse { 0%, 100% { transform: scaleY(0.2); } 50% { transform: scaleY(1); } }
+        .hero { min-height: 100vh; display: flex; align-items: center; padding-top: 80px; }
+        .hero-content { display: grid; grid-template-columns: repeat(2, 1fr); align-items: center; gap: 4rem; }
+        .hero-text { text-align: left; }
+        .hero-title-wrapper { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; }
+        .hero-title-wrapper .hero-logo-icon { width: clamp(50px, 10vw, 80px); height: clamp(50px, 10vw, 80px); color: var(--color-primary); }
+        .hero-title-wrapper .hero-logo-icon .soundwave-bar { fill: url(#logo-gradient); }
+        .main-title-container { display: flex; align-items: center; gap: 1rem; }
+        h1.main-title { font-size: clamp(3rem, 10vw, 5rem); line-height: 1; font-weight: 900; text-shadow: 0 0 20px var(--color-glow); letter-spacing: -2px; }
+        .title-blinking-cursor { width: 6px; height: clamp(3rem, 10vw, 4.5rem); background-image: linear-gradient(var(--color-accent-end), var(--color-accent-start)); border-radius: 3px; animation: blink 1.2s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .hero-text .hero-tagline { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.2; margin-bottom: 1.5rem; }
+        .hero-text p { font-size: 1.1rem; max-width: 500px; margin-bottom: 2rem; color: var(--color-secondary); }
+        .cta-buttons { display: flex; gap: 15px; justify-content: flex-start; flex-wrap: wrap; }
+        .hero-visual { position: relative; }
+        .hero-visual .carousel-container { transform: perspective(1200px) rotateY(-15deg) rotateX(2deg) scale(1.05); box-shadow: 0px 30px 60px -10px var(--shadow-color); transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); }
+        .hero-visual .carousel-container:hover { transform: perspective(1200px) rotateY(-10deg) rotateX(1deg) scale(1.08); }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        .hero-text > * { opacity: 0; animation: slideInLeft 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .hero-title-wrapper { animation-delay: 0.2s; }
+        .hero-tagline { animation-delay: 0.4s; }
+        .hero-text p { animation-delay: 0.6s; }
+        .cta-buttons { animation-delay: 0.8s; }
+        .hero-visual { opacity: 0; animation: slideInRight 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.4s forwards; }
 
-        .animate-item { opacity: 0; animation-fill-mode: forwards; }
-        #hero-logo { animation: popIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.2s forwards; }
-        #full-name-subtitle, #subtitle, #description, #creator-credit { animation: fadeInDown 1s ease-out forwards; }
-        #full-name-subtitle { animation-delay: 2.3s; }
-        #subtitle { animation-delay: 2.8s; } 
-        #description { animation-delay: 3.0s; font-size: 13px; } 
-        #creator-credit { animation-delay: 3.2s; }
-        #cta-buttons { animation: fadeInUp 1s ease-out 3.4s forwards; }
-        .scroll-down-indicator { position: absolute; bottom: 30px; left: 50%; color: var(--color-secondary); font-size: 1.8rem; opacity: 0; animation: gentleBounce 2.5s infinite 4.5s, fadeInDown 1s ease-out 4.5s forwards; }
-        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
-        @keyframes gentleBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -12px); } }
-        
-        #main-title { font-size: clamp(3rem, 12vw, 8rem); line-height: 1; margin: 0; text-shadow: 0 0 20px var(--color-glow); width: max-content; margin: auto; opacity: 0; animation: fadeInDown 1s ease-out 0.6s forwards; }
-        .typewriter-text { display: inline-block; overflow: hidden; white-space: nowrap; width: 0; border-right: 0.1em solid var(--color-accent-end); font-family: 'Courier Prime', monospace; animation: typing 1.5s steps(6, end) 0.8s forwards, blink-caret 0.75s step-end 5 forwards; }
-        @keyframes typing { from { width: 0 } to { width: 100% } }
-        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--color-accent-end) } }
-
-        /* === NUEVO: Estilos y jerarquía para los subtítulos === */
-        #full-name-subtitle {
-            font-family: 'Poppins', sans-serif;
-            font-weight: 300;
-            font-size: clamp(0.8rem, 2.5vw, 1.1rem);
-            color: var(--color-secondary);
-            letter-spacing: 0.1em;
-            margin: 5px 0 35px 0; /* Espaciado ajustado */
-            text-transform: uppercase;
-        }
-
-        .hero p { max-width: 750px; margin: 0 auto 25px auto; font-size: 1.25rem; }
-        #creator-credit { margin-bottom: 40px; color: var(--color-secondary); font-size: 1.1rem; }
-        .creator-link { font-family: 'Poppins', sans-serif; font-weight: 600; color: var(--color-primary); text-decoration: none; position: relative; transition: color 0.3s ease; }
-        .creator-link:hover { color: var(--color-accent-start); }
-        .creator-link::after { content: ''; position: absolute; left: 0; bottom: -3px; width: 100%; height: 2px; background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end)); transform: scaleX(0); transform-origin: left; transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
-        .creator-link:hover::after { transform: scaleX(1); }
-        .creator-link i { margin-left: 5px; font-size: 1rem; }
-        
-        .cta-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 32px; font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 600; border-radius: 50px; text-decoration: none; position: relative; overflow: hidden; z-index: 1; transition: transform 0.3s ease, box-shadow 0.3s ease; border: none; cursor: pointer; }
         .btn i { transition: transform 0.3s ease; }
         .btn:hover i { transform: scale(1.1) rotate(-5deg); }
@@ -170,7 +157,8 @@
         .bento-card:hover::before { opacity: 1; }
         body.light-mode .bento-card:hover::before { display: none; }
         .bento-card .icon { color: var(--color-accent-start); font-size: 1.8rem; margin-bottom: 15px; }
-        .carousel-container { margin-top: 40px; position: relative; width: 100%; border-radius: var(--border-radius-lg); overflow: hidden; border: 1px solid var(--color-border); box-shadow: 0 25px 50px -12px var(--shadow-color); aspect-ratio: 16 / 9; background-color: #000; }
+        
+        .carousel-container { position: relative; width: 100%; border-radius: var(--border-radius-lg); overflow: hidden; border: 1px solid var(--color-border); aspect-ratio: 16 / 9; background-color: #000; }
         .carousel-slides { display: flex; transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); height: 100%; }
         .carousel-slide { flex: 1 0 100%; cursor: pointer; }
         .carousel-slide img { width: 100%; height: 100%; display: block; object-fit: contain; }
@@ -180,6 +168,7 @@
         .carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
         .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background-color: transparent; border: 2px solid var(--color-primary); cursor: pointer; transition: background-color 0.3s ease, transform 0.3s ease; }
         .carousel-dot.active { background-color: var(--color-accent-start); border-color: var(--color-accent-start); transform: scale(1.2); }
+        
         .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease; }
         .lightbox.active { opacity: 1; visibility: visible; }
         .lightbox-content { position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
@@ -224,12 +213,32 @@
         .footer-socials a:hover { color: var(--color-accent-start); transform: translateY(-3px) scale(1.1); }
         .fade-in { opacity: 0; transform: translateY(30px); filter: blur(5px); transition: opacity 0.6s ease-out, transform 0.6s ease-out, filter 0.6s ease-out; }
         .fade-in.visible { opacity: 1; transform: translateY(0); filter: blur(0); }
+        
+        @media screen and (max-width: 992px) {
+            .hero-content { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
+            .hero-text { text-align: center; order: 2; display: flex; flex-direction: column; align-items: center; }
+            .hero-title-wrapper { justify-content: center; }
+            .hero-text h1, .hero-text p { max-width: 100%; margin-left: auto; margin-right: auto; }
+            .cta-buttons { justify-content: center; }
+            .hero-visual { order: 1; }
+            .hero-visual .carousel-container { transform: none; }
+        }
+
         @media screen and (max-width: 1024px) { .bento-grid { grid-template-columns: repeat(2, 1fr); } .bento-item:nth-child(n) { grid-column: span 1; } .bento-item:nth-child(1), .bento-item:nth-child(5) { grid-column: span 2; } }
-        @media screen and (max-width: 768px) { .nav-links { position: fixed; top: 0; right: 0; width: 100%; height: 100%; background-color: var(--color-background); flex-direction: column; align-items: center; justify-content: center; gap: 40px; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); z-index: 1001; } .nav-links.active { transform: translateX(0); } .nav-links a { font-size: 1.5rem; } .nav-toggle { display: block; z-index: 1002;} .architecture-diagram { flex-direction: column; } .diagram-arrow { transform: rotate(90deg); margin: 10px 0; } .timeline::after { left: 9px; } .timeline-item { width: 100%; padding-left: 50px; padding-right: 0; } .timeline-item.right { left: 0; } .timeline-item.left::after, .timeline-item.right::after { left: 0; } .cta-buttons { flex-direction: column; align-items: stretch; } .btn { width: 100%; text-align: center; } h1#main-title { letter-spacing: normal; } .lightbox-nav { display: none; } .bento-grid, .bento-item:nth-child(n) { grid-template-columns: 1fr; grid-column: span 1; grid-row: span 1; } }
+        @media screen and (max-width: 768px) { .nav-links { position: fixed; top: 0; right: 0; width: 100%; height: 100%; background-color: var(--color-background); flex-direction: column; align-items: center; justify-content: center; gap: 40px; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); z-index: 1001; } .nav-links.active { transform: translateX(0); } .nav-links a { font-size: 1.5rem; } .nav-toggle { display: block; z-index: 1002;} .architecture-diagram { flex-direction: column; } .diagram-arrow { transform: rotate(90deg); margin: 10px 0; } .timeline::after { left: 9px; } .timeline-item { width: 100%; padding-left: 50px; padding-right: 0; } .timeline-item.right { left: 0; } .timeline-item.left::after, .timeline-item.right::after { left: 0; } .cta-buttons { flex-direction: column; align-items: stretch; } .btn { width: 100%; text-align: center; } .lightbox-nav { display: none; } .bento-grid, .bento-item:nth-child(n) { grid-template-columns: 1fr; grid-column: span 1; grid-row: span 1; } }
     </style>
 </head>
 <body>
     
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:var(--color-accent-start);stop-opacity:1" />
+          <stop offset="100%" style="stop-color:var(--color-accent-end);stop-opacity:1" />
+        </linearGradient>
+      </defs>
+    </svg>
+
     <div class="cursor"></div>
     <div class="cursor-glow"></div>
     <div class="background-aurora"></div>
@@ -259,55 +268,59 @@
     </nav>
 
     <header id="hero" class="hero container">
-        <div id="hero-logo" class="hero-logo animate-item">
-            <svg class="soundwave-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <rect class="soundwave-bar" x="2" y="6" width="4" height="12" rx="2"></rect>
-                <rect class="soundwave-bar" x="8" y="2" width="4" height="20" rx="2"></rect>
-                <rect class="soundwave-bar" x="14" y="4" width="4" height="16" rx="2"></rect>
-                <rect class="soundwave-bar" x="20" y="8" width="4" height="8" rx="2"></rect>
-            </svg>
-        </div>
-        
-        <h1 id="main-title">
-            <span class="typewriter-text text-gradient">STTVAR</span>
-        </h1>
-        <h3 id="full-name-subtitle" class="animate-item">(Speech-to-Text-Voice-Analysis-Realtime)</h3>
-        
-        <h2 id="subtitle" class="subtitle animate-item">Transcripción Colaborativa y Análisis con IA en Tiempo Real</h2>
-        <p id="description" class="animate-item"> La herramienta definitiva que convierte la voz en conocimiento accesible. Una plataforma interactiva y multiusuario, potenciada por IA y disponible desde cualquier lugar. </p>
-        <div id="creator-credit" class="animate-item">
-            Creado por 
-            <a href="https://github.com/LucasJS28" target="_blank" class="creator-link">
-                LucasJS28 <i class="fab fa-github"></i>
-            </a>
-        </div>
-        <div id="cta-buttons" class="cta-buttons animate-item">
-            <a href="https://github.com/LucasJS28/STTVAR" target="_blank" class="btn btn-primary"> <i class="fab fa-github"></i><span>Descargar en GitHub</span></a>
-            <a href="#caracteristicas" class="btn btn-secondary"><span>Ver Características</span></a>
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-title-wrapper">
+                    <svg class="hero-logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <rect class="soundwave-bar" x="2" y="6" width="4" height="12" rx="2"></rect>
+                        <rect class="soundwave-bar" x="8" y="2" width="4" height="20" rx="2"></rect>
+                        <rect class="soundwave-bar" x="14" y="4" width="4" height="16" rx="2"></rect>
+                        <rect class="soundwave-bar" x="20" y="8" width="4" height="8" rx="2"></rect>
+                    </svg>
+                    <div class="main-title-container">
+                        <h1 class="main-title">STTVAR</h1>
+                        <div class="title-blinking-cursor"></div>
+                    </div>
+                </div>
+                
+                <h2 class="hero-tagline text-gradient">
+                    Convierte la voz en conocimiento accesible.
+                </h2>
+                
+                <p>
+                    La herramienta definitiva de transcripción colaborativa y análisis con IA en tiempo real. Multiplataforma, multiusuario y disponible desde cualquier lugar.
+                </p>
+                <div class="cta-buttons">
+                    <a href="https://github.com/LucasJS28/STTVAR" target="_blank" class="btn btn-primary"> <i class="fab fa-github"></i><span>Ver en GitHub</span></a>
+                    <a href="#caracteristicas" class="btn btn-secondary"><span>Ver Características</span></a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                 <div id="image-carousel" class="carousel-container">
+                    <div class="carousel-slides">
+                        <div class="carousel-slide" data-description="Menú principal web con todas las opciones globales presentadas"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Menuprincipal.png" alt="Menu principal web"> </div>
+                        <div class="carousel-slide" data-description="Chat global en tiempo real con múltiples usuarios conectados"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Chat.png" alt="Chat global"> </div>
+                        <div class="carousel-slide" data-description="Panel de apuntes compartidos por todos los usuarios conectados"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Apuntescompartidos.png" alt="Panel de apuntes"> </div>
+                        <div class="carousel-slide" data-description="Transcripción en vivo con traducción automática al idioma del usuario"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/pantallacompletatranscripcionenotroidioma.png" alt="Traducción en vivo"> </div>
+                        <div class="carousel-slide" data-description="Pantalla de gestión de transcripciones en la aplicación de escritorio"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/PantallaAdministrativaEscritorio.png" alt="Gestión de transcripciones"> </div>
+                    </div>
+                    <button class="carousel-nav prev" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-nav next" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+                    <div class="carousel-dots"></div>
+                </div>
+            </div>
         </div>
     </header>
 
     <main>
          <section id="que-es" class="section container">
-            <h2 class="fade-in">¿Qué es STTVAR?</h2>
-            <p class="section-subtitle fade-in">STTVAR es un ecosistema completo que transforma cualquier ordenador en un potente servidor de transcripción, permitiendo a múltiples usuarios colaborar en tiempo real desde una sencilla interfaz web.</p>
-            <div id="image-carousel" class="carousel-container fade-in">
-                <div class="carousel-slides">
-                    <div class="carousel-slide" data-description="Menú principal web con todas las opciones globales presentadas"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Menuprincipal.png" alt="Menu principal web"> </div>
-                    <div class="carousel-slide" data-description="Chat global en tiempo real con múltiples usuarios conectados"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Chat.png" alt="Chat global"> </div>
-                    <div class="carousel-slide" data-description="Panel de apuntes compartidos por todos los usuarios conectados"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/Apuntescompartidos.png" alt="Panel de apuntes"> </div>
-                    <div class="carousel-slide" data-description="Transcripción en vivo con traducción automática al idioma del usuario"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/pantallacompletatranscripcionenotroidioma.png" alt="Traducción en vivo"> </div>
-                    <div class="carousel-slide" data-description="Pantalla de gestión de transcripciones en la aplicación de escritorio"> <img src="https://raw.githubusercontent.com/LucasJS28/STTVAR/main/imagenespagina/PantallaAdministrativaEscritorio.png" alt="Gestión de transcripciones"> </div>
-                </div>
-                <button class="carousel-nav prev" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-nav next" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
-                <div class="carousel-dots"></div>
-            </div>
+            <h2 class="section-title">¿Qué es STTVAR?</h2>
+            <p class="section-subtitle">STTVAR es un ecosistema completo que transforma cualquier ordenador en un potente servidor de transcripción, permitiendo a múltiples usuarios colaborar en tiempo real desde una sencilla interfaz web, sin importar las barreras del idioma o la distancia.</p>
         </section>
 
         <section id="como-funciona" class="section container">
-            <h2 class="fade-in">¿Cómo Funciona?</h2>
-            <p class="section-subtitle fade-in">La magia de STTVAR reside en su arquitectura Servidor-Cliente. La aplicación de escritorio hace todo el trabajo pesado, y la interfaz web sirve como una ventana universal para la colaboración.</p>
+            <h2 class="section-title">¿Cómo Funciona?</h2>
+            <p class="section-subtitle">La magia de STTVAR reside en su arquitectura Servidor-Cliente. La aplicación de escritorio hace todo el trabajo pesado, y la interfaz web sirve como una ventana universal para la colaboración.</p>
             <div class="architecture-diagram fade-in">
                 <div class="diagram-box"> <i class="fas fa-desktop"></i> <h4>Aplicación Servidor (PC)</h4> </div>
                 <div class="diagram-arrow"> <i class="fas fa-long-arrow-alt-right"></i> </div>
@@ -316,8 +329,8 @@
         </section>
         
         <section id="caracteristicas" class="section container">
-            <h2 class="fade-in">Características Estelares</h2>
-            <p class="section-subtitle fade-in">Una suite de herramientas potentes y colaborativas, diseñadas para transformar la voz en acción de manera inteligente y accesible.</p>
+            <h2 class="section-title">Características Estelares</h2>
+            <p class="section-subtitle">Una suite de herramientas potentes y colaborativas, diseñadas para transformar la voz en acción de manera inteligente y accesible.</p>
             <div class="bento-grid fade-in">
                 <div class="bento-item"><div class="bento-card"><div><div class="icon"><i class="fas fa-globe"></i></div><h3>Colaboración Global en Tiempo Real</h3></div><p>Cada usuario elige su idioma y recibe la transcripción traducida en vivo. Colabora a través del chat y los apuntes compartidos, sin importar dónde estés.</p></div></div>
                 <div class="bento-item"><div class="bento-card"><div class="icon"><i class="fas fa-brain"></i></div><h3>Asistente IA</h3><p>Pregunta sobre el contexto de la transcripción.</p></div></div>
@@ -329,7 +342,7 @@
         </section>
 
         <section id="evolucion" class="section container">
-            <h2 class="fade-in">Evolución del Proyecto</h2>
+            <h2 class="section-title">Evolución del Proyecto</h2>
             <div class="timeline">
                 <div class="timeline-item left fade-in"><div class="timeline-content"><h3>Fase 1: El Núcleo</h3><p>Creación del sistema base de transcripción y el servidor Flask para enviar el texto en tiempo real.</p></div></div>
                 <div class="timeline-item right fade-in"><div class="timeline-content"><h3>Fase 2: Mejoras de UI/UX</h3><p>Implementación de contadores, modo Zen, y la capacidad de tener un panel de apuntes personal.</p></div></div>
@@ -340,8 +353,8 @@
         </section>
 
         <section id="instalacion" class="section container">
-            <h2 class="fade-in">Guía de Instalación</h2>
-            <p class="section-subtitle fade-in">Poner en marcha STTVAR es un proceso sencillo. Sigue estos cuatro pasos para tener tu servidor de transcripción funcionando en minutos.</p>
+            <h2 class="section-title">Guía de Instalación</h2>
+            <p class="section-subtitle">Poner en marcha STTVAR es un proceso sencillo. Sigue estos cuatro pasos para tener tu servidor de transcripción funcionando en minutos.</p>
             <div class="fade-in">
                 <div class="step"><div class="step-number">1</div><div class="step-content"><h3>Prepara el Reconocimiento de Voz</h3><p>Descarga el modelo en español desde <a href="https://alphacephei.com/vosk/models" target="_blank">Vosk Models</a>, descomprímelo y coloca la carpeta en la raíz del proyecto.</p></div></div>
                 <div class="step"><div class="step-number">2</div><div class="step-content"><h3>Instala las Dependencias</h3><p>Abre una terminal en la carpeta del proyecto y ejecuta el siguiente comando para instalar todas las librerías necesarias.</p><div class="code-block-wrapper"><div class="code-block" data-lang="shell">pip install -r requirements.txt</div><button class="copy-btn" aria-label="Copiar código"><i class="far fa-copy"></i></button></div></div></div>
@@ -352,7 +365,7 @@
     </main>
 
     <footer class="footer">
-        <p class="fade-in">Desarrollado con 💖 por <b>Lucas Jiménez Sepúlveda</b></p>
+        <p class="fade-in">Desarrollado con 💖 por <b>Lucas Jiménez Sepúlveda (LucasJS28)</b></p>
         <div class="footer-socials fade-in">
             <a href="mailto:lucasjimenezsepulveda@gmail.com" target="_blank" aria-label="Enviar correo electrónico"><i class="fas fa-envelope"></i></a>
             <a href="https://github.com/LucasJS28/STTVAR" target="_blank" aria-label="Ver repositorio en GitHub"><i class="fab fa-github"></i></a>
@@ -451,77 +464,87 @@
                 const dotsContainer = carousel.querySelector('.carousel-dots');
                 let currentIndex = 0; let autoPlayInterval;
 
-                carouselSlides.forEach((_, i) => {
-                    const dot = document.createElement('button');
-                    dot.classList.add('carousel-dot');
-                    dot.setAttribute('aria-label', `Ir a la imagen ${i + 1}`);
-                    if (i === 0) dot.classList.add('active');
-                    dot.addEventListener('click', () => { goToSlide(i); resetAutoPlay(); });
-                    dotsContainer.appendChild(dot);
-                });
-                const dots = dotsContainer.querySelectorAll('.carousel-dot');
-                const goToSlide = (index) => {
-                    currentIndex = (index + carouselSlides.length) % carouselSlides.length;
-                    slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
-                    dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
-                };
-                const startAutoPlay = () => autoPlayInterval = setInterval(() => goToSlide(currentIndex + 1), 5000);
-                const stopAutoPlay = () => clearInterval(autoPlayInterval);
-                const resetAutoPlay = () => { stopAutoPlay(); startAutoPlay(); };
-                prevButton.addEventListener('click', () => { goToSlide(currentIndex - 1); resetAutoPlay(); });
-                nextButton.addEventListener('click', () => { goToSlide(currentIndex + 1); resetAutoPlay(); });
-                carousel.addEventListener('mouseenter', stopAutoPlay);
-                carousel.addEventListener('mouseleave', startAutoPlay);
-                goToSlide(0); startAutoPlay();
+                if(carouselSlides.length > 0) {
+                    carouselSlides.forEach((_, i) => {
+                        const dot = document.createElement('button');
+                        dot.classList.add('carousel-dot');
+                        dot.setAttribute('aria-label', `Ir a la imagen ${i + 1}`);
+                        if (i === 0) dot.classList.add('active');
+                        dot.addEventListener('click', () => { goToSlide(i); resetAutoPlay(); });
+                        dotsContainer.appendChild(dot);
+                    });
+                
+                    const dots = dotsContainer.querySelectorAll('.carousel-dot');
+                    const goToSlide = (index) => {
+                        currentIndex = (index + carouselSlides.length) % carouselSlides.length;
+                        slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+                        dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+                    };
+
+                    const startAutoPlay = () => autoPlayInterval = setInterval(() => goToSlide(currentIndex + 1), 5000);
+                    const stopAutoPlay = () => clearInterval(autoPlayInterval);
+                    const resetAutoPlay = () => { stopAutoPlay(); startAutoPlay(); };
+
+                    prevButton.addEventListener('click', () => { goToSlide(currentIndex - 1); resetAutoPlay(); });
+                    nextButton.addEventListener('click', () => { goToSlide(currentIndex + 1); resetAutoPlay(); });
+                    
+                    carousel.addEventListener('mouseenter', stopAutoPlay);
+                    carousel.addEventListener('mouseleave', startAutoPlay);
+
+                    goToSlide(0); 
+                    startAutoPlay();
+                }
             }
             
             const lightbox = document.getElementById('lightbox');
             if (lightbox) {
                 const carouselSlidesForLightbox = [...document.querySelectorAll('#image-carousel .carousel-slide')];
-                const lightboxImage = lightbox.querySelector('.lightbox-image');
-                const lightboxCaption = lightbox.querySelector('.lightbox-caption');
-                const closeButton = lightbox.querySelector('.lightbox-close');
-                const prevButton = lightbox.querySelector('.lightbox-prev');
-                const nextButton = lightbox.querySelector('.lightbox-next');
-                let lightboxCurrentIndex = 0;
+                if (carouselSlidesForLightbox.length > 0) {
+                    const lightboxImage = lightbox.querySelector('.lightbox-image');
+                    const lightboxCaption = lightbox.querySelector('.lightbox-caption');
+                    const closeButton = lightbox.querySelector('.lightbox-close');
+                    const prevButton = lightbox.querySelector('.lightbox-prev');
+                    const nextButton = lightbox.querySelector('.lightbox-next');
+                    let lightboxCurrentIndex = 0;
 
-                const showLightboxImage = (index) => {
-                    const slide = carouselSlidesForLightbox[index];
-                    const img = slide.querySelector('img');
-                    lightboxImage.src = img.src;
-                    lightboxCaption.textContent = slide.dataset.description || '';
-                };
-                const openLightbox = (index) => {
-                    lightboxCurrentIndex = index;
-                    showLightboxImage(index);
-                    body.classList.add('lightbox-active');
-                    lightbox.classList.add('active');
-                    document.addEventListener('keydown', handleKeyPress);
-                };
-                const closeLightbox = () => {
-                    body.classList.remove('lightbox-active');
-                    lightbox.classList.remove('active');
-                    document.removeEventListener('keydown', handleKeyPress);
-                };
-                const showPrevImage = () => {
-                    lightboxCurrentIndex = (lightboxCurrentIndex - 1 + carouselSlidesForLightbox.length) % carouselSlidesForLightbox.length;
-                    showLightboxImage(lightboxCurrentIndex);
-                };
-                const showNextImage = () => {
-                    lightboxCurrentIndex = (lightboxCurrentIndex + 1) % carouselSlidesForLightbox.length;
-                    showLightboxImage(lightboxCurrentIndex);
-                };
-                const handleKeyPress = (e) => {
-                    if (e.key === 'Escape') closeLightbox();
-                    if (e.key === 'ArrowLeft') showPrevImage();
-                    if (e.key === 'ArrowRight') showNextImage();
-                };
+                    const showLightboxImage = (index) => {
+                        const slide = carouselSlidesForLightbox[index];
+                        const img = slide.querySelector('img');
+                        lightboxImage.src = img.src;
+                        lightboxCaption.textContent = slide.dataset.description || '';
+                    };
+                    const openLightbox = (index) => {
+                        lightboxCurrentIndex = index;
+                        showLightboxImage(index);
+                        body.classList.add('lightbox-active');
+                        lightbox.classList.add('active');
+                        document.addEventListener('keydown', handleKeyPress);
+                    };
+                    const closeLightbox = () => {
+                        body.classList.remove('lightbox-active');
+                        lightbox.classList.remove('active');
+                        document.removeEventListener('keydown', handleKeyPress);
+                    };
+                    const showPrevImage = () => {
+                        lightboxCurrentIndex = (lightboxCurrentIndex - 1 + carouselSlidesForLightbox.length) % carouselSlidesForLightbox.length;
+                        showLightboxImage(lightboxCurrentIndex);
+                    };
+                    const showNextImage = () => {
+                        lightboxCurrentIndex = (lightboxCurrentIndex + 1) % carouselSlidesForLightbox.length;
+                        showLightboxImage(lightboxCurrentIndex);
+                    };
+                    const handleKeyPress = (e) => {
+                        if (e.key === 'Escape') closeLightbox();
+                        if (e.key === 'ArrowLeft') showPrevImage();
+                        if (e.key === 'ArrowRight') showNextImage();
+                    };
 
-                carouselSlidesForLightbox.forEach((slide, index) => slide.addEventListener('click', () => openLightbox(index)));
-                closeButton.addEventListener('click', closeLightbox);
-                lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-                prevButton.addEventListener('click', showPrevImage);
-                nextButton.addEventListener('click', showNextImage);
+                    carouselSlidesForLightbox.forEach((slide, index) => slide.addEventListener('click', () => openLightbox(index)));
+                    closeButton.addEventListener('click', closeLightbox);
+                    lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+                    prevButton.addEventListener('click', showPrevImage);
+                    nextButton.addEventListener('click', showNextImage);
+                }
             }
 
             const fadeInObserver = new IntersectionObserver((entries) => {
