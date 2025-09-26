@@ -1,60 +1,64 @@
-# 🧠 STTVAR: Transcripción, Análisis y Gestión de Voz/Audio en Tiempo Real con IA
+🚀 STTVAR: Plataforma Colaborativa de Transcripción y Análisis en Tiempo Real (Desktop Server + Web Client)
+¡Bienvenido a STTVAR! Este proyecto ha evolucionado de una simple herramienta de transcripción a una potente plataforma colaborativa y multiusuario. STTVAR opera bajo un modelo Servidor-Cliente, donde la aplicación de escritorio (grabadora.py) actúa como el Servidor que realiza la transcripción, la grabación, y aloja un servidor web Flask en segundo plano para el Streaming de datos.
 
-[](https://opensource.org/licenses/MIT)
-[](https://www.python.org/)
-[](https://alphacephei.com/vosk/)
-[](https://ollama.com/)
+La interfaz web (Frontend) permite a colaboradores, estudiantes o asistentes de reunión conectarse vía código QR para ver la transcripción en vivo, chatear, tomar apuntes y analizar el texto con IA, todo en tiempo real y con traducción individual. Es la herramienta definitiva para convertir voz en conocimiento accesible, colaborativo y globalmente compartible.
 
------
+✨ Características Estelares
+💡 Core & Desktop
+🎤 Transcripción Instantánea con Selección de Idioma: Convierte voz en texto al momento, eligiendo entre español o inglés, adaptando el modelo Vosk dinámicamente.
 
-¡Bienvenido a **STTVAR** (Speech-to-Text-Voice-Analysis-Realtime)\! Este proyecto revoluciona la forma en que interactúas con el audio, ofreciendo una solución integral para la **transcripción de voz en tiempo real** con **selección de idioma**, la **grabación simultánea de audio**, el **análisis de texto inteligente** y la **traducción** en múltiples idiomas. Desarrollado con tecnologías de vanguardia como **Vosk**, **PyQt5**, **Ollama**, **pyttsx3** y **Argos Translate**, STTVAR proporciona una experiencia fluida e intuitiva, ideal para periodistas, investigadores, estudiantes o cualquier persona que necesite convertir voz en conocimiento, gestionar grabaciones de audio, traducir textos y escuchar el análisis de la IA.
+🎧 Grabación de Audio Concurrente: Captura y guarda el audio original (.wav) mientras la transcripción se ejecuta.
 
------
+🖥️ Gestión de Transcripciones (PyQt5): Interfaz de escritorio para explorar, editar, consultar la IA, traducir y exportar documentos (PDF, Word, Markdown).
 
-## ✨ Características Destacadas
+🔒 Aceptación de Términos: El launcher inicializa la app solo tras la aceptación de los términos para garantizar la privacidad y el uso legal.
 
-  * **🎤 Transcripción Instantánea con Selección de Idioma:** Convierte tu voz en texto al momento, con la opción de elegir entre español o inglés para la transcripción en tiempo real, adaptando dinámicamente el motor de reconocimiento de voz.
-  * **🎧 Grabación de Audio Concurrente:** Captura y guarda el audio original mientras se realiza la transcripción, permitiendo una revisión detallada.
-  * **🌐 Interfaz Web Integrada:** Accede a la transcripción en vivo desde cualquier dispositivo en tu red local escaneando un código QR. Esta interfaz web ofrece:
-      * **Subtítulos en Tiempo Real:** Visualiza la transcripción parcial mientras hablas.
-      * **Traducción en Vivo:** Traduce los subtítulos a múltiples idiomas usando Argos Translate.
-      * **Asistente de IA (Mistral 7B):** Haz preguntas sobre el texto acumulado y obtén respuestas generadas localmente por Ollama.
-  * **🖥️ Interfaz de Escritorio con PyQt5:** Explora, edita y gestiona tus transcripciones y grabaciones fácilmente con una UI moderna y responsiva.
-  * **🗣️ Lectura de Texto con Voz (TTS):** Utiliza **pyttsx3** para escuchar los resultados generados por la IA en diversos idiomas, mejorando la accesibilidad y la revisión.
-  * **📝 Gestión Completa de Transcripciones:** Guarda, edita y exporta tus documentos en formatos populares como PDF, Word y Markdown.
-  * **🔒 Aceptación de Términos:** La aplicación requiere la aceptación de los términos y condiciones de uso para garantizar la privacidad y el uso responsable.
-  * **⚙️ Personalizable y Extensible:** Adapta el vocabulario, la configuración de audio y los estilos visuales a tus necesidades.
+🌐 Interfaz Web (Colaboración en Tiempo Real)
+⚡ Streaming de Subtítulos con SSE: La transcripción se "empuja" a todos los clientes web en tiempo real sin recargas (Server-Sent Events).
 
------
+💬 Chat Global Integrado: Los usuarios pueden comunicarse en vivo en un chat que se actualiza a todos los clientes.
 
-## 📥 Configuración Inicial
+📝 Apuntes Colaborativos: Los usuarios toman apuntes y pueden compartirlos con el grupo a través del chat, donde se muestran como un bloque destacado con opción de descarga.
 
+🗣️ Comunicación Multi-Idioma Individual: Cada usuario web selecciona su idioma de preferencia. La aplicación traduce el texto de la transcripción específicamente para ese cliente usando Argos Translate antes de enviárselo.
+
+🤖 Asistente de IA (Ollama/Mistral 7B): La interfaz web permite a los colaboradores hacer preguntas sobre el texto transcrito y recibir respuestas generadas localmente.
+
+📲 Acceso con Código QR: Un botón en la UI de escritorio genera un QR que permite unirse a la sesión fácilmente desde cualquier dispositivo en la red local.
+
+🌎 Alcance Global
+🔗 Ngrok Automatizado: El botón de compartir inicia automáticamente un túnel Ngrok en segundo plano, generando una URL pública para que usuarios fuera de la red local puedan conectarse con un solo clic.
+
+🏗️ Justificación y Evolución Arquitectónica
+El proyecto pasó de ser una aplicación local a una plataforma híbrida para resolver dos problemas clave: la colaboración y el acceso remoto.
+
+Componente	Objetivo	Tecnología
+Backend (PyQt5)	Controla el flujo de datos: Vosk → Flask → Clientes.	grabadora.py (Manejo de audio y servidor Flask)
+Server-Sent Events (SSE)	Permite enviar datos desde el servidor a múltiples clientes al mismo tiempo, esencial para el streaming en vivo y el chat global.	Flask /stream route
+Ngrok	Supera las limitaciones de la red local, permitiendo compartir la sesión globalmente de forma segura y automatizada.	pyngrok y qr_app.py
+Lógica Individualizada	Garantiza que las preferencias de un usuario (traducción, IA) no afecten a los demás, manteniendo una experiencia personal.	Diccionarios globales en grabadora.py (clientes_idioma, client_ai_responses)
+
+Exportar a Hojas de cálculo
+📥 Configuración Inicial
 Para poner STTVAR en marcha, sigue estos sencillos pasos:
 
-### 1\. Descarga los Modelos de Voz Vosk
-
+1. Descarga los Modelos de Voz Vosk
 STTVAR utiliza modelos de reconocimiento de voz locales para la transcripción. Necesitarás descargar al menos el modelo en español y el inglés.
 
-1.  Visita 🔗 [Vosk Models](https://alphacephei.com/vosk/models)
-2.  **Descarga los siguientes modelos** (o sus versiones más recientes y pequeñas):
-      * Español: `vosk-model-small-es-0.42`
-      * Inglés: `vosk-model-small-en-us-0.22` (o similar, busca uno para "en-us" o "en")
-3.  **Descomprime** los archivos ZIP descargados.
-4.  **Renombra** las carpetas resultantes y colócalas en el directorio raíz del proyecto (junto a `main.py`). Asegúrate de que los nombres sean los que usa el programa, por ejemplo:
-      * `vosk-model-es-0.42`
-      * `vosk-model-en-us-0.22`
+Visita 🔗 Vosk Models
 
-### 2\. Instala las Dependencias de Python
+Descarga los modelos (ej. vosk-model-small-es-0.42).
 
+Descomprime y renombra las carpetas, colocándolas en el directorio raíz del proyecto (junto a main.py).
+
+2. Instala las Dependencias de Python
 Asegúrate de tener Python 3.9+ instalado y ejecuta:
 
-```bash
+Bash
+
 pip install -r requirements.txt
-```
+requirements.txt (Contenido mínimo ampliado):
 
-**`requirements.txt`** (Contenido mínimo):
-
-```
 PyQt5
 vosk
 sounddevice
@@ -64,145 +68,96 @@ python-docx
 ollama
 pyttsx3
 argostranslate
-Flask
-qrcode
-# Posiblemente necesites PyAudio o similar si sounddevice no es suficiente para la grabación/reproducción
-# pip install pyaudio
-```
-
-### 3\. Configura Ollama y Descarga el Modelo de IA
-
+Flask         # Para el servidor web
+qrcode        # Para generar el QR de conexión
+pyngrok       # Para compartir la sesión globalmente
+3. Configura Ollama y Descarga el Modelo de IA
 Ollama te permite ejecutar modelos de lenguaje grandes (LLMs) localmente.
 
-1.  **Instala Ollama:** Sigue las instrucciones para tu sistema operativo en 🔗 [ollama.com](https://ollama.com/).
+Instala Ollama: Sigue las instrucciones para tu sistema operativo en 🔗 ollama.com.
 
-2.  **Descarga el Modelo:** Abre tu terminal y ejecuta:
+Descarga el Modelo: Abre tu terminal y ejecuta:
 
-    ```bash
-    ollama pull mistral:7b-instruct-q4_K_M
-    ```
+Bash
 
-    *(Este modelo es ideal para análisis y conversaciones rápidas.)*
+ollama pull mistral:7b-instruct-q4_K_M
+4. Configuración de Ngrok (Opcional, para Compartir Globalmente)
+Para usar la función de compartir fuera de tu red local, necesitas un token de Ngrok:
 
-3.  **Verifica la Ruta:** Asegúrate de que la ruta al ejecutable `ollama.exe` esté configurada correctamente dentro del archivo `interfaz/menu.py` si es necesario.
+Regístrate en Ngrok y obtén tu authtoken.
 
------
+La primera vez que hagas clic en el botón de compartir (🌐) en la aplicación de escritorio, se te pedirá ingresar este token.
 
-## 📁 Estructura del Proyecto
+📁 Estructura del Proyecto
+La nueva arquitectura se organiza para separar las responsabilidades de la UI de escritorio, el servidor web y la lógica del núcleo.
 
-```
 STTVAR/
 ├── interfaz/
-│   ├── __pycache__
-│   ├── __init__.py
-│   ├── grabadora.py         # 🎤 UI de escritorio y servidor web integrado (Flask)
-│   ├── launcher.py          # ▶️ Script de inicio que verifica la aceptación de los términos y condiciones
-│   ├── menu.py              # 📝 Menú para explorar, editar, consultar, traducir y reproducir audio
-│   ├── terminos.py          # 📄 Muestra los términos y condiciones de uso de la aplicación
-│   └── templates/             # 💻 Carpeta con archivos HTML para la interfaz web (index.html)
-├── stt_guardados/           # 📂 Carpeta con transcripciones guardadas (YYYY-MM-DD_HH-MM-SS.txt)
-├── sttaudio_guardados/      # 🎧 Carpeta con los audios originales grabados (YYYY-MM-DD_HH-MM-SS.wav)
-├── traduccion/              # 🌐 Módulo para la gestión y ejecución de traducciones
-├── transcripcion/
-│   ├── __pycache__
-│   ├── transcriber.py       # ⚡ Hilo dedicado para la ejecución de Vosk en tiempo real
-│   └── vosk_utils.py        # 🛠️ Funciones auxiliares para la interacción con Vosk
-├── vocabularios/            # 💬 Carpeta que contiene archivos de vocabulario personalizados
-├── vosk-model-es-0.42/      # 🗣️ Modelo de reconocimiento de voz de Vosk para español
-├── .gitignore               # 🚫 Archivos y carpetas ignorados por Git
-├── main.py                  # ▶️ Punto de entrada principal de la aplicación
-├── README.md                # 📖 Documentación del proyecto
-├── requirements.txt         # 📦 Lista de dependencias de Python
-└── STTVAR.bat               # 🚀 Script de un clic para iniciar main.py (Windows)
-```
+│   ├── grabadora.py         # 💻 UI Principal (Contiene el Servidor Flask)
+│   ├── launcher.py          # ▶️ Validador de términos e iniciador de la UI
+│   ├── menu.py              # 📝 Explorador y editor de transcripciones
+│   ├── terminos.py          # 📄 Pantalla de Términos y Condiciones
+│   ├── qr_app.py            # 📲 Genera la ventana con el QR y URLs de conexión
+│   └── templates/             # 🌐 Contiene index.html (Frontend Cliente)
+├── stt_guardados/           # 📂 Transcripciones guardadas
+├── sttaudio_guardados/      # 🎧 Audios WAV originales
+├── traduccion/              # 🌐 Módulo de Argos Translate
+├── transcripcion/           # ⚡ Lógica de Vosk y Transcripción
+├── vocabularios/            # 💬 Archivos de vocabulario personalizados
+├── vosk-model-es-0.42/      # 🗣️ Modelo de Vosk (Español)
+├── main.py                  # ▶️ Punto de entrada principal
+└── requirements.txt         # 📦 Dependencias
+🗺️ Guía de Uso Rápido (Servidor y Clientes)
+1. Inicio y Conexión
+Ejecuta python main.py.
 
------
+Acepta los términos y condiciones.
 
-## 🔒 Términos y Condiciones de Uso
+En la UI de escritorio (grabadora.py), selecciona el idioma de transcripción y el micrófono.
 
-Antes de usar la aplicación, se le presentará una pantalla de bienvenida que requiere la aceptación de los términos y condiciones. Estos términos están diseñados para garantizar la transparencia y el uso responsable de la herramienta.
+Haz clic en el botón Compartir (🌐). La aplicación inicia el servidor Flask, configura Ngrok (si es necesario) y muestra la ventana qr_app.py.
 
-  * **Uso Personal y Privacidad:** La aplicación es para uso personal y no comercial. Todos los datos (grabaciones y transcripciones) se procesan de forma local en su dispositivo y nunca se envían a servidores externos.
-  * **Responsabilidad del Usuario:** Usted es el único responsable de cumplir con las leyes de privacidad y de obtener el consentimiento de todas las partes involucradas antes de grabar o transcribir una conversación. STTVAR no se hace responsable de ningún uso indebido o ilegal.
+Conexión de Clientes: Pide a los colaboradores que escaneen el QR o usen la URL local/pública para acceder a la interfaz web en su navegador.
 
-La aplicación no se iniciará hasta que usted acepte estos términos.
+2. Funcionalidad Web (Cliente)
+Una vez conectados, los clientes pueden:
 
------
+Ver Subtítulos: La transcripción parcial y acumulada se actualizan en vivo.
 
-## ▶️ Guía de Uso Rápido
+Traducir (Individual): Usar el selector de idioma para ver el texto traducido solo para ellos.
 
-1.  **Conecta y configura tu micrófono** como dispositivo de entrada predeterminado.
+Chatear: Enviar mensajes al chat global que se muestra a todos los demás clientes.
 
-2.  Inicia la aplicación desde la terminal:
+Tomar y Compartir Apuntes: Usar el panel de apuntes para tomar notas privadas y, si lo desean, compartirlas con el grupo a través del chat con un formato descargable.
 
-    ```bash
-    python main.py
-    ```
+Preguntar a la IA: Usar el asistente para obtener un resumen o preguntar sobre el texto acumulado.
 
-      * Al iniciar por primera vez, se mostrará una ventana con los términos y condiciones. **Debe leerlos y aceptarlos** para poder acceder a la funcionalidad principal de la aplicación.
+3. Finalización
+Haz clic en Detener Grabación (■) en la UI de escritorio.
 
-3.  **Interfaz Principal (Grabadora):**
+Al cerrar la aplicación principal, el servidor Flask y el túnel Ngrok se cierran automáticamente para liberar recursos y garantizar la privacidad.
 
-      * **Elige el idioma de transcripción:** Antes de iniciar la grabación, selecciona el idioma deseado para la transcripción (Español o Inglés) desde el selector en la interfaz. Esto cargará el modelo Vosk correspondiente.
-      * **Selecciona tu dispositivo** de micrófono desde el menú desplegable.
-      * Haz clic en 🔴 **Iniciar Grabación** para que la transcripción en tiempo real comience a aparecer en el idioma seleccionado.
-          * A la vez que se transcribe, el audio de tu micrófono será **grabado y guardado** automáticamente en la carpeta `sttaudio_guardados/`.
-      * **¡Nuevo\! Interfaz Web:** La aplicación generará un **código QR** que, al escanearse con un teléfono o tablet conectado a la misma red, te permitirá acceder a la interfaz web con las siguientes funciones:
-          * Ver subtítulos en tiempo real.
-          * Traducir el texto en vivo.
-          * Interactuar con la IA para obtener resúmenes o respuestas.
-      * Usa 🔇/🎙️ para **silenciar/reactivar** tu micrófono sin detener la transcripción.
-      * Presiona ■ **Detener Grabación** para finalizar y guardar la transcripción en `stt_guardados/`. Se te preguntará si deseas guardar o descartar. El audio se guardará con el mismo nombre y timestamp (ej. `YYYY-MM-DD_HH-MM-SS.wav`).
+⚠️ Consideraciones y Consejos
+Integridad del Audio: Para transcribir audio del sistema (ej. una reunión de Teams), considera usar una utilidad de audio virtual (ej., VB-Audio Cable o Loopback) en lugar del micrófono físico.
 
-4.  **Explorador de Transcripciones (Botón ⚙️):**
+Latencia Web: La latencia puede variar ligeramente al usar Ngrok debido a la distancia y la infraestructura de internet, pero el sistema SSE minimiza el retraso en la recepción de datos.
 
-      * Accede a una lista de tus transcripciones guardadas (`.txt`).
-      * Al seleccionar una transcripción, la aplicación buscará automáticamente un archivo de audio (`.wav`) con el mismo nombre en la carpeta `sttaudio_guardados/` para vincularlo.
-      * **Reproducir Audio:** Verás un botón de **"Reproducir Audio"** (o similar) que te permitirá escuchar la grabación original asociada a la transcripción seleccionada.
-      * **Edita** el texto directamente en un editor integrado.
-      * **Exporta** tus transcripciones a **PDF**, **Word** o **Markdown**.
-      * **Consulta la IA:** Utiliza el texto de tu transcripción como contexto para hacer preguntas a Ollama y recibir respuestas directamente en la interfaz.
-          * Ahora verás un botón o una opción para **"Leer Respuesta"** que usará `pyttsx3` para vocalizar el texto generado por la IA.
-      * **Traduce el Texto:** Selecciona un fragmento de texto o la transcripción completa para traducirla a los idiomas para los que hayas instalado los modelos de Argos Translate.
-      * *Nota: Cambiar de archivo limpiará automáticamente los campos de consulta IA y traducción, y cargará el nuevo audio asociado.*
+Vocabulario Local: Se recomienda modificar el archivo en la carpeta vocabularios/ para aumentar la precisión de Vosk con términos y modismos locales.
 
------
-
-## ⚠️ Consideraciones y Consejos
-
-  * **Precisión del Reconocimiento de Voz:** Para una **precisión óptima en la transcripción**, es crucial que el idioma que elijas en la interfaz (Español o Inglés) coincida con el idioma que se está hablando.
-  * **Mejora del Reconocimiento (Español Chileno):** Si trabajas con español chileno, puedes adaptar el archivo en la carpeta `vocabularios/` con modismos y términos locales para optimizar la precisión de Vosk en este dialecto.
-  * **Captura de Audio del Sistema:** Para transcribir y grabar audio que no provenga directamente de un micrófono (ej. YouTube, videollamadas), considera usar herramientas de audio virtual como **VB-Audio Cable** (Windows) o **Loopback Audio** (macOS).
-  * **Personalización Visual:** Los estilos CSS para la interfaz están en `grabadora.py` y `menu.py`. ¡Siéntete libre de jugar con los colores y la tipografía\!
-  * **Modelos de Traducción:** Los modelos de Argos Translate pueden ser grandes. Asegúrate de tener suficiente espacio en disco al instalarlos.
-  * **Tamaño de Archivos de Audio:** Grabar audio en formato WAV puede generar archivos de gran tamaño rápidamente, especialmente en grabaciones largas. Considera la duración de tus sesiones para gestionar el espacio de almacenamiento.
-
------
-
-## 📄 Formatos de Exportación
-
+📄 Formatos de Exportación
 STTVAR te permite exportar tus transcripciones con facilidad:
 
-| Formato    | Descripción                                           | Biblioteca Usada   |
-| :--------- | :---------------------------------------------------- | :----------------- |
-| **PDF** | Documento portable con saltos de página automáticos.  | `ReportLab`        |
-| **Word** | (`.docx`) Documento editable con formato de párrafo.  | `python-docx`      |
-| **Markdown** | (`.md`) Texto plano con formato estructurado simple. | N/A                |
+Formato	Descripción	Biblioteca Usada
+PDF	Documento portable con saltos de página automáticos.	ReportLab
+Word	(.docx) Documento editable con formato de párrafo.	python-docx
+Markdown	(.md) Texto plano con formato estructurado simple.	N/A
 
------
+Exportar a Hojas de cálculo
+💬 Contribuciones y Licencia
+¡Tu feedback y contribuciones son bienvenidos! Este proyecto es un esfuerzo constante por mejorar la accesibilidad y la colaboración.
 
-## 💬 Contribuciones
+Este proyecto está distribuido bajo la Licencia MIT.
 
-¡Tu feedback y contribuciones son bienvenidos\! Si encuentras un bug, tienes una sugerencia o quieres añadir una nueva característica, por favor, abre un "issue" o envía un "pull request".
-
------
-
-## 🛡️ Licencia
-
-Este proyecto está distribuido bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
-
------
-
-**Desarrollado con 💖 por Lucas Jimenez Sepulveda**
+Desarrollado con 💖 por Lucas Jimenez Sepulveda
 📧 Contacto: lucasjimenezsepulveda@gmail.com
-🌐 Repositorio: [https://github.com/LucasJS28/STTVAR](https://github.com/LucasJS28/STTVAR)
+🌐 Repositorio: https://github.com/LucasJS28/STTVAR
