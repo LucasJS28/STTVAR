@@ -7,7 +7,7 @@
     
     <!-- Fuentes de Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <!-- Iconos de Font Awesome -->
@@ -18,7 +18,7 @@
         :root {
             --color-background: #0D1117;
             --color-surface: #161B22;
-            --color-surface-gradient: #1F2731; /* MEJORA VISUAL: Para dar profundidad a las tarjetas */
+            --color-surface-gradient: #1F2731;
             --color-border: #30363d;
             --color-primary: #e6edf3;
             --color-secondary: #a0b0c1;
@@ -52,74 +52,53 @@
             overflow-x: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+        /* MEJORA: Evita el scroll del fondo cuando el lightbox está abierto */
+        body.lightbox-active {
+            overflow: hidden;
+        }
         
-        /* --- Fondo Animado con Partículas --- */
         #particles-js {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: -1;
             background: linear-gradient(300deg, #0d1117, #1e293b, #0d1117, #082f49);
-            background-size: 400% 400%;
-            animation: gradientAnimation 20s ease infinite;
-            transition: opacity 0.5s ease;
+            background-size: 400% 400%; animation: gradientAnimation 20s ease infinite; transition: opacity 0.5s ease;
         }
         body.light-mode #particles-js { opacity: 0; }
-        @keyframes gradientAnimation {
-            0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
-        }
+        @keyframes gradientAnimation { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
         .container { width: 90%; max-width: 1100px; margin: 0 auto; padding: 80px 20px; position: relative; z-index: 1; }
         section { padding-top: 80px; }
         img { max-width: 100%; height: auto; display: block; }
         
-        /* --- Barra de Desplazamiento Personalizada --- */
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: var(--color-background); }
         ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #4a5568; }
 
-        /* --- Tipografía --- */
         h1, h2, h3 { font-family: 'Poppins', sans-serif; color: var(--color-primary); font-weight: 700; }
-        h1.main-title {
-            font-size: clamp(4.5rem, 10vw, 8rem); font-weight: 900; line-height: 1; margin: 0;
-            letter-spacing: -4px;
-            /* MEJORA VISUAL: Sombra para mejorar legibilidad sobre fondo animado */
-            text-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-        }
+        h1.main-title { font-size: clamp(4.5rem, 10vw, 8rem); font-weight: 900; line-height: 1; margin: 0; letter-spacing: -4px; text-shadow: 0 0 30px rgba(0, 0, 0, 0.5); }
         h2 { font-size: clamp(2.2rem, 5vw, 3rem); margin-bottom: 60px; text-align: center; position: relative; }
         h2.subtitle { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 400; margin-bottom: 25px; color: var(--color-secondary); }
         h2::after {
             content: ''; position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 4px;
-            background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end));
-            border-radius: 2px;
+            width: 80px; height: 4px; background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end)); border-radius: 2px;
         }
         h3 { font-size: 1.4rem; margin-bottom: 15px; font-weight: 600; }
-        .text-gradient {
-            background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-        }
+        .text-gradient { background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-        /* --- Barra de Navegación --- */
         .navbar {
-            background-color: transparent;
-            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; padding: 15px 5%;
+            background-color: transparent; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; padding: 15px 5%;
             display: flex; justify-content: space-between; align-items: center; 
-            border-bottom: 1px solid transparent;
-            transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+            border-bottom: 1px solid transparent; transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
         .navbar.scrolled {
-            background-color: rgba(13, 17, 23, 0.8); 
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--color-border);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            background-color: rgba(13, 17, 23, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--color-border); box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         }
         body.light-mode .navbar.scrolled { background-color: rgba(255, 255, 255, 0.8); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07); }
         .nav-logo { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.6rem; text-decoration: none; }
         .nav-right-group { display: flex; align-items: center; gap: 15px; }
         .nav-links { list-style: none; display: flex; align-items: center; gap: 35px; }
-        .nav-links a {
-            color: var(--color-secondary); text-decoration: none; font-weight: 500; font-size: 1.05rem;
-            position: relative; transition: color 0.3s ease;
-        }
+        .nav-links a { color: var(--color-secondary); text-decoration: none; font-weight: 500; font-size: 1.05rem; position: relative; transition: color 0.3s ease; }
         .nav-links a:hover, .nav-links a.active { color: var(--color-primary); }
         .nav-links a::after {
             content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 2px;
@@ -129,7 +108,6 @@
         .nav-links a:hover::after, .nav-links a.active::after { transform: scaleX(1); transform-origin: bottom left; }
         .nav-toggle { display: none; }
         
-        /* --- Botón Modo Claro/Oscuro --- */
         .theme-toggle {
             background-color: transparent; border: none; cursor: pointer; color: var(--color-secondary); font-size: 1.3rem;
             width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
@@ -143,115 +121,128 @@
         body.light-mode .theme-toggle .fa-moon { transform: translateY(-150%); opacity: 0; }
         .icon-btn { background: none; border: none; font-size: 1.8rem; color: var(--color-primary); cursor: pointer; width: 40px; height: 40px; }
 
-        /* --- Estilo de la Cabecera (Hero Section) --- */
         .hero { text-align: center; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding-top: 100px; }
-        
-        /* --- MEJORA RADICAL: Logo del Micrófono --- */
         .hero-logo {
             width: 100px; height: 100px; background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end));
             border-radius: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px;
-            font-size: 2.5rem; color: white; position: relative;
-            /* Eliminamos la animación constante y la reemplazamos por un estado base elegante y un hover interactivo */
-            box-shadow: 0 0 30px -5px var(--color-glow);
+            font-size: 2.5rem; color: white; position: relative; box-shadow: 0 0 30px -5px var(--color-glow);
             transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
         }
-        .hero-logo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 50px 5px var(--color-glow);
-        }
-        
+        .hero-logo:hover { transform: scale(1.1); box-shadow: 0 0 50px 5px var(--color-glow); }
         .hero > .animate-item { opacity: 0; animation-fill-mode: forwards; }
         #hero-logo { animation-name: popIn; animation-duration: 0.8s; animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1); animation-delay: 0.2s; }
-        #main-title { animation-name: fadeInDown; animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 0.6s; }
-        #subtitle { animation-name: fadeInDown; animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 0.8s; }
-        #description { animation-name: fadeInDown; animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 1.0s; }
+        #main-title, #subtitle, #description { animation-name: fadeInDown; animation-duration: 1s; animation-timing-function: ease-out; }
+        #main-title { animation-delay: 0.6s; } #subtitle { animation-delay: 0.8s; } #description { animation-delay: 1.0s; }
         #cta-buttons { animation-name: fadeInUp; animation-duration: 1s; animation-timing-function: ease-out; animation-delay: 1.2s; }
         
-        /* MEJORA VISUAL: Animación de scroll más suave */
         .scroll-down-indicator {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: var(--color-secondary);
             font-size: 1.8rem; opacity: 0; 
-            animation: gentleBounce 2.5s infinite, fadeInDown 1s ease-out forwards;
-            animation-delay: 2.5s, 2.5s;
+            animation: gentleBounce 2.5s infinite, fadeInDown 1s ease-out forwards; animation-delay: 2.5s, 2.5s;
         }
         
-        /* --- Animaciones Clave --- */
         @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes fadeInDown { 0% { opacity: 0; transform: translateY(-30px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
-        
-        /* MEJORA VISUAL: Nueva animación para el scroll-down, más elegante que el bounce */
-        @keyframes gentleBounce {
-            0%, 100% { transform: translate(-50%, 0); }
-            50% { transform: translate(-50%, -12px); }
-        }
+        @keyframes gentleBounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -12px); } }
 
         .hero p { max-width: 750px; margin: 0 auto 40px auto; font-size: 1.2rem; }
 
-        /* --- Botones CTA --- */
         .cta-buttons { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .btn {
             display: inline-flex; align-items: center; gap: 10px; padding: 14px 32px; font-family: 'Poppins', sans-serif;
             font-size: 1rem; font-weight: 600; border-radius: 50px; text-decoration: none; border: 2px solid transparent;
             transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        .btn-primary {
-            background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end)); color: white;
-            box-shadow: 0 8px 15px var(--color-glow);
-        }
+        .btn-primary { background-image: linear-gradient(45deg, var(--color-accent-start), var(--color-accent-end)); color: white; box-shadow: 0 8px 15px var(--color-glow); }
         .btn-primary:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 12px 25px var(--color-glow); }
         .btn-secondary { background-color: transparent; color: var(--color-primary); border-color: var(--color-border); }
         .btn-secondary:hover { background-color: var(--color-surface); border-color: var(--color-accent-end); }
 
-        /* --- MEJORA VISUAL: Tarjetas con más profundidad --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .card {
-            background-color: var(--color-surface); 
-            background-image: linear-gradient(145deg, var(--color-surface-gradient), var(--color-surface)); /* Añade profundidad */
+            background-color: var(--color-surface); background-image: linear-gradient(145deg, var(--color-surface-gradient), var(--color-surface));
             padding: 40px; border-radius: var(--border-radius-lg); border: 1px solid var(--color-border); 
             transition: transform 0.3s ease, box-shadow 0.3s ease; position: relative; overflow: hidden; z-index: 1;
         }
-        .card::before {
-            content: ''; position: absolute; top: 50%; left: 50%; width: 300%; height: 300%;
-            background: conic-gradient(transparent, var(--color-accent-end), var(--color-accent-start), transparent 30%);
-            transform: translate(-50%, -50%); animation: rotateGlow 8s linear infinite; /* Animación más lenta */
-            opacity: 0; transition: opacity 0.4s ease; z-index: -2;
-        }
-        .card::after {
-            content: ''; position: absolute; top: 1px; left: 1px; width: calc(100% - 2px); height: calc(100% - 2px);
-            background-color: var(--color-surface);
-            background-image: linear-gradient(145deg, var(--color-surface-gradient), var(--color-surface));
-            border-radius: var(--border-radius-lg); z-index: -1; transition: background-color 0.3s ease;
-        }
+        .card::before { content: ''; position: absolute; top: 50%; left: 50%; width: 300%; height: 300%; background: conic-gradient(transparent, var(--color-accent-end), var(--color-accent-start), transparent 30%); transform: translate(-50%, -50%); animation: rotateGlow 8s linear infinite; opacity: 0; transition: opacity 0.4s ease; z-index: -2; }
+        .card::after { content: ''; position: absolute; top: 1px; left: 1px; width: calc(100% - 2px); height: calc(100% - 2px); background-color: var(--color-surface); background-image: linear-gradient(145deg, var(--color-surface-gradient), var(--color-surface)); border-radius: var(--border-radius-lg); z-index: -1; transition: background-color 0.3s ease; }
         .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px var(--shadow-color); }
         .card:hover::before { opacity: 1; }
         body.light-mode .card:hover { box-shadow: 0 15px 30px var(--shadow-color); }
         body.light-mode .card:hover::before { opacity: 0; }
-        
         @keyframes rotateGlow { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
-        
-        .card .icon {
-            font-size: 2rem; margin-bottom: 20px; width: 60px; height: 60px; display: flex; align-items: center;
-            justify-content: center; border-radius: var(--border-radius-md); background: var(--color-background);
-            border: 1px solid var(--color-border); color: var(--color-accent-end);
-            transition: all 0.3s ease;
-        }
+        .card .icon { font-size: 2rem; margin-bottom: 20px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: var(--border-radius-md); background: var(--color-background); border: 1px solid var(--color-border); color: var(--color-accent-end); transition: all 0.3s ease; }
 
-        /* --- Estilos Adicionales --- */
-        .screenshot-wrapper { margin-top: 40px; }
-        .screenshot { max-width: 100%; border-radius: var(--border-radius-md); border: 1px solid var(--color-border); box-shadow: 0 25px 50px -12px var(--shadow-color); transition: border-color 0.3s ease; }
-        
+        /* --- Estilos del Carrusel de Imágenes --- */
+        .carousel-container { margin-top: 40px; position: relative; width: 100%; border-radius: var(--border-radius-md); overflow: hidden; border: 1px solid var(--color-border); box-shadow: 0 25px 50px -12px var(--shadow-color); }
+        .carousel-slides { display: flex; transition: transform 0.5s ease-in-out; }
+        .carousel-slide { flex: 1 0 100%; cursor: pointer; /* Hace que el slide sea clickeable */ }
+        .carousel-slide img { width: 100%; display: block; object-fit: cover; }
+        .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background-color: rgba(13, 17, 23, 0.5); color: var(--color-primary); border: 1px solid var(--color-border); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s ease, transform 0.3s ease; }
+        .carousel-nav:hover { background-color: var(--color-surface); transform: translateY(-50%) scale(1.1); }
+        .carousel-nav.prev { left: 15px; } .carousel-nav.next { right: 15px; }
+        .carousel-dots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+        .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background-color: transparent; border: 2px solid var(--color-primary); cursor: pointer; transition: background-color 0.3s ease; }
+        .carousel-dot.active { background-color: var(--color-accent-start); border-color: var(--color-accent-start); }
+
+        /* --- MEJORA: Estilos del Lightbox --- */
+        .lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .lightbox.active { opacity: 1; visibility: visible; }
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw; max-height: 90vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transform: scale(0.9);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .lightbox.active .lightbox-content { transform: scale(1); }
+        .lightbox-image {
+            max-width: 100%; max-height: calc(90vh - 80px); /* Deja espacio para el caption */
+            border-radius: var(--border-radius-md);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+        .lightbox-caption {
+            color: var(--color-primary); font-size: 1rem; text-align: center;
+            font-weight: 500;
+        }
+        .lightbox-close {
+            position: absolute; top: -10px; right: -10px;
+            width: 40px; height: 40px;
+            font-size: 2.5rem; font-weight: 300;
+            color: var(--color-primary); background: none; border: none;
+            cursor: pointer; transition: transform 0.3s ease, color 0.3s ease;
+        }
+        .lightbox-close:hover { transform: rotate(90deg); color: var(--color-accent-start); }
+        .lightbox-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 50px; height: 50px; font-size: 1.5rem;
+            background-color: rgba(13, 17, 23, 0.5); color: var(--color-primary);
+            border: 1px solid var(--color-border); border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .lightbox-nav:hover { background-color: var(--color-surface); transform: translateY(-50%) scale(1.1); }
+        .lightbox-prev { left: -70px; } .lightbox-next { right: -70px; }
+
+        /* --- Estilos Adicionales (sin cambios) --- */
         .timeline { position: relative; max-width: 800px; margin: 50px auto 0 auto; }
         .timeline::after { content: ''; position: absolute; width: 3px; background-image: linear-gradient(to bottom, var(--color-accent-start), var(--color-accent-end)); top: 0; bottom: 0; left: 50%; margin-left: -1.5px; border-radius: 3px; }
         .timeline-item { padding: 10px 40px; position: relative; width: 50%; }
         .timeline-item::after { content: "\f005"; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; width: 28px; height: 28px; right: -14px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; color: var(--color-accent-start); background-color: var(--color-background); border: 2px solid var(--color-accent-start); top: 25px; border-radius: 50%; z-index: 1; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
         .timeline-item:hover::after { background-color: var(--color-accent-start); color: var(--color-background); transform: scale(1.3) rotate(360deg); box-shadow: 0 0 15px var(--color-accent-start); }
-        .timeline-item.left { left: 0; }
-        .timeline-item.right { left: 50%; }
-        .timeline-item.right::after { left: -14px; }
+        .timeline-item.left { left: 0; } .timeline-item.right { left: 50%; } .timeline-item.right::after { left: -14px; }
         .timeline-content { padding: 25px; background: var(--color-surface); position: relative; border-radius: var(--border-radius-md); border: 1px solid var(--color-border); transition: all 0.4s ease; }
         .timeline-item:hover .timeline-content { border-color: var(--color-accent-start); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); }
-        
         .step { display: flex; align-items: flex-start; gap: 25px; margin-bottom: 30px; background: rgba(13, 17, 23, 0.05); padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border); transition: all 0.3s ease; }
         body.light-mode .step { background: rgba(255, 255, 255, 0.5); }
         .step-number { font-size: 1.5rem; font-weight: 700; color: white; background-image: linear-gradient(to right, var(--color-accent-start), var(--color-accent-end)); min-width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -259,26 +250,13 @@
         .step-content a:hover { color: var(--color-accent-end); }
         .code-block { background-color: var(--color-background); border: 1px solid var(--color-border); padding: 15px; border-radius: var(--border-radius-md); font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; color: #c9d1d9; margin-top: 10px; white-space: pre-wrap; transition: all 0.3s ease; }
         body.light-mode .code-block { color: var(--color-primary); }
-        
         .footer { text-align: center; padding: 50px 20px; border-top: 1px solid var(--color-border); transition: border-color 0.3s ease; }
         .footer p { margin-bottom: 20px; }
         .footer-socials a { color: var(--color-secondary); font-size: 1.5rem; margin: 0 15px; transition: color 0.3s ease, transform 0.3s ease; }
         .footer-socials a:hover { color: var(--color-accent-start); transform: translateY(-3px); }
+        .fade-in { opacity: 0; transform: translateY(30px); filter: blur(5px); transition: opacity 0.6s ease-out, transform 0.6s ease-out, filter 0.6s ease-out; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); filter: blur(0); }
         
-        /* MEJORA VISUAL: Animación de entrada más profesional con desenfoque */
-        .fade-in { 
-            opacity: 0; 
-            transform: translateY(30px); 
-            filter: blur(5px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out, filter 0.6s ease-out;
-        }
-        .fade-in.visible { 
-            opacity: 1; 
-            transform: translateY(0); 
-            filter: blur(0);
-        }
-        
-        /* Media Queries para Responsividad */
         @media screen and (max-width: 768px) {
             .nav-links { position: fixed; top: 68px; right: 0; width: 100%; height: calc(100vh - 68px); background-color: var(--color-background); flex-direction: column; align-items: center; justify-content: center; gap: 40px; transform: translateX(100%); transition: transform 0.4s ease-in-out; border-top: 1px solid var(--color-border);}
             .nav-links.active { transform: translateX(0); }
@@ -290,6 +268,7 @@
             .timeline-item.left::after, .timeline-item.right::after { left: 0; }
             .cta-buttons { flex-direction: column; align-items: center; }
             h1.main-title { letter-spacing: -2px; }
+            .lightbox-nav { display: none; /* Oculta flechas en móvil para no estorbar */ }
         }
     </style>
 </head>
@@ -297,7 +276,6 @@
     
     <div id="particles-js"></div>
 
-    <!-- ==================== BARRA DE NAVEGACIÓN ==================== -->
     <nav class="navbar" id="navbar">
         <a href="#hero" class="nav-logo text-gradient">STTVAR</a>
         <div class="nav-right-group">
@@ -308,205 +286,98 @@
                 <li><a href="#tecnologia">Tecnología</a></li>
                 <li><a href="#inicio-rapido">Guía de Inicio</a></li>
             </ul>
-             <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar modo claro/oscuro">
-                <i class="fas fa-moon"></i>
-                <i class="fas fa-sun"></i>
-            </button>
-            <button class="nav-toggle icon-btn" id="nav-toggle" aria-label="Abrir menú">
-                <i class="fas fa-bars"></i>
-            </button>
+             <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar modo claro/oscuro"> <i class="fas fa-moon"></i> <i class="fas fa-sun"></i> </button>
+            <button class="nav-toggle icon-btn" id="nav-toggle" aria-label="Abrir menú"> <i class="fas fa-bars"></i> </button>
         </div>
     </nav>
 
-    <!-- ==================== SECCIÓN HERO ==================== -->
     <header id="hero" class="hero container">
-        <div id="hero-logo" class="hero-logo animate-item">
-            <i class="fas fa-microphone-alt"></i>
-        </div>
+        <div id="hero-logo" class="hero-logo animate-item"> <i class="fas fa-microphone-alt"></i> </div>
         <h1 id="main-title" class="main-title text-gradient animate-item">STTVAR</h1>
         <h2 id="subtitle" class="subtitle animate-item">Transcripción Colaborativa y Análisis con IA en Tiempo Real</h2>
-        <p id="description" class="animate-item">
-            La herramienta definitiva que convierte la voz en conocimiento accesible y colaborativo. Una plataforma interactiva y multiusuario, potenciada por IA y disponible desde cualquier lugar del mundo.
-        </p>
+        <p id="description" class="animate-item"> La herramienta definitiva que convierte la voz en conocimiento accesible y colaborativo. Una plataforma interactiva y multiusuario, potenciada por IA y disponible desde cualquier lugar del mundo. </p>
         <div id="cta-buttons" class="cta-buttons animate-item">
-            <a href="https://github.com/LucasJS28/STTVAR" target="_blank" class="btn btn-primary">
-                <i class="fab fa-github"></i>
-                Descargar en GitHub
-            </a>
-            <a href="#caracteristicas" class="btn btn-secondary">
-                Ver Características
-            </a>
+            <a href="https://github.com/LucasJS28/STTVAR" target="_blank" class="btn btn-primary"> <i class="fab fa-github"></i> Descargar en GitHub </a>
+            <a href="#caracteristicas" class="btn btn-secondary"> Ver Características </a>
         </div>
-        <div class="scroll-down-indicator">
-            <i class="fas fa-computer-mouse"></i>
-        </div>
+        <div class="scroll-down-indicator"> <i class="fas fa-computer-mouse"></i> </div>
     </header>
 
     <main>
-       <!-- El resto del contenido HTML permanece sin cambios -->
         <section id="que-es" class="section container">
             <h2 class="fade-in">¿Qué es STTVAR?</h2>
-            <p class="fade-in" style="text-align: center; max-width: 800px; margin: -20px auto 40px auto; font-size: 1.1rem;">
-                STTVAR opera bajo un modelo Servidor-Cliente. La aplicación de escritorio actúa como un potente Servidor que transcribe, graba y sirve los datos en tiempo real. La interfaz web (Cliente) permite a colaboradores conectarse vía código QR para ver la transcripción en vivo, chatear, tomar apuntes y analizar el texto, todo de forma simultánea.
-            </p>
-            <div class="screenshot-wrapper fade-in">
-                <img src="https://i.imgur.com/iC5QfXC.png" alt="Captura de pantalla de la interfaz de STTVAR" class="screenshot">
+            <p class="fade-in" style="text-align: center; max-width: 800px; margin: -20px auto 40px auto; font-size: 1.1rem;"> STTVAR opera bajo un modelo Servidor-Cliente. La aplicación de escritorio actúa como un potente Servidor que transcribe, graba y sirve los datos en tiempo real. La interfaz web (Cliente) permite a colaboradores conectarse vía código QR para ver la transcripción en vivo, chatear, tomar apuntes y analizar el texto, todo de forma simultánea. </p>
+            
+            <div id="image-carousel" class="carousel-container fade-in">
+                <div class="carousel-slides">
+                    <!-- MEJORA: Añadido data-description para el lightbox -->
+                    <div class="carousel-slide" data-description="Un golden retriever sonriendo a la cámara en un parque.">
+                        <img src="imagenespagina/Menuprincipal.png" alt="Golden retriever sonriendo">
+                    </div>
+                    <div class="carousel-slide" data-description="Un border collie feliz corriendo por la hierba.">
+                        <img src="imagenespagina/Chat.png" alt="Perro feliz">
+                    </div>
+                    <div class="carousel-slide" data-description="Un perro de raza beagle corriendo en la playa al atardecer.">
+                        <img src="imagenespagina\Apuntescompartidos.png" alt="Perro corriendo">
+                    </div>
+                    <div class="carousel-slide" data-description="Un adorable cachorro de labrador mirando con curiosidad.">
+                        <img src="imagenespagina\pantallacompletatranscripcionenotroidioma.png" alt="Cachorro adorable">
+                    </div>
+                </div>
+                <button class="carousel-nav prev" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-nav next" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+                <div class="carousel-dots"></div>
             </div>
         </section>
 
+        <!-- El resto del contenido se mantiene igual -->
         <section id="caracteristicas" class="section container">
             <h2 class="fade-in">Características Estelares</h2>
-            
             <h3 class="fade-in" style="text-align:center; font-weight: 400; color: var(--color-primary); margin-top: -30px; margin-bottom: 40px;">Core & Desktop Server (PyQt5)</h3>
             <div class="grid">
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-microphone-alt"></i></div>
-                    <h3>Transcripción Instantánea</h3>
-                    <p>Convierte voz a texto eligiendo entre español o inglés, adaptando el modelo Vosk dinámicamente.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-file-audio"></i></div>
-                    <h3>Grabación Concurrente</h3>
-                    <p>Captura y guarda el audio original (.wav) de alta calidad mientras la transcripción se ejecuta.</p>
-                </div>
-                 <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-file-export"></i></div>
-                    <h3>Gestión de Transcripciones</h3>
-                    <p>Interfaz para explorar, editar, consultar la IA, traducir y exportar en formatos PDF, Word y Markdown.</p>
-                </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-microphone-alt"></i></div> <h3>Transcripción Instantánea</h3> <p>Convierte voz a texto eligiendo entre español o inglés, adaptando el modelo Vosk dinámicamente.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-file-audio"></i></div> <h3>Grabación Concurrente</h3> <p>Captura y guarda el audio original (.wav) de alta calidad mientras la transcripción se ejecuta.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-file-export"></i></div> <h3>Gestión de Transcripciones</h3> <p>Interfaz para explorar, editar, consultar la IA, traducir y exportar en formatos PDF, Word y Markdown.</p> </div>
             </div>
-
             <h3 class="fade-in" style="text-align:center; font-weight: 400; color: var(--color-primary); margin-top: 60px; margin-bottom: 40px;">Interfaz Web & Colaboración Global</h3>
             <div class="grid">
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-globe"></i></div>
-                    <h3>Traducción Individual</h3>
-                    <p>Cada usuario web selecciona su idioma. La aplicación traduce la transcripción en vivo para cada cliente de forma independiente.</p>
-                </div>
-                 <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-comments"></i></div>
-                    <h3>Chat y Apuntes Colaborativos</h3>
-                    <p>Chat global en tiempo real y panel de apuntes que pueden compartirse con el grupo como un bloque descargable.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-brain"></i></div>
-                    <h3>Asistente de IA Integrado</h3>
-                    <p>Los usuarios pueden realizar preguntas sobre el contexto de la transcripción, gracias a la integración con Ollama.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-share-alt"></i></div>
-                    <h3>Acceso Global con un Clic</h3>
-                    <p>La integración con Ngrok genera una URL pública para compartir la sesión en internet, sin configuración manual.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-qrcode"></i></div>
-                    <h3>Acceso con Código QR</h3>
-                    <p>Un QR generado en el escritorio permite unirse a la sesión fácilmente desde cualquier dispositivo en la red.</p>
-                </div>
-                 <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-paper-plane"></i></div>
-                    <h3>Streaming SSE</h3>
-                    <p>La transcripción se "empuja" a todos los clientes web en tiempo real sin recargas (Server-Sent Events).</p>
-                </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-globe"></i></div> <h3>Traducción Individual</h3> <p>Cada usuario web selecciona su idioma. La aplicación traduce la transcripción en vivo para cada cliente de forma independiente.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-comments"></i></div> <h3>Chat y Apuntes Colaborativos</h3> <p>Chat global en tiempo real y panel de apuntes que pueden compartirse con el grupo como un bloque descargable.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-brain"></i></div> <h3>Asistente de IA Integrado</h3> <p>Los usuarios pueden realizar preguntas sobre el contexto de la transcripción, gracias a la integración con Ollama.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-share-alt"></i></div> <h3>Acceso Global con un Clic</h3> <p>La integración con Ngrok genera una URL pública para compartir la sesión en internet, sin configuración manual.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-qrcode"></i></div> <h3>Acceso con Código QR</h3> <p>Un QR generado en el escritorio permite unirse a la sesión fácilmente desde cualquier dispositivo en la red.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-paper-plane"></i></div> <h3>Streaming SSE</h3> <p>La transcripción se "empuja" a todos los clientes web en tiempo real sin recargas (Server-Sent Events).</p> </div>
             </div>
         </section>
-
         <section id="evolucion" class="section container">
             <h2 class="fade-in">Evolución del Proyecto</h2>
             <div class="timeline">
-                <div class="timeline-item left fade-in">
-                    <div class="timeline-content">
-                        <h3>Fase 1: El Núcleo</h3>
-                        <p>Creación del sistema base de transcripción y el servidor Flask para enviar el texto en tiempo real.</p>
-                    </div>
-                </div>
-                <div class="timeline-item right fade-in">
-                    <div class="timeline-content">
-                        <h3>Fase 2: Mejoras de UI/UX</h3>
-                        <p>Implementación de contadores, modo Zen, y la capacidad de tener un panel de apuntes personal.</p>
-                    </div>
-                </div>
-                <div class="timeline-item left fade-in">
-                    <div class="timeline-content">
-                        <h3>Fase 3: Colaboración</h3>
-                        <p>Añadido el chat global para comunicación entre usuarios y la funcionalidad de compartir apuntes.</p>
-                    </div>
-                </div>
-                 <div class="timeline-item right fade-in">
-                    <div class="timeline-content">
-                        <h3>Fase 4: Inteligencia</h3>
-                        <p>Integración de un modelo de IA (Ollama) para permitir consultas sobre el texto y acciones rápidas.</p>
-                    </div>
-                </div>
-                <div class="timeline-item left fade-in">
-                    <div class="timeline-content">
-                        <h3>Fase 5: Accesibilidad Global</h3>
-                        <p>Automatización de Ngrok para permitir compartir la sesión públicamente con un solo clic.</p>
-                    </div>
-                </div>
+                <div class="timeline-item left fade-in"> <div class="timeline-content"> <h3>Fase 1: El Núcleo</h3> <p>Creación del sistema base de transcripción y el servidor Flask para enviar el texto en tiempo real.</p> </div> </div>
+                <div class="timeline-item right fade-in"> <div class="timeline-content"> <h3>Fase 2: Mejoras de UI/UX</h3> <p>Implementación de contadores, modo Zen, y la capacidad de tener un panel de apuntes personal.</p> </div> </div>
+                <div class="timeline-item left fade-in"> <div class="timeline-content"> <h3>Fase 3: Colaboración</h3> <p>Añadido el chat global para comunicación entre usuarios y la funcionalidad de compartir apuntes.</p> </div> </div>
+                <div class="timeline-item right fade-in"> <div class="timeline-content"> <h3>Fase 4: Inteligencia</h3> <p>Integración de un modelo de IA (Ollama) para permitir consultas sobre el texto y acciones rápidas.</p> </div> </div>
+                <div class="timeline-item left fade-in"> <div class="timeline-content"> <h3>Fase 5: Accesibilidad Global</h3> <p>Automatización de Ngrok para permitir compartir la sesión públicamente con un solo clic.</p> </div> </div>
             </div>
         </section>
-
         <section id="tecnologia" class="section container">
             <h2 class="fade-in">Pila Tecnológica</h2>
             <div class="grid">
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-server"></i></div>
-                    <h3>Backend y Lógica</h3>
-                    <p><b>Python:</b> El lenguaje principal. <br><b>PyQt5:</b> Para la interfaz de escritorio. <br><b>Flask:</b> Como servidor web para la comunicación. <br><b>PyNgrok:</b> Para la creación de túneles públicos.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-desktop"></i></div>
-                    <h3>Frontend</h3>
-                    <p><b>HTML5, CSS3, JavaScript:</b> La base de la interfaz web. Sin frameworks, para un rendimiento máximo y control total del streaming de datos.</p>
-                </div>
-                <div class="card fade-in">
-                    <div class="icon"><i class="fas fa-robot"></i></div>
-                    <h3>IA y Voz</h3>
-                    <p><b>Vosk:</b> Modelo de reconocimiento de voz offline. <br><b>Ollama & Mistral:</b> Para el procesamiento de lenguaje natural. <br><b>Argos Translate:</b> Para las traducciones en tiempo real.</p>
-                </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-server"></i></div> <h3>Backend y Lógica</h3> <p><b>Python:</b> El lenguaje principal. <br><b>PyQt5:</b> Para la interfaz de escritorio. <br><b>Flask:</b> Como servidor web para la comunicación. <br><b>PyNgrok:</b> Para la creación de túneles públicos.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-desktop"></i></div> <h3>Frontend</h3> <p><b>HTML5, CSS3, JavaScript:</b> La base de la interfaz web. Sin frameworks, para un rendimiento máximo y control total del streaming de datos.</p> </div>
+                <div class="card fade-in"> <div class="icon"><i class="fas fa-robot"></i></div> <h3>IA y Voz</h3> <p><b>Vosk:</b> Modelo de reconocimiento de voz offline. <br><b>Ollama & Mistral:</b> Para el procesamiento de lenguaje natural. <br><b>Argos Translate:</b> Para las traducciones en tiempo real.</p> </div>
             </div>
         </section>
-
         <section id="inicio-rapido" class="section container">
             <h2 class="fade-in">Guía de Inicio Rápido</h2>
             <div class="fade-in">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h3>Descarga los Modelos Vosk</h3>
-                        <p>Visita <a href="https://alphacephei.com/vosk/models" target="_blank">Vosk Models</a>, descarga los modelos para español e inglés, descomprímelos y colócalos en la raíz del proyecto.</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h3>Instala las Dependencias</h3>
-                        <p>Asegúrate de tener Python 3.9+ instalado y ejecuta el siguiente comando en tu terminal:</p>
-                        <div class="code-block">pip install -r requirements.txt</div>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h3>Configura Ollama</h3>
-                        <p>Instala Ollama desde <a href="https://ollama.com/" target="_blank">ollama.com</a> y descarga el modelo de IA ejecutando:</p>
-                        <div class="code-block">ollama pull mistral:7b-instruct-q4_K_M</div>
-                    </div>
-                </div>
-                 <div class="step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h3>Ejecuta el Proyecto</h3>
-                        <p>Inicia la aplicación. ¡Listo para transcribir y colaborar!</p>
-                        <div class="code-block">python main.py</div>
-                    </div>
-                </div>
+                <div class="step"> <div class="step-number">1</div> <div class="step-content"> <h3>Descarga los Modelos Vosk</h3> <p>Visita <a href="https://alphacephei.com/vosk/models" target="_blank">Vosk Models</a>, descarga los modelos para español e inglés, descomprímelos y colócalos en la raíz del proyecto.</p> </div> </div>
+                <div class="step"> <div class="step-number">2</div> <div class="step-content"> <h3>Instala las Dependencias</h3> <p>Asegúrate de tener Python 3.9+ instalado y ejecuta el siguiente comando en tu terminal:</p> <div class="code-block">pip install -r requirements.txt</div> </div> </div>
+                <div class="step"> <div class="step-number">3</div> <div class="step-content"> <h3>Configura Ollama</h3> <p>Instala Ollama desde <a href="https://ollama.com/" target="_blank">ollama.com</a> y descarga el modelo de IA ejecutando:</p> <div class="code-block">ollama pull mistral:7b-instruct-q4_K_M</div> </div> </div>
+                <div class="step"> <div class="step-number">4</div> <div class="step-content"> <h3>Ejecuta el Proyecto</h3> <p>Inicia la aplicación. ¡Listo para transcribir y colaborar!</p> <div class="code-block">python main.py</div> </div> </div>
             </div>
         </section>
     </main>
 
-    <!-- ==================== FOOTER ==================== -->
     <footer class="footer">
         <p class="fade-in">Desarrollado con 💖 por <b>Lucas Jiménez Sepúlveda</b></p>
         <div class="footer-socials fade-in">
@@ -514,8 +385,19 @@
             <a href="https://github.com/LucasJS28/STTVAR" target="_blank" aria-label="Ver repositorio en GitHub"><i class="fab fa-github"></i></a>
         </div>
     </footer>
+
+    <!-- INICIO DEL NUEVO HTML PARA EL LIGHTBOX -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" aria-label="Cerrar">&times;</button>
+            <img src="" alt="Imagen ampliada" class="lightbox-image">
+            <p class="lightbox-caption"></p>
+            <button class="lightbox-nav lightbox-prev" aria-label="Anterior">&#10094;</button>
+            <button class="lightbox-nav lightbox-next" aria-label="Siguiente">&#10095;</button>
+        </div>
+    </div>
+    <!-- FIN DEL NUEVO HTML PARA EL LIGHTBOX -->
     
-    <!-- JS para la animación de partículas y de entrada -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -524,43 +406,32 @@
             const particlesContainer = document.getElementById('particles-js');
             const navbar = document.getElementById('navbar');
 
-            // --- Lógica para la barra de navegación dinámica ---
+            // --- Lógica Barra de Navegación Dinámica ---
             if (navbar) {
-                window.addEventListener('scroll', () => {
-                    if (window.scrollY > 50) {
-                        navbar.classList.add('scrolled');
-                    } else {
-                        navbar.classList.remove('scrolled');
-                    }
-                });
+                window.addEventListener('scroll', () => { window.scrollY > 50 ? navbar.classList.add('scrolled') : navbar.classList.remove('scrolled'); });
             }
 
-            // --- Lógica para el Modo Claro/Oscuro ---
+            // --- Lógica Modo Claro/Oscuro ---
             const currentTheme = localStorage.getItem('theme');
-            if (currentTheme) {
-                body.classList.add(currentTheme);
-            }
+            if (currentTheme) { body.classList.add(currentTheme); }
             themeToggle.addEventListener('click', () => {
                 body.classList.toggle('light-mode');
                 let theme = body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode';
                 localStorage.setItem('theme', theme);
-                if (theme === 'dark-mode' && (!window.pJSDom || !window.pJSDom[0])) {
-                    initParticles();
-                }
+                if (theme === 'dark-mode' && (!window.pJSDom || !window.pJSDom[0])) { initParticles(); }
             });
 
-            // --- Lógica del menú de navegación responsivo ---
+            // --- Lógica Menú Responsivo ---
             const navToggle = document.getElementById('nav-toggle');
             const navMenu = document.getElementById('nav-menu');
-            const navLinks = navMenu.querySelectorAll('a');
-            const navToggleIcon = navToggle.querySelector('i');
             if (navToggle && navMenu) {
+                const navToggleIcon = navToggle.querySelector('i');
                 navToggle.addEventListener('click', () => {
                     navMenu.classList.toggle('active');
                     navToggleIcon.classList.toggle('fa-bars');
                     navToggleIcon.classList.toggle('fa-times');
                 });
-                navLinks.forEach(link => {
+                navMenu.querySelectorAll('a').forEach(link => {
                     link.addEventListener('click', () => {
                         navMenu.classList.remove('active');
                         navToggleIcon.classList.add('fa-bars');
@@ -569,38 +440,117 @@
                 });
             }
 
-            // --- Animación de Fade-In al hacer scroll ---
-            const elementsToFadeIn = document.querySelectorAll('.fade-in');
-            const fadeInObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            }, { threshold: 0.1 });
-            elementsToFadeIn.forEach(element => fadeInObserver.observe(element));
+            // --- Lógica del Carrusel ---
+            const carousel = document.getElementById('image-carousel');
+            if (carousel) {
+                const slidesContainer = carousel.querySelector('.carousel-slides');
+                const carouselSlides = carousel.querySelectorAll('.carousel-slide');
+                const prevButton = carousel.querySelector('.carousel-nav.prev');
+                const nextButton = carousel.querySelector('.carousel-nav.next');
+                const dotsContainer = carousel.querySelector('.carousel-dots');
+                let currentIndex = 0; let autoPlayInterval;
 
-            // --- Resaltar enlace activo en la navegación al hacer scroll ---
-            const sections = document.querySelectorAll('main section[id]');
-            const observerOptions = { rootMargin: "-40% 0px -60% 0px" };
+                carouselSlides.forEach((_, i) => {
+                    const dot = document.createElement('button');
+                    dot.classList.add('carousel-dot');
+                    dot.setAttribute('aria-label', `Ir a la imagen ${i + 1}`);
+                    if (i === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => { goToSlide(i); resetAutoPlay(); });
+                    dotsContainer.appendChild(dot);
+                });
+                const dots = dotsContainer.querySelectorAll('.carousel-dot');
+                const goToSlide = (index) => {
+                    currentIndex = (index + carouselSlides.length) % carouselSlides.length;
+                    slidesContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+                    dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+                };
+                const startAutoPlay = () => { autoPlayInterval = setInterval(() => goToSlide(currentIndex + 1), 5000); };
+                const stopAutoPlay = () => clearInterval(autoPlayInterval);
+                const resetAutoPlay = () => { stopAutoPlay(); startAutoPlay(); };
+                prevButton.addEventListener('click', () => { goToSlide(currentIndex - 1); resetAutoPlay(); });
+                nextButton.addEventListener('click', () => { goToSlide(currentIndex + 1); resetAutoPlay(); });
+                carousel.addEventListener('mouseenter', stopAutoPlay);
+                carousel.addEventListener('mouseleave', startAutoPlay);
+                goToSlide(0); startAutoPlay();
+            }
+            
+            // --- INICIO DE LA NUEVA LÓGICA DEL LIGHTBOX ---
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox) {
+                const carouselSlidesForLightbox = document.querySelectorAll('#image-carousel .carousel-slide');
+                const lightboxImage = lightbox.querySelector('.lightbox-image');
+                const lightboxCaption = lightbox.querySelector('.lightbox-caption');
+                const closeButton = lightbox.querySelector('.lightbox-close');
+                const prevButton = lightbox.querySelector('.lightbox-prev');
+                const nextButton = lightbox.querySelector('.lightbox-next');
+                let lightboxCurrentIndex = 0;
+
+                const showLightboxImage = (index) => {
+                    const slide = carouselSlidesForLightbox[index];
+                    const img = slide.querySelector('img');
+                    lightboxImage.src = img.src;
+                    lightboxCaption.textContent = slide.dataset.description || '';
+                };
+                const openLightbox = (index) => {
+                    lightboxCurrentIndex = index;
+                    showLightboxImage(index);
+                    body.classList.add('lightbox-active');
+                    lightbox.classList.add('active');
+                    document.addEventListener('keydown', handleKeyPress);
+                };
+                const closeLightbox = () => {
+                    body.classList.remove('lightbox-active');
+                    lightbox.classList.remove('active');
+                    document.removeEventListener('keydown', handleKeyPress);
+                };
+                const showPrevImage = () => {
+                    lightboxCurrentIndex = (lightboxCurrentIndex - 1 + carouselSlidesForLightbox.length) % carouselSlidesForLightbox.length;
+                    showLightboxImage(lightboxCurrentIndex);
+                };
+                const showNextImage = () => {
+                    lightboxCurrentIndex = (lightboxCurrentIndex + 1) % carouselSlidesForLightbox.length;
+                    showLightboxImage(lightboxCurrentIndex);
+                };
+                const handleKeyPress = (e) => {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') showPrevImage();
+                    if (e.key === 'ArrowRight') showNextImage();
+                };
+
+                carouselSlidesForLightbox.forEach((slide, index) => {
+                    slide.addEventListener('click', () => openLightbox(index));
+                });
+
+                closeButton.addEventListener('click', closeLightbox);
+                lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+                prevButton.addEventListener('click', showPrevImage);
+                nextButton.addEventListener('click', showNextImage);
+            }
+            // --- FIN DE LA NUEVA LÓGICA DEL LIGHTBOX ---
+
+            // --- Animación de Fade-In al hacer scroll ---
+            const fadeInObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.fade-in').forEach(el => fadeInObserver.observe(el));
+
+            // --- Resaltar enlace activo en la navegación ---
             const sectionObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     const id = entry.target.getAttribute('id');
                     const navLink = document.querySelector(`.nav-links a[href="#${id}"]`);
                     if (entry.isIntersecting) {
-                         document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
-                         if(navLink) navLink.classList.add('active');
+                        document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+                        if (navLink) navLink.classList.add('active');
                     }
                 });
-            }, observerOptions);
-            sections.forEach(section => sectionObserver.observe(section));
+            }, { rootMargin: "-40% 0px -60% 0px" });
+            document.querySelectorAll('main section[id]').forEach(sec => sectionObserver.observe(sec));
             
             // --- Configuración de Particles.js ---
             function initParticles() {
                 if (particlesContainer) {
-                    particlesJS('particles-js', {
-                      "particles": { "number": { "value": 60, "density": { "enable": true, "value_area": 800 } }, "color": { "value": "#4a5568" }, "shape": { "type": "circle" }, "opacity": { "value": 0.3, "random": true, "anim": { "enable": true, "speed": 1, "opacity_min": 0.1, "sync": false } }, "size": { "value": 3, "random": true }, "line_linked": { "enable": true, "distance": 150, "color": "#4a5568", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 1, "direction": "none", "out_mode": "out" } },
-                      "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "grab" }, "resize": true }, "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 0.5 } } } }, "retina_detect": true });
+                    particlesJS('particles-js', { "particles": { "number": { "value": 60, "density": { "enable": true, "value_area": 800 } }, "color": { "value": "#4a5568" }, "shape": { "type": "circle" }, "opacity": { "value": 0.3, "random": true, "anim": { "enable": true, "speed": 1, "opacity_min": 0.1, "sync": false } }, "size": { "value": 3, "random": true }, "line_linked": { "enable": true, "distance": 150, "color": "#4a5568", "opacity": 0.2, "width": 1 }, "move": { "enable": true, "speed": 1, "direction": "none", "out_mode": "out" } }, "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "grab" }, "resize": true }, "modes": { "grab": { "distance": 140, "line_linked": { "opacity": 0.5 } } } }, "retina_detect": true });
                 }
             }
             if (!body.classList.contains('light-mode')) { initParticles(); }

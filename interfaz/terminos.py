@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QCheckBox, QPushButton, QTextEdit,
     QHBoxLayout, QMessageBox, QLabel, QWidget, QFrame, QGraphicsDropShadowEffect
 )
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QColor, QCursor
+from PyQt5.QtCore import Qt, QPoint, QUrl
+from PyQt5.QtGui import QColor, QCursor, QDesktopServices
 
 class DraggableDialog(QDialog):
     """QDialog personalizado y arrastrable sin bordes."""
@@ -106,6 +106,15 @@ class TermsAndConditionsDialog(DraggableDialog):
 
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
+
+        # --- BOTÓN AÑADIDO ---
+        self.learn_more_button = QPushButton("Saber más sobre STTVAR")
+        self.learn_more_button.setObjectName("learnMoreButton")
+        self.learn_more_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.learn_more_button.clicked.connect(self.open_link)
+        button_layout.addWidget(self.learn_more_button)
+        # --- FIN DEL BOTÓN AÑADIDO ---
+
         self.cancel_button = QPushButton("Rechazar")
         self.cancel_button.setObjectName("cancelButton")
         self.cancel_button.setCursor(QCursor(Qt.PointingHandCursor))
@@ -161,7 +170,6 @@ class TermsAndConditionsDialog(DraggableDialog):
 
     def accept_terms(self):
         if not self.accept_checkbox.isChecked():
-            # ... (código del QMessageBox sin cambios)
             msg_box = QMessageBox(self)
             msg_box.setIcon(QMessageBox.Warning)
             msg_box.setText("Debe aceptar los términos para poder continuar.")
@@ -179,6 +187,11 @@ class TermsAndConditionsDialog(DraggableDialog):
             msg_box.exec_()
         else:
             self.accept()
+
+    def open_link(self):
+        """Abre la URL del proyecto en el navegador."""
+        url = QUrl("https://lucasjs28.github.io/STTVAR")
+        QDesktopServices.openUrl(url)
 
     def _apply_styles(self):
         self.setStyleSheet("""
@@ -230,6 +243,21 @@ class TermsAndConditionsDialog(DraggableDialog):
             #cancelButton { background-color: #383838; color: #a0a0a0; }
             #cancelButton:hover { background-color: #444; color: #e0e0e0; }
             #cancelButton:pressed { background-color: #2f2f2f; }
+            
+            /* --- ESTILOS PARA EL NUEVO BOTÓN --- */
+            #learnMoreButton {
+                background-color: transparent;
+                color: #a0a0a0;
+                border: 2px solid #555;
+            }
+            #learnMoreButton:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+                color: #e0e0e0;
+                border-color: #777;
+            }
+            #learnMoreButton:pressed {
+                background-color: rgba(0, 0, 0, 0.1);
+            }
         """)
 
 if __name__ == '__main__':
