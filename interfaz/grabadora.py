@@ -16,7 +16,7 @@ import sys
 import queue
 import json
 import time
-from flask import Flask, Response, render_template, request, jsonify
+from flask import Flask, Response, render_template, request, jsonify, send_from_directory
 import threading
 import requests
 from docx import Document
@@ -24,8 +24,8 @@ from io import StringIO, BytesIO
 import socket
 from pyngrok import ngrok, conf
 
-# (El resto del código de Flask y las variables globales permanecen sin cambios)
-# ... (todo el código hasta la clase TranscriptionWindow) ...
+# =====================================================================
+# Sección de Flask y Variables Globales
 # =====================================================================
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -40,6 +40,8 @@ chat_messages = []
 qtextedit_buffer = ""
 last_qtextedit_update = 0
 qtextedit_update_interval = 0.5
+# SOLUCIÓN: Variable global para gestionar el audio compartido
+shared_audio_data = {}
 
 model = None
 q = queue.Queue(maxsize=20)
@@ -125,9 +127,11 @@ def set_language(client_id, lang): clientes_idioma[client_id] = lang; return "OK
 def set_language_acumulado(client_id, lang): clientes_idioma_acumulado[client_id] = lang; return "OK"
 @app.route("/clear_text/<client_id>", methods=['POST'])
 def clear_text(client_id):
-    global transcripcion, current_partial, qtextedit_buffer
+    global transcripcion, current_partial, qtextedit_buffer, shared_audio_data
     transcripcion = ""; current_partial = ""; qtextedit_buffer = ""
     client_ai_responses.pop(client_id, None)
+    # Al limpiar el texto, también revocamos el acceso al audio anterior
+    shared_audio_data.clear()
     return "OK"
 @app.route("/ask_ai/<client_id>", methods=['POST'])
 def ask_ai(client_id):
@@ -158,6 +162,32 @@ def download_docx(client_id, filename):
     doc = Document(); doc.add_heading("Transcripción de STTTVAR", 0); doc.add_paragraph(f"Fecha: {datetime.now().strftime('%d de %B de %Y, %I:%M %p')}"); doc.add_heading("Transcripción:", level=1); doc.add_paragraph(acumulado_text)
     buffer = BytesIO(); doc.save(buffer); buffer.seek(0)
     return Response(buffer.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', headers={'Content-Disposition': f'attachment; filename={filename}.docx'})
+
+# SOLUCIÓN: Nuevas rutas para gestionar la descarga de audio
+@app.route('/audio_status')
+def audio_status():
+    """Endpoint para que el cliente web consulte si hay un audio disponible."""
+    if shared_audio_data and shared_audio_data.get('available'):
+        return jsonify({
+            'available': True,
+            'filename': shared_audio_data.get('filename')
+        })
+    return jsonify({'available': False})
+
+@app.route('/download_audio')
+def download_audio():
+    """Endpoint para iniciar la descarga del archivo de audio compartido."""
+    if shared_audio_data and shared_audio_data.get('available'):
+        try:
+            directory = shared_audio_data['directory']
+            filename = shared_audio_data['filename']
+            # send_from_directory es más seguro que send_file
+            return send_from_directory(directory, filename, as_attachment=True)
+        except Exception as e:
+            print(f"Error al servir el archivo de audio: {e}")
+            return "Error al leer el archivo.", 500
+    return "No hay archivo de audio disponible para descargar.", 404
+
 def process_ai_question(question, client_id):
     if not ollama_available: client_ai_responses[client_id] = "Error: Ollama no está disponible."; return
     if not question.strip(): client_ai_responses[client_id] = "Error: La pregunta está vacía."; return
@@ -190,7 +220,6 @@ class TranscriptionWindow(QWidget):
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
         self.selected_language = "es"
-        # SOLUCIÓN: Añadir una bandera para evitar que _stop_transcription se ejecute dos veces
         self._already_stopped = False
 
         self.ngrok_tunnel = None
@@ -211,7 +240,6 @@ class TranscriptionWindow(QWidget):
         self._hide_button_timer.setSingleShot(True)
         self._hide_button_timer.timeout.connect(self._fade_out_buttons)
 
-    # ... (Todas las funciones de UI, ngrok, eventos de ratón, etc., se mantienen igual) ...
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = event.globalPos()
     def mouseMoveEvent(self, event):
@@ -288,10 +316,9 @@ class TranscriptionWindow(QWidget):
         local_ip = self._get_local_ip()
         try:
             import subprocess
-            # Asumiendo que qr_app.py está en el mismo directorio que grabadora.py
             current_dir = os.path.dirname(os.path.abspath(__file__))
             qr_app_path = os.path.join(current_dir, "qr_app.py")
-            if not os.path.exists(qr_app_path): # Fallback si está en un subdirectorio
+            if not os.path.exists(qr_app_path): 
                  qr_app_path = os.path.join(os.path.dirname(current_dir), "interfaz", "qr_app.py")
             
             subprocess.Popen([sys.executable, qr_app_path, f"http://{local_ip}:5000", self.public_url])
@@ -351,13 +378,12 @@ class TranscriptionWindow(QWidget):
             self._start_transcription()
 
     def _start_transcription(self):
-        global qtextedit_buffer
+        global qtextedit_buffer, shared_audio_data
         device_index = self.device_combo.currentData()
         if device_index is None:
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
             return
 
-        # ... (código de pyttsx3, QProgressDialog, creación de directorios, etc. sin cambios) ...
         engine = pyttsx3.init(); engine.setProperty('voice', 'spanish'); engine.setProperty('rate', 150); engine.setProperty('volume', 0.9)
         engine.say("Se iniciará la grabación"); engine.runAndWait()
         progress = QProgressDialog("Iniciando transcripción...", None, 0, 0, self); progress.setWindowModality(Qt.WindowModal); progress.setWindowFlags(Qt.FramelessWindowHint); progress.setMinimumDuration(0)
@@ -367,6 +393,8 @@ class TranscriptionWindow(QWidget):
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S"); self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"; self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
         
         try:
+            # SOLUCIÓN: Reiniciar el estado de audio compartido al iniciar una nueva grabación
+            shared_audio_data.clear()
             self.transcriber_thread = TranscriberThread(self.model, device_index, self.current_transcription_filepath, self.current_audio_filepath)
             self.transcriber_thread.new_text.connect(self._update_text_area)
             self.transcriber_thread.finished.connect(self._on_transcription_finished)
@@ -377,7 +405,6 @@ class TranscriptionWindow(QWidget):
             self.transcription_status_changed.emit(True)
             self.text_area.clear()
             qtextedit_buffer = ""
-            # SOLUCIÓN: Reiniciar la bandera cada vez que se inicia una nueva grabación
             self._already_stopped = False
 
         except Exception as e:
@@ -388,29 +415,24 @@ class TranscriptionWindow(QWidget):
 
     def _stop_transcription(self):
         global qtextedit_buffer
-        # SOLUCIÓN: La guarda para prevenir la doble ejecución
         if self._already_stopped:
             return
         self._already_stopped = True
 
         if self.transcriber_thread:
             self.transcriber_thread.stop()
-            self.transcriber_thread.wait() # Esperar a que el hilo termine limpiamente
+            self.transcriber_thread.wait()
             self.transcriber_thread = None
 
         self.transcription_active = False
         self.transcription_status_changed.emit(False)
         self._prompt_save_or_discard()
         
-        # Limpiar variables globales
         qtextedit_buffer = ""
 
     def _on_transcription_finished(self):
-        # Esta señal se emite cuando el hilo termina por su cuenta.
-        # Simplemente llamamos a _stop_transcription(), que ahora es seguro gracias a la bandera.
         self._stop_transcription()
         
-    # ... (funciones de UI como _toggle_mute, _fade_in/out, _update_ui_for_transcription_status, etc. sin cambios)...
     def _toggle_mute(self):
         muted = self.mute_button.isChecked(); self.mute_button.setText("🔇" if muted else "🎙️")
         if self.transcriber_thread: self.transcriber_thread.set_mute(muted)
@@ -458,18 +480,16 @@ class TranscriptionWindow(QWidget):
         self.selected_language = self.language_combo.itemData(index)
         if self.transcription_active and qtextedit_buffer.strip(): self._update_text_area(qtextedit_buffer, is_partial=True)
 
-    # SOLUCIÓN: Lógica de guardado completamente reescrita para ser más clara y robusta.
     def _prompt_save_or_discard(self):
-        global transcripcion, qtextedit_buffer
+        global transcripcion, qtextedit_buffer, shared_audio_data
         
-        # Verificar si hay archivos válidos para preguntar
         has_transcription = self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)
         has_audio = self.current_audio_filepath and os.path.exists(self.current_audio_filepath)
 
         if not has_transcription and not has_audio:
-            return # No hay nada que guardar o descartar
+            shared_audio_data.clear()
+            return
 
-        # 1. Tomar decisiones primero
         save_transcription = False
         if has_transcription:
             reply_transcription = QMessageBox.question(self, "Guardar Transcripción",
@@ -478,13 +498,29 @@ class TranscriptionWindow(QWidget):
             save_transcription = (reply_transcription == QMessageBox.Yes)
 
         save_audio = False
+        share_audio = False
         if has_audio:
             reply_audio = QMessageBox.question(self, "Guardar Audio",
                                                "Guardar la grabación es bajo tu propia responsabilidad.\n\n¿Deseas guardar el archivo de audio?",
                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             save_audio = (reply_audio == QMessageBox.Yes)
+            
+            # SOLUCIÓN: Si se guarda el audio, preguntar si se quiere compartir
+            if save_audio:
+                reply_share = QMessageBox.question(self, "Compartir Audio",
+                                                   "¿Deseas compartir este audio con los usuarios conectados a la web?",
+                                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply_share == QMessageBox.Yes:
+                    share_audio = True
+                    shared_audio_data['directory'] = os.path.abspath(os.path.dirname(self.current_audio_filepath))
+                    shared_audio_data['filename'] = os.path.basename(self.current_audio_filepath)
+                    shared_audio_data['available'] = True
+                    print(f"Audio listo para compartir: {shared_audio_data}")
 
-        # 2. Actuar sobre los archivos
+        # Si no se comparte, asegurarse de que el estado esté limpio
+        if not share_audio:
+            shared_audio_data.clear()
+
         try:
             if not save_transcription and has_transcription:
                 os.remove(self.current_transcription_filepath)
@@ -493,20 +529,16 @@ class TranscriptionWindow(QWidget):
         except Exception as e:
             QMessageBox.warning(self, "Error al eliminar archivo", str(e))
 
-        # 3. Informar al usuario del resultado final
         messages = []
-        if save_transcription:
-            messages.append("La transcripción ha sido guardada.")
-        if save_audio:
-            messages.append("El audio ha sido guardado.")
+        if save_transcription: messages.append("La transcripción ha sido guardada.")
+        if save_audio: messages.append("El audio ha sido guardado.")
+        if share_audio: messages.append("El audio está ahora disponible para descarga en la web.")
 
         if messages:
             QMessageBox.information(self, "Proceso completado", "\n".join(messages))
         else:
-            # Dar feedback si el usuario descartó todo
             QMessageBox.information(self, "Proceso completado", "La transcripción y el audio no han sido guardados.")
         
-        # Limpiar rutas y variables globales al final
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
         transcripcion = ""

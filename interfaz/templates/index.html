@@ -286,10 +286,14 @@
         justify-content: center;
         gap: 0.5rem;
       }
-      .quick-action-btn:hover {
+      .quick-action-btn:hover:not(:disabled) {
         background: var(--accent-gradient);
         color: #fff;
         border-color: transparent;
+      }
+      .quick-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
       .question-section {
         display: flex;
@@ -720,7 +724,6 @@
         transform: translateX(22px);
       }
 
-      /* ================== ESTILOS MEJORADOS PARA EL CHAT ================== */
       #chatModalOverlay .popup-menu {
         max-width: 400px;
         height: 70vh;
@@ -893,6 +896,10 @@
             </button>
             <button class="quick-action-btn" onclick="quickAction('correct')">
               <i class="fas fa-check-double"></i> Corregir
+            </button>
+            <!-- SOLUCIÓN: Botón de descarga de audio, deshabilitado por defecto -->
+            <button id="downloadAudioBtn" class="quick-action-btn" disabled>
+                <i class="fas fa-volume-up"></i> Descargar Audio
             </button>
           </div>
           <div class="question-section">
@@ -1225,6 +1232,7 @@
         confirmExportBtn: document.getElementById('confirmExportBtn'),
         acumuladoCounter: document.getElementById('acumulado-counter'),
         notesCounter: document.getElementById('notes-counter'),
+        downloadAudioBtn: document.getElementById('downloadAudioBtn'), // SOLUCIÓN: Referencia al nuevo botón
         
         zenModeContainer: document.getElementById('zen-mode-container'),
         zenSubtitulo: document.getElementById('zen-subtitulo'),
@@ -1324,7 +1332,7 @@
         } else {
             elements.chatCurrentUser.textContent = '';
             elements.chatNamePrompt.classList.remove('hidden');
-            elements.chatMessageArea.classList.add('hidden');
+            elements.chatMessageArea.add('hidden');
             elements.chatUsernameInput.focus();
         }
       }
@@ -1361,7 +1369,7 @@
         fetch(`/ask_ai/${clientId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
             .then(res => { if (!res.ok) throw new Error("Error en servidor"); updateStatus("Pregunta enviada", "success"); })
             .catch(err => { updateStatus("Error al enviar pregunta a la IA", "error"); console.error(err); })
-            .finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.classList.add('hidden'); });
+            .finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.add('hidden'); });
         if (!customPrompt) elements.aiQuestion.value = "";
       }
 
@@ -1370,7 +1378,37 @@
       function updateStatus(e,t="normal",n=3e3){clearTimeout(statusTimeout),elements.status.textContent=e,elements.status.className=`status visible ${t}`,statusTimeout=setTimeout(()=>elements.status.classList.remove("visible","success","error"),n)}
       function makeRequest(e,t,n){fetch(e,{method:"POST"}).then(res=>res.ok||(n?updateStatus(n,"error"):0))}
 
-      document.addEventListener('DOMContentLoaded', () => { updateStatus("Listo", "success", 1500); });
+      // SOLUCIÓN: Función para comprobar la disponibilidad del audio y actualizar el botón
+      function checkAudioStatus() {
+        fetch('/audio_status')
+            .then(res => res.json())
+            .then(data => {
+                if (data.available) {
+                    elements.downloadAudioBtn.disabled = false;
+                    elements.downloadAudioBtn.title = `Descargar ${data.filename}`;
+                    // Asignar el evento onclick para que redirija a la ruta de descarga
+                    elements.downloadAudioBtn.onclick = () => {
+                        window.location.href = '/download_audio';
+                    };
+                } else {
+                    elements.downloadAudioBtn.disabled = true;
+                    elements.downloadAudioBtn.title = 'Ningún audio compartido para descargar';
+                    elements.downloadAudioBtn.onclick = null; // Quitar el evento
+                }
+            })
+            .catch(err => {
+                console.error("Error al comprobar estado del audio:", err);
+                elements.downloadAudioBtn.disabled = true;
+                elements.downloadAudioBtn.title = 'Error de conexión con el servidor';
+            });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => { 
+        updateStatus("Listo", "success", 1500);
+        // SOLUCIÓN: Iniciar la comprobación periódica del estado del audio
+        checkAudioStatus(); // Comprobar una vez al cargar la página
+        setInterval(checkAudioStatus, 3000); // Comprobar cada 3 segundos
+      });
       
       elements.chatToggleBtn.addEventListener('click', () => { elements.chatModalOverlay.classList.add('active'); initializeChat(); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; });
       elements.closeChatBtn.addEventListener('click', () => elements.chatModalOverlay.classList.remove('active'));
@@ -1419,12 +1457,11 @@
       });
       elements.exportBtn.addEventListener('click', () => elements.exportSection.classList.toggle("active"));
       elements.previewAndExportBtn.addEventListener('click', () => {
-          // This logic now needs to be defined if it's separate
           alert("La vista previa y exportación desde el menú de opciones necesita ser definida.");
       });
 
 
-      elements.zenModeBtn.addEventListener('click',toggleZenMode);elements.zenCloseBtn.addEventListener('click',toggleZenMode);elements.zenOrientationBtn.addEventListener('click',()=>{clientState.zenRotation=(clientState.zenRotation+90)%360;elements.zenSubtituloWrapper.style.transform=`rotate(${clientState.zenRotation}deg)`});elements.zenViewToggleBtn.addEventListener('click',()=>{document.body.classList.toggle('zen-view-acumulado');const i=document.body.classList.contains('zen-view-acumulado');elements.zenViewToggleBtn.innerHTML=i?'<i class="fas fa-quote-left"></i>':'<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title=i?"Ver Subtítulo Actual":"Ver Texto Acumulado";if(i)elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight});elements.zenFontIncreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize<15){clientState.zenFontSize+=0.5;applyZenFontSize()}});elements.zenFontDecreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize>2){clientState.zenFontSize-=0.5;applyZenFontSize()}});
+      elements.zenModeBtn.addEventListener('click',toggleZenMode);elements.zenCloseBtn.addEventListener('click',toggleZenMode);elements.zenOrientationBtn.addEventListener('click',()=>{clientState.zenRotation=(clientState.zenRotation+90)%360;elements.zenSubtituloWrapper.style.transform=`rotate(${clientState.zenRotation}deg)`});elements.zenViewToggleBtn.addEventListener('click',()=>{document.body.classList.toggle('zen-view-acumulado');const i=document.body.classList.contains('zen-view-acumulado');elements.zenViewToggleBtn.innerHTML=i?'<i class="fas fa-file-alt"></i>':'<i class="fas fa-quote-left"></i>';elements.zenViewToggleBtn.title=i?"Ver Subtítulo Actual":"Ver Texto Acumulado";if(i)elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight});elements.zenFontIncreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize<15){clientState.zenFontSize+=0.5;applyZenFontSize()}});elements.zenFontDecreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize>2){clientState.zenFontSize-=0.5;applyZenFontSize()}});
       
       function updateCounters(s){let t,c;if(s==='acumulado'){t=elements.acumulado.textContent||"";c=document.getElementById('acumulado-counter')}else if(s==='notes'){t=elements.notesArea.value||"";c=document.getElementById('notes-counter')}else{return}const a=t.length;const o=t.trim().split(/\s+/).filter(w=>w.length>0);const l=t.trim()===''?0:o.length;c.textContent=`Caracteres: ${a} | Palabras: ${l}`}
       function copyText(e,t){const n=document.getElementById(e),o=n.tagName==="TEXTAREA"||n.tagName==="INPUT"?n.value:n.textContent;o&&o.trim()&&navigator.clipboard?navigator.clipboard.writeText(o).then(()=>{updateStatus("Copiado al portapapeles","success");const e=t.querySelector(".fa-copy"),o=t.querySelector(".fa-check");e&&o&&(e.classList.add("hidden"),o.classList.remove("hidden"),setTimeout(()=>{e.classList.remove("hidden"),o.classList.add("hidden")},2e3))}).catch(e=>{console.error("Error al copiar texto:",e),updateStatus("Error al copiar texto","error")}):updateStatus("Error: No hay nada que copiar.","error")}
