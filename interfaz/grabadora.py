@@ -378,7 +378,10 @@ class TranscriptionWindow(QWidget):
             self._start_transcription()
 
     def _start_transcription(self):
-        global qtextedit_buffer, shared_audio_data
+        global transcripcion, current_partial, qtextedit_buffer, shared_audio_data
+        transcripcion = ""
+        current_partial = ""
+        qtextedit_buffer = ""
         device_index = self.device_combo.currentData()
         if device_index is None:
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
@@ -541,8 +544,6 @@ class TranscriptionWindow(QWidget):
         
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
-        transcripcion = ""
-        qtextedit_buffer = ""
 
     def closeEvent(self, event):
         if self.ngrok_tunnel:
