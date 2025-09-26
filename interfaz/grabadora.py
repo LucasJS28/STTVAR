@@ -40,8 +40,13 @@ chat_messages = []
 qtextedit_buffer = ""
 last_qtextedit_update = 0
 qtextedit_update_interval = 0.5
-# SOLUCIÓN: Variable global para gestionar el audio compartido
 shared_audio_data = {}
+
+# --- INICIO DE NUEVAS VARIABLES GLOBALES ---
+# Usaremos un diccionario para rastrear a los clientes activos y su última hora de conexión.
+active_clients = {}
+# --- FIN DE NUEVAS VARIABLES GLOBALES ---
+
 
 model = None
 q = queue.Queue(maxsize=20)
@@ -89,38 +94,63 @@ def send_chat_message():
     return jsonify({"status": "ok"})
 @app.route("/stream")
 def stream():
-    def event_stream(client_id):
-        last_chat_message_count = len(chat_messages)
-        last_sent_data = {}
-        while True:
-            idioma_sub = clientes_idioma.get(client_id, "es"); idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
-            subtitulo_text = current_partial; acumulado_text = transcripcion; ai_response_text = client_ai_responses.get(client_id, "")
-            if idioma_sub != "es" and current_partial.strip() and source_lang:
-                cache_key_sub = f"{current_partial}:{idioma_sub}"
-                if cache_key_sub in translation_cache: subtitulo_text = translation_cache[cache_key_sub]
-                else:
-                    try:
-                        target_language = next((l for l in installed_languages if l.code == idioma_sub), None)
-                        if target_language: subtitulo_text = source_lang.get_translation(target_language).translate(current_partial); translation_cache[cache_key_sub] = subtitulo_text
-                    except Exception: pass
-            if idioma_acum != "es" and transcripcion.strip() and source_lang:
-                cache_key_acum = f"{transcripcion}:{idioma_acum}"
-                if cache_key_acum in translation_cache: acumulado_text = translation_cache[cache_key_acum]
-                else:
-                    try:
-                        target_language = next((l for l in installed_languages if l.code == idioma_acum), None)
-                        if target_language: acumulado_text = source_lang.get_translation(target_language).translate(transcripcion); translation_cache[cache_key_acum] = acumulado_text
-                    except Exception: pass
-            current_data = {"subtitulo": subtitulo_text, "acumulado": acumulado_text, "ai_response": ai_response_text}
-            if current_data != last_sent_data.get("transcript"):
-                last_sent_data["transcript"] = current_data; transcript_payload = {"type": "transcript", "data": current_data}
-                yield f"data: {json.dumps(transcript_payload)}\n\n"
-            if len(chat_messages) > last_chat_message_count:
-                new_messages = chat_messages[last_chat_message_count:]
-                for msg in new_messages: yield f"data: {json.dumps({'type': 'chat', 'data': msg})}\n\n"
-                last_chat_message_count = len(chat_messages)
-            time.sleep(0.1)
-    return Response(event_stream(request.args.get("client_id", "default")), mimetype="text/event-stream")
+    client_id = request.args.get("client_id", "default")
+    
+    def event_stream():
+        global active_clients
+        # Usamos try...finally para asegurar que el cliente se elimine al desconectarse
+        try:
+            # Añadir el cliente actual al diccionario de clientes activos
+            active_clients[client_id] = time.time()
+            print(f"Cliente conectado: {client_id}. Total de usuarios: {len(active_clients)}")
+
+            last_chat_message_count = len(chat_messages)
+            last_sent_data = {}
+            last_sent_user_count = 0
+
+            while True:
+                # --- LÓGICA PARA ENVIAR EL CONTEO DE USUARIOS ---
+                current_user_count = len(active_clients)
+                if current_user_count != last_sent_user_count:
+                    system_payload = {"type": "system_info", "data": {"user_count": current_user_count}}
+                    yield f"data: {json.dumps(system_payload)}\n\n"
+                    last_sent_user_count = current_user_count
+
+                # --- LÓGICA EXISTENTE PARA TRANSCRIPCIÓN Y CHAT ---
+                idioma_sub = clientes_idioma.get(client_id, "es"); idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
+                subtitulo_text = current_partial; acumulado_text = transcripcion; ai_response_text = client_ai_responses.get(client_id, "")
+                if idioma_sub != "es" and current_partial.strip() and source_lang:
+                    cache_key_sub = f"{current_partial}:{idioma_sub}"
+                    if cache_key_sub in translation_cache: subtitulo_text = translation_cache[cache_key_sub]
+                    else:
+                        try:
+                            target_language = next((l for l in installed_languages if l.code == idioma_sub), None)
+                            if target_language: subtitulo_text = source_lang.get_translation(target_language).translate(current_partial); translation_cache[cache_key_sub] = subtitulo_text
+                        except Exception: pass
+                if idioma_acum != "es" and transcripcion.strip() and source_lang:
+                    cache_key_acum = f"{transcripcion}:{idioma_acum}"
+                    if cache_key_acum in translation_cache: acumulado_text = translation_cache[cache_key_acum]
+                    else:
+                        try:
+                            target_language = next((l for l in installed_languages if l.code == idioma_acum), None)
+                            if target_language: acumulado_text = source_lang.get_translation(target_language).translate(transcripcion); translation_cache[cache_key_acum] = acumulado_text
+                        except Exception: pass
+                current_data = {"subtitulo": subtitulo_text, "acumulado": acumulado_text, "ai_response": ai_response_text}
+                if current_data != last_sent_data.get("transcript"):
+                    last_sent_data["transcript"] = current_data; transcript_payload = {"type": "transcript", "data": current_data}
+                    yield f"data: {json.dumps(transcript_payload)}\n\n"
+                if len(chat_messages) > last_chat_message_count:
+                    new_messages = chat_messages[last_chat_message_count:]
+                    for msg in new_messages: yield f"data: {json.dumps({'type': 'chat', 'data': msg})}\n\n"
+                    last_chat_message_count = len(chat_messages)
+                
+                time.sleep(0.1)
+        finally:
+            # Eliminar al cliente del diccionario cuando se desconecte
+            active_clients.pop(client_id, None)
+            print(f"Cliente desconectado: {client_id}. Total de usuarios: {len(active_clients)}")
+
+    return Response(event_stream(), mimetype="text/event-stream")
 @app.route("/set_language/<client_id>/<lang>", methods=['POST'])
 def set_language(client_id, lang): clientes_idioma[client_id] = lang; return "OK"
 @app.route("/set_language_acumulado/<client_id>/<lang>", methods=['POST'])
@@ -130,7 +160,6 @@ def clear_text(client_id):
     global transcripcion, current_partial, qtextedit_buffer, shared_audio_data
     transcripcion = ""; current_partial = ""; qtextedit_buffer = ""
     client_ai_responses.pop(client_id, None)
-    # Al limpiar el texto, también revocamos el acceso al audio anterior
     shared_audio_data.clear()
     return "OK"
 @app.route("/ask_ai/<client_id>", methods=['POST'])
@@ -163,10 +192,8 @@ def download_docx(client_id, filename):
     buffer = BytesIO(); doc.save(buffer); buffer.seek(0)
     return Response(buffer.getvalue(), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', headers={'Content-Disposition': f'attachment; filename={filename}.docx'})
 
-# SOLUCIÓN: Nuevas rutas para gestionar la descarga de audio
 @app.route('/audio_status')
 def audio_status():
-    """Endpoint para que el cliente web consulte si hay un audio disponible."""
     if shared_audio_data and shared_audio_data.get('available'):
         return jsonify({
             'available': True,
@@ -176,12 +203,10 @@ def audio_status():
 
 @app.route('/download_audio')
 def download_audio():
-    """Endpoint para iniciar la descarga del archivo de audio compartido."""
     if shared_audio_data and shared_audio_data.get('available'):
         try:
             directory = shared_audio_data['directory']
             filename = shared_audio_data['filename']
-            # send_from_directory es más seguro que send_file
             return send_from_directory(directory, filename, as_attachment=True)
         except Exception as e:
             print(f"Error al servir el archivo de audio: {e}")
@@ -378,10 +403,12 @@ class TranscriptionWindow(QWidget):
             self._start_transcription()
 
     def _start_transcription(self):
+        # SOLUCIÓN: Reiniciar el estado de la transcripción al iniciar una nueva
         global transcripcion, current_partial, qtextedit_buffer, shared_audio_data
         transcripcion = ""
         current_partial = ""
         qtextedit_buffer = ""
+
         device_index = self.device_combo.currentData()
         if device_index is None:
             QMessageBox.warning(self, "Falta dispositivo", "Selecciona un micrófono.")
@@ -396,7 +423,6 @@ class TranscriptionWindow(QWidget):
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S"); self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"; self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
         
         try:
-            # SOLUCIÓN: Reiniciar el estado de audio compartido al iniciar una nueva grabación
             shared_audio_data.clear()
             self.transcriber_thread = TranscriberThread(self.model, device_index, self.current_transcription_filepath, self.current_audio_filepath)
             self.transcriber_thread.new_text.connect(self._update_text_area)
@@ -407,7 +433,6 @@ class TranscriptionWindow(QWidget):
             self.transcription_active = True
             self.transcription_status_changed.emit(True)
             self.text_area.clear()
-            qtextedit_buffer = ""
             self._already_stopped = False
 
         except Exception as e:
@@ -417,7 +442,6 @@ class TranscriptionWindow(QWidget):
         progress.close()
 
     def _stop_transcription(self):
-        global qtextedit_buffer
         if self._already_stopped:
             return
         self._already_stopped = True
@@ -431,8 +455,6 @@ class TranscriptionWindow(QWidget):
         self.transcription_status_changed.emit(False)
         self._prompt_save_or_discard()
         
-        qtextedit_buffer = ""
-
     def _on_transcription_finished(self):
         self._stop_transcription()
         
@@ -484,7 +506,7 @@ class TranscriptionWindow(QWidget):
         if self.transcription_active and qtextedit_buffer.strip(): self._update_text_area(qtextedit_buffer, is_partial=True)
 
     def _prompt_save_or_discard(self):
-        global transcripcion, qtextedit_buffer, shared_audio_data
+        global shared_audio_data
         
         has_transcription = self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)
         has_audio = self.current_audio_filepath and os.path.exists(self.current_audio_filepath)
@@ -508,7 +530,6 @@ class TranscriptionWindow(QWidget):
                                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             save_audio = (reply_audio == QMessageBox.Yes)
             
-            # SOLUCIÓN: Si se guarda el audio, preguntar si se quiere compartir
             if save_audio:
                 reply_share = QMessageBox.question(self, "Compartir Audio",
                                                    "¿Deseas compartir este audio con los usuarios conectados a la web?",
@@ -520,7 +541,6 @@ class TranscriptionWindow(QWidget):
                     shared_audio_data['available'] = True
                     print(f"Audio listo para compartir: {shared_audio_data}")
 
-        # Si no se comparte, asegurarse de que el estado esté limpio
         if not share_audio:
             shared_audio_data.clear()
 
@@ -544,6 +564,7 @@ class TranscriptionWindow(QWidget):
         
         self.current_transcription_filepath = None
         self.current_audio_filepath = None
+        # SOLUCIÓN: El reseteo de 'transcripcion' se movió a _start_transcription()
 
     def closeEvent(self, event):
         if self.ngrok_tunnel:

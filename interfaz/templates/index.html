@@ -161,6 +161,31 @@
         background: var(--accent-gradient);
         color: #fff;
       }
+
+      /* --- INICIO DE NUEVOS ESTILOS PARA EL CONTADOR --- */
+      #user-counter {
+        width: auto;
+        padding: 0 1rem;
+        gap: 0.6rem;
+        cursor: default;
+        background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+        color: var(--accent-color);
+      }
+      #user-counter:hover {
+        transform: none;
+        background: color-mix(in srgb, var(--accent-color) 15%, transparent);
+        color: var(--accent-color);
+      }
+      #user-count-number {
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: #1e8746; /* Verde oscuro */
+      }
+      body.dark-theme #user-count-number {
+        color: #28a745; /* Verde más brillante para tema oscuro */
+      }
+      /* --- FIN DE NUEVOS ESTILOS PARA EL CONTADOR --- */
+
       .text-area-wrapper {
         position: relative;
         margin-bottom: 0.25rem;
@@ -848,6 +873,12 @@
       <header class="main-header">
         <h1><i class="fas fa-microphone-alt"></i> STTVAR</h1>
         <div class="header-buttons">
+          <!-- --- INICIO DEL NUEVO ELEMENTO HTML --- -->
+          <div id="user-counter" class="icon-button hidden" title="Usuarios Conectados">
+            <i class="fas fa-users"></i>
+            <span id="user-count-number">1</span>
+          </div>
+          <!-- --- FIN DEL NUEVO ELEMENTO HTML --- -->
           <button id="chatToggleBtn" class="icon-button" title="Chat Global">
             <i class="fas fa-comments"></i>
           </button>
@@ -855,6 +886,7 @@
             id="notesToggleBtn"
             class="icon-button"
             title="Mostrar/Ocultar Apuntes"
+            
           >
             <i class="fas fa-clipboard"></i>
           </button>
@@ -897,7 +929,6 @@
             <button class="quick-action-btn" onclick="quickAction('correct')">
               <i class="fas fa-check-double"></i> Corregir
             </button>
-            <!-- SOLUCIÓN: Botón de descarga de audio, deshabilitado por defecto -->
             <button id="downloadAudioBtn" class="quick-action-btn" disabled>
                 <i class="fas fa-volume-up"></i> Descargar Audio
             </button>
@@ -1232,7 +1263,12 @@
         confirmExportBtn: document.getElementById('confirmExportBtn'),
         acumuladoCounter: document.getElementById('acumulado-counter'),
         notesCounter: document.getElementById('notes-counter'),
-        downloadAudioBtn: document.getElementById('downloadAudioBtn'), // SOLUCIÓN: Referencia al nuevo botón
+        downloadAudioBtn: document.getElementById('downloadAudioBtn'),
+        
+        // --- INICIO DE NUEVAS REFERENCIAS A ELEMENTOS ---
+        userCounter: document.getElementById('user-counter'),
+        userCountNumber: document.getElementById('user-count-number'),
+        // --- FIN DE NUEVAS REFERENCIAS A ELEMENTOS ---
         
         zenModeContainer: document.getElementById('zen-mode-container'),
         zenSubtitulo: document.getElementById('zen-subtitulo'),
@@ -1270,7 +1306,19 @@
       const source = new EventSource(`/stream?client_id=${clientId}`);
       source.onmessage = event => {
         const payload = JSON.parse(event.data);
-        if (payload.type === 'transcript') {
+
+        // --- INICIO DE NUEVA LÓGICA JAVASCRIPT ---
+        if (payload.type === 'system_info') {
+          // Actualizamos el contador de usuarios
+          const userCount = payload.data.user_count;
+          if (elements.userCountNumber) {
+            elements.userCountNumber.textContent = userCount;
+            elements.userCounter.classList.remove('hidden');
+          }
+        } 
+        // --- FIN DE NUEVA LÓGICA JAVASCRIPT ---
+        
+        else if (payload.type === 'transcript') {
           const data = payload.data;
           elements.subtitulo.textContent = data.subtitulo;
           elements.acumulado.textContent = data.acumulado;
@@ -1332,7 +1380,7 @@
         } else {
             elements.chatCurrentUser.textContent = '';
             elements.chatNamePrompt.classList.remove('hidden');
-            elements.chatMessageArea.add('hidden');
+            elements.chatMessageArea.classList.add('hidden');
             elements.chatUsernameInput.focus();
         }
       }
@@ -1369,7 +1417,7 @@
         fetch(`/ask_ai/${clientId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
             .then(res => { if (!res.ok) throw new Error("Error en servidor"); updateStatus("Pregunta enviada", "success"); })
             .catch(err => { updateStatus("Error al enviar pregunta a la IA", "error"); console.error(err); })
-            .finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.add('hidden'); });
+            .finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.classList.add('hidden'); });
         if (!customPrompt) elements.aiQuestion.value = "";
       }
 
@@ -1378,7 +1426,6 @@
       function updateStatus(e,t="normal",n=3e3){clearTimeout(statusTimeout),elements.status.textContent=e,elements.status.className=`status visible ${t}`,statusTimeout=setTimeout(()=>elements.status.classList.remove("visible","success","error"),n)}
       function makeRequest(e,t,n){fetch(e,{method:"POST"}).then(res=>res.ok||(n?updateStatus(n,"error"):0))}
 
-      // SOLUCIÓN: Función para comprobar la disponibilidad del audio y actualizar el botón
       function checkAudioStatus() {
         fetch('/audio_status')
             .then(res => res.json())
@@ -1386,14 +1433,13 @@
                 if (data.available) {
                     elements.downloadAudioBtn.disabled = false;
                     elements.downloadAudioBtn.title = `Descargar ${data.filename}`;
-                    // Asignar el evento onclick para que redirija a la ruta de descarga
                     elements.downloadAudioBtn.onclick = () => {
                         window.location.href = '/download_audio';
                     };
                 } else {
                     elements.downloadAudioBtn.disabled = true;
                     elements.downloadAudioBtn.title = 'Ningún audio compartido para descargar';
-                    elements.downloadAudioBtn.onclick = null; // Quitar el evento
+                    elements.downloadAudioBtn.onclick = null;
                 }
             })
             .catch(err => {
@@ -1405,9 +1451,8 @@
 
       document.addEventListener('DOMContentLoaded', () => { 
         updateStatus("Listo", "success", 1500);
-        // SOLUCIÓN: Iniciar la comprobación periódica del estado del audio
-        checkAudioStatus(); // Comprobar una vez al cargar la página
-        setInterval(checkAudioStatus, 3000); // Comprobar cada 3 segundos
+        checkAudioStatus();
+        setInterval(checkAudioStatus, 3000);
       });
       
       elements.chatToggleBtn.addEventListener('click', () => { elements.chatModalOverlay.classList.add('active'); initializeChat(); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; });
