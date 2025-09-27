@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyecto STTVAR - Presentación Definitiva</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;900&family=Inter:wght@400;500;600&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <style>
     :root {
@@ -44,10 +43,14 @@
         overflow-x: hidden;
         transition: background-color 0.4s ease, color 0.4s ease;
     }
-    body.lightbox-active { overflow: hidden; }
+    body.lightbox-active, body.modal-active { overflow: hidden; }
     
     .cursor { display: none; position: fixed; width: 20px; height: 20px; border-radius: 50%; background: var(--color-accent-start); opacity: 0.5; pointer-events: none; transform: translate(-50%, -50%); z-index: 9999; transition: width 0.3s, height 0.3s, opacity 0.3s; }
     .cursor-glow { display: none; position: fixed; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, var(--color-glow) 0%, transparent 70%); pointer-events: none; transform: translate(-50%, -50%); z-index: 9998; }
+    body.modal-active .cursor,
+    body.modal-active .cursor-glow {
+        display: none !important;
+    }
     @media (pointer: fine) { body:hover .cursor, body:hover .cursor-glow { display: block; } a:hover ~ .cursor, button:hover ~ .cursor, .card:hover ~ .cursor, .bento-card:hover ~ .cursor { width: 40px; height: 40px; opacity: 0.2; } }
 
     .background-aurora { 
@@ -64,56 +67,13 @@
     #particles-js { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: -1; transition: opacity 0.5s ease; }
     body.light-mode #particles-js { opacity: 0; pointer-events: none; }
     
-    /* === INICIO: NUEVO FONDO ANIMADO PARA MODO CLARO === */
-    .light-mode-bg {
-        display: block; /* Siempre está en el DOM */
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-        z-index: -2;
-        opacity: 0; /* Oculto por defecto */
-        transition: opacity 0.5s ease-in-out;
-    }
-    body.light-mode .light-mode-bg {
-        opacity: 1; /* Se muestra en modo claro */
-    }
-    .light-mode-bg::before,
-    .light-mode-bg::after {
-        content: '';
-        position: absolute;
-        width: 60vw;
-        height: 60vw;
-        min-width: 400px;
-        min-height: 400px;
-        border-radius: 50%;
-        filter: blur(100px);
-        opacity: 0.15; /* Sutil pero visible */
-        will-change: transform;
-    }
-    .light-mode-bg::before {
-        background: radial-gradient(circle, var(--color-accent-start), transparent 60%);
-        top: -20%;
-        left: -20%;
-        animation: moveBlob1 30s infinite alternate ease-in-out;
-    }
-    .light-mode-bg::after {
-        background: radial-gradient(circle, var(--color-accent-end), transparent 60%);
-        bottom: -20%;
-        right: -20%;
-        animation: moveBlob2 35s infinite alternate ease-in-out -5s;
-    }
-    @keyframes moveBlob1 {
-        from { transform: translate(0, 0) rotate(0deg); }
-        to { transform: translate(10vw, 20vh) rotate(180deg); }
-    }
-    @keyframes moveBlob2 {
-        from { transform: translate(0, 0) rotate(0deg); }
-        to { transform: translate(-15vw, -10vh) rotate(-180deg); }
-    }
-    /* === FIN: NUEVO FONDO ANIMADO === */
+    .light-mode-bg { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; overflow: hidden; z-index: -2; opacity: 0; transition: opacity 0.5s ease-in-out; }
+    body.light-mode .light-mode-bg { opacity: 1; }
+    .light-mode-bg::before, .light-mode-bg::after { content: ''; position: absolute; width: 60vw; height: 60vw; min-width: 400px; min-height: 400px; border-radius: 50%; filter: blur(100px); opacity: 0.15; will-change: transform; }
+    .light-mode-bg::before { background: radial-gradient(circle, var(--color-accent-start), transparent 60%); top: -20%; left: -20%; animation: moveBlob1 30s infinite alternate ease-in-out; }
+    .light-mode-bg::after { background: radial-gradient(circle, var(--color-accent-end), transparent 60%); bottom: -20%; right: -20%; animation: moveBlob2 35s infinite alternate ease-in-out -5s; }
+    @keyframes moveBlob1 { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(10vw, 20vh) rotate(180deg); } }
+    @keyframes moveBlob2 { from { transform: translate(0, 0) rotate(0deg); } to { transform: translate(-15vw, -10vh) rotate(-180deg); } }
 
     .container { width: 90%; max-width: 1100px; margin: 0 auto; padding: 100px 20px; position: relative; z-index: 1; }
     section { padding-top: 100px; }
@@ -269,6 +229,83 @@
     .fade-in { opacity: 0; transform: translateY(30px); filter: blur(5px); transition: opacity 0.6s ease-out, transform 0.6s ease-out, filter 0.6s ease-out; }
     .fade-in.visible { opacity: 1; transform: translateY(0); filter: blur(0); }
     
+    /* ESTILOS DEL MODAL DE DEMO */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .modal-content {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--border-radius-lg);
+        width: 100%;
+        max-width: 1400px;
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 50px var(--shadow-color);
+        transform: scale(0.9);
+        transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        overflow: hidden;
+    }
+    .modal-overlay.active .modal-content {
+        transform: scale(1);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 25px;
+        border-bottom: 1px solid var(--color-border);
+        flex-shrink: 0;
+    }
+    .modal-header h3 {
+        margin-bottom: 0;
+        font-size: 1.2rem;
+    }
+    .modal-close-btn {
+        background: none;
+        border: none;
+        color: var(--color-secondary);
+        font-size: 2rem;
+        font-weight: 300;
+        line-height: 1;
+        cursor: pointer;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+    .modal-close-btn:hover {
+        color: var(--color-primary);
+        transform: rotate(90deg);
+    }
+    .modal-body {
+        flex-grow: 1;
+        padding: 0;
+        overflow: hidden;
+    }
+    #demo-iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
     @media screen and (max-width: 992px) {
         .hero-content { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
         .hero-text { text-align: center; order: 2; display: flex; flex-direction: column; align-items: center; }
@@ -278,7 +315,6 @@
         .hero-visual { order: 1; }
         .hero-visual .carousel-container { transform: none; }
     }
-
     @media screen and (max-width: 1024px) { .bento-grid { grid-template-columns: repeat(2, 1fr); } .bento-item:nth-child(n) { grid-column: span 1; } .bento-item:nth-child(1), .bento-item:nth-child(5) { grid-column: span 2; } }
     @media screen and (max-width: 768px) { .nav-links { position: fixed; top: 0; right: 0; width: 100%; height: 100%; background-color: var(--color-background); flex-direction: column; align-items: center; justify-content: center; gap: 40px; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); z-index: 1001; } .nav-links.active { transform: translateX(0); } .nav-links a { font-size: 1.5rem; } .nav-toggle { display: block; z-index: 1002;} .architecture-diagram { flex-direction: column; } .diagram-arrow { transform: rotate(90deg); margin: 10px 0; } .timeline::after { left: 9px; } .timeline-item { width: 100%; padding-left: 50px; padding-right: 0; } .timeline-item.right { left: 0; } .timeline-item.left::after, .timeline-item.right::after { left: 0; } .cta-buttons { flex-direction: column; align-items: stretch; } .btn { width: 100%; text-align: center; } .lightbox-nav { display: none; } .bento-grid, .bento-item:nth-child(n) { grid-template-columns: 1fr; grid-column: span 1; grid-row: span 1; } }
 </style>
@@ -347,7 +383,7 @@
             </p>
             <div class="cta-buttons">
                 <a href="https://github.com/LucasJS28/STTVAR" target="_blank" class="btn btn-primary"> <i class="fab fa-github"></i><span>Ver en GitHub</span></a>
-                <a href="#caracteristicas" class="btn btn-secondary"><span>Ver Características</span></a>
+                <button id="open-demo-modal" class="btn btn-secondary"><span><i class="fas fa-play-circle"></i> Iniciar Ejemplo</span></button>
             </div>
             <div class="creator-credit">
                 Creado por
@@ -443,35 +479,40 @@
     </div>
 </div>
 
+<div id="demo-modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Demostración Interactiva de STTVAR</h3>
+            <button id="close-demo-modal" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <iframe id="demo-iframe" title="Demostración de STTVAR" srcdoc="<p style='text-align:center; padding: 2rem; color: white;'>Cargando demostración...</p>" frameborder="0"></iframe>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         
-        // --- INICIO: CÓDIGO AÑADIDO PARA ANIMACIÓN DE ESCRITURA ---
         const mainTitle = document.querySelector('.main-title');
         const blinkingCursor = document.querySelector('.title-blinking-cursor');
-
         if (mainTitle && blinkingCursor) {
             const textToType = mainTitle.textContent;
-            mainTitle.textContent = ''; // Limpia el texto inicial
-            blinkingCursor.style.display = 'none'; // Oculta el cursor al principio
-
+            mainTitle.textContent = ''; 
+            blinkingCursor.style.display = 'none';
             let i = 0;
             function typeWriter() {
                 if (i < textToType.length) {
                     mainTitle.textContent += textToType.charAt(i);
                     i++;
-                    setTimeout(typeWriter, 200); // Velocidad de escritura (en ms)
+                    setTimeout(typeWriter, 200);
                 } else {
-                    blinkingCursor.style.display = 'block'; // Muestra el cursor al terminar
+                    blinkingCursor.style.display = 'block';
                 }
             }
-
-            // Inicia la animación después de que la animación de entrada del contenedor comience
-            setTimeout(typeWriter, 500); // Retraso para empezar a escribir
+            setTimeout(typeWriter, 500);
         }
-        // --- FIN: CÓDIGO AÑADIDO ---
-
 
         const body = document.body;
         const themeToggle = document.getElementById('theme-toggle');
@@ -659,6 +700,113 @@
             }
         }
         if (!body.classList.contains('light-mode')) { initParticles(); }
+        
+        // --- LÓGICA DEL MODAL DE DEMOSTRACIÓN ---
+        const openDemoModalBtn = document.getElementById('open-demo-modal');
+        const demoModalOverlay = document.getElementById('demo-modal-overlay');
+        const closeDemoModalBtn = document.getElementById('close-demo-modal');
+        const demoIframe = document.getElementById('demo-iframe');
+
+        // Contenido completo de la demo, con los backticks escapados para que funcione dentro de un template literal
+        const demoHtmlContent = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>STTVAR - Interfaz Profesional (DEMO)</title>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet" />
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+                <style>
+                    :root{--bg-color:#f8f9fa;--text-color:#212529;--container-bg:#ffffff;--border-color:#dee2e6;--input-bg:#f1f3f5;--shadow-color-light:rgba(0,0,0,0.05);--shadow-color-heavy:rgba(0,0,0,0.1);--accent-color:#007bff;--accent-gradient:linear-gradient(135deg,#007bff,#17a2b8);--accent-gradient-hover:linear-gradient(135deg,#17a2b8,#007bff);--subtitle-color:#0056b3;--border-radius:12px;--transition-speed:0.2s}.dark-theme{--bg-color:#121212;--text-color:#e9ecef;--container-bg:#1e1e1e;--border-color:#495057;--input-bg:#2c2c2c;--shadow-color-light:rgba(0,0,0,0.2);--shadow-color-heavy:rgba(0,0,0,0.4);--subtitle-color:#80bfff}*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Inter",sans-serif;background-color:var(--bg-color);color:var(--text-color);min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:2rem 1rem;transition:background-color var(--transition-speed),color var(--transition-speed)}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background-color:var(--border-color);border-radius:10px;border:2px solid transparent;background-clip:content-box}::-webkit-scrollbar-thumb:hover{background-color:var(--subtitle-color)}.container{max-width:900px;width:100%;background-color:var(--container-bg);border-radius:var(--border-radius);padding:2.5rem;box-shadow:0 8px 32px var(--shadow-color-light);border:1px solid var(--border-color);transition:all var(--transition-speed)}.notes-active .container{max-width:1400px}.main-content{display:grid;grid-template-columns:1fr;gap:2rem;transition:grid-template-columns var(--transition-speed)}.notes-active .main-content{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.main-column{min-width:0;display:flex;flex-direction:column}#notes-wrapper{display:none}.notes-active #notes-wrapper{display:flex;flex-direction:column;animation:slideIn 0.5s ease-out}@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}.main-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2.5rem;gap:1rem;flex-wrap:wrap}h1{font-family:"Poppins",sans-serif;font-size:clamp(1.5rem,4vw,2rem);display:flex;align-items:center;gap:.8rem;letter-spacing:-1px;margin:0}h1 .logo-icon{color:var(--accent-color);transition:color var(--transition-speed);width:1.2em;height:1.2em}@keyframes pulse{0%,100%{transform:scaleY(.2)}50%{transform:scaleY(1)}}.soundwave-bar{fill:currentColor;transform-origin:bottom;animation:pulse 1.5s infinite ease-in-out}.soundwave-bar:nth-child(2){animation-delay:-.2s}.soundwave-bar:nth-child(3){animation-delay:-.4s}.soundwave-bar:nth-child(4){animation-delay:-.6s}.header-controls{display:flex;align-items:center;gap:.5rem}#user-counter{display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:500;color:var(--text-color);opacity:.7;padding:.4rem .8rem;background-color:var(--input-bg);border-radius:20px;transition:all var(--transition-speed)}#user-count-number{font-weight:700;min-width:12px;text-align:center}.count-update{animation:pop-in .4s ease}@keyframes pop-in{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}.header-buttons{display:flex;gap:.5rem}.icon-button{position:relative;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;border:1px solid transparent;background:transparent;color:var(--text-color);cursor:pointer;opacity:.7;transition:all var(--transition-speed)}.icon-button:hover{opacity:1;background:var(--input-bg);transform:scale(1.1);color:var(--accent-color)}.unread-badge{position:absolute;top:0;right:0;background-color:var(--accent-color);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--container-bg);transform:scale(0);transition:transform .3s cubic-bezier(.18,.89,.32,1.28)}.unread-badge:not(.hidden){transform:scale(1)}.text-area-wrapper{position:relative;display:flex;flex-direction:column;flex-grow:1}#subtitulo,#acumulado,#ai_response,#notes-area{padding:1.25rem;border-radius:var(--border-radius);border:1px solid var(--border-color);background-color:var(--bg-color);color:var(--text-color);transition:all var(--transition-speed)}#subtitulo{font-size:clamp(1.2rem,3vw,1.6rem);font-weight:600;color:var(--subtitle-color);min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center;margin-bottom:1.5rem;line-height:1.4;background-color:var(--input-bg);text-shadow:0 1px 2px var(--shadow-color-light)}#acumulado,#ai_response,#notes-area{min-height:150px;overflow-y:auto;white-space:pre-wrap;line-height:1.7;font-size:1rem;flex-grow:1}#ai_response{margin-top:1.5rem}.counter{font-size:.8rem;color:var(--text-color);opacity:.6;text-align:right;padding:.25rem .5rem 1.5rem;height:1em}#notes-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}#notes-title{font-size:1.25rem;font-weight:600;color:var(--subtitle-color)}.hidden{display:none!important}.copy-button{position:absolute;top:.8rem;right:.8rem;width:32px;height:32px;background-color:var(--container-bg);color:var(--text-color);border:1px solid var(--border-color);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.3;transition:all var(--transition-speed);z-index:10;font-size:.8rem}.text-area-wrapper:hover .copy-button{opacity:.7}.copy-button:hover{opacity:1;transform:scale(1.1);background-color:var(--input-bg)}.copy-button .fa-check{color:#28a745}.quick-actions-section{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.75rem;padding:1.5rem 0}.quick-action-btn{padding:.6rem .5rem;font-size:.8rem;font-weight:600;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);border-radius:8px;cursor:pointer;transition:all var(--transition-speed);display:flex;align-items:center;justify-content:center;gap:.5rem}.quick-action-btn:hover:not(:disabled){background:var(--accent-color);color:#fff;border-color:transparent;transform:translateY(-2px);box-shadow:0 4px 15px var(--shadow-color-heavy)}.quick-action-btn:disabled{opacity:.5;cursor:not-allowed}.question-section{display:flex;gap:.75rem;align-items:center;margin-top:1.5rem}.ai-question-wrapper{position:relative;flex-grow:1}#ai_question{width:100%;padding:.8rem 3rem .8rem 1rem;font-size:1rem;border-radius:8px;background:var(--input-bg);color:var(--text-color);border:1px solid var(--border-color);transition:all var(--transition-speed)}#ai_question:focus{border-color:var(--accent-color);background-color:var(--container-bg)}#questionHistoryBtn{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:32px;height:32px;font-size:.9rem}#sendQuestion{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.25rem;font-size:.9rem;font-weight:600;color:#fff;background:var(--accent-gradient);border:none;border-radius:8px;cursor:pointer;transition:all var(--transition-speed);box-shadow:0 4px 15px var(--shadow-color-light)}#sendQuestion:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow-color-heavy);background:var(--accent-gradient-hover)}#status{font-size:.8rem;text-align:center;margin-top:1.5rem;padding:.4rem 1rem;border-radius:8px;background-color:var(--input-bg);border:1px solid transparent;transition:all var(--transition-speed);opacity:0}.status.visible{opacity:1}.status.success{border-color:#28a745;color:#28a745}.status.error{border-color:#dc3545;color:#dc3545}#zen-mode-container{position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:#121212;color:#e9ecef;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:2000;opacity:0;visibility:hidden;transition:opacity var(--transition-speed)}body.zen-active #zen-mode-container{opacity:1;visibility:visible}#zen-subtitulo{font-size:6vmin;font-weight:600;padding:2rem;text-align:center;line-height:1.4;max-width:90vw;color:#80bfff}#zen-acumulado{font-size:2.2vmin;line-height:1.6;text-align:left;white-space:pre-wrap;padding:2rem 3rem;max-width:90vw;max-height:85vh;overflow-y:auto;background-color:#1e1e1e;border-radius:var(--border-radius);border:1px solid #495057;display:none}body.zen-active.zen-view-acumulado #zen-subtitulo{display:none}body.zen-active.zen-view-acumulado #zen-acumulado{display:block}#zen-controls{position:absolute;top:1.5rem;right:1.5rem;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.5rem;background-color:#1e1e1e;padding:.5rem;border-radius:50px;border:1px solid #495057;box-shadow:0 4px 15px rgba(0,0,0,.2)}.zen-control-btn{background:transparent;color:#e9ecef;opacity:.7}.zen-control-btn:hover{opacity:1;background:#2c2c2c;transform:scale(1.1);color:#007bff}.popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);z-index:999;opacity:0;visibility:hidden;backdrop-filter:blur(4px);transition:opacity .3s,visibility .3s}.popup-overlay.active{opacity:1;visibility:visible}.popup-menu{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);background:var(--container-bg);border-radius:var(--border-radius);box-shadow:0 15px 40px var(--shadow-color-heavy);z-index:1000;width:90%;max-width:450px;max-height:85vh;display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:transform .3s,opacity .3s,visibility .3s}.popup-overlay.active .popup-menu{transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible}.popup-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;border-bottom:1px solid var(--border-color)}.popup-header h2{font-size:1.1rem;font-weight:600}.popup-content{display:flex;flex-direction:column;gap:1rem;padding:1.5rem;overflow-y:auto}.action-button{padding:.7rem 1.2rem;font-size:.9rem;border-radius:8px;border:none;background:var(--accent-gradient);color:#fff;cursor:pointer;font-weight:600;transition:all var(--transition-speed)}.action-button:hover{transform:translateY(-2px);box-shadow:0 4px 15px var(--shadow-color-light)}.action-button.secondary{background:var(--input-bg);color:var(--text-color);border:1px solid var(--border-color)}.action-button.secondary:hover{border-color:var(--accent-color);color:var(--accent-color)}#chatModalOverlay .popup-menu{max-width:400px;height:70vh;right:1rem;left:auto;top:auto;bottom:1rem;transform:translateY(calc(100% + 2rem))}#chatModalOverlay.active .popup-menu{transform:translateY(0)}@media (max-width:1024px){.notes-active .main-content{grid-template-columns:1fr}.container{padding:2rem 1.5rem}}@media (max-width:600px){body{padding:1rem .5rem}.container{padding:1.5rem 1rem}.main-header{justify-content:space-between}h1{font-size:1.3rem}.header-controls{order:3;width:100%;justify-content:center;margin-top:.5rem}.question-section{flex-direction:column;align-items:stretch}#chatModalOverlay .popup-menu{left:1rem;right:1rem;bottom:1rem;width:auto;max-width:none;height:75vh}}#questionHistoryPopup{position:absolute;bottom:105%;left:0;right:0;background-color:var(--container-bg);border:1px solid var(--border-color);border-radius:12px;box-shadow:0 8px 25px var(--shadow-color-heavy);z-index:100;max-height:250px;overflow-y:auto}.history-item{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1rem;cursor:pointer;transition:background-color var(--transition-speed);border-bottom:1px solid var(--border-color)}.history-item:last-child{border-bottom:none}.history-item:hover{background-color:var(--input-bg)}.history-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-grow:1;margin-right:1rem;font-size:.95rem}.history-delete-btn{background:none;border:none;color:#c53030;cursor:pointer;font-size:.9rem;flex-shrink:0;padding:.2rem}#previewModalOverlay .popup-menu,#sharedNotesModalOverlay .popup-menu{max-width:800px}#previewContent,#sharedNotesContent{background-color:var(--bg-color);border:1px solid var(--border-color);border-radius:8px;padding:1rem;max-height:50vh;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;font-size:1rem;line-height:1.6}.setting-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem}.setting-title{font-size:.8rem;font-weight:600;text-transform:uppercase;color:var(--text-color);opacity:.5;margin:1rem 0 .5rem;padding-bottom:.5rem;border-bottom:1px solid var(--border-color)}.select-wrapper{position:relative}.select-wrapper::after{content:"\\f078";font-family:"Font Awesome 6 Free";font-weight:900;position:absolute;top:50%;right:1rem;transform:translateY(-50%);pointer-events:none;opacity:.5}.popup-content select,.popup-content input[type=text]{width:100%;padding:.8rem 1rem;font-size:.9rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);-webkit-appearance:none;appearance:none}.popup-footer{padding:1rem 1.5rem;border-top:1px solid var(--border-color);display:flex;gap:1rem;justify-content:flex-end}.switch{position:relative;display:inline-block;width:44px;height:24px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:var(--border-color);transition:.4s;border-radius:24px}.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background-color:#fff;transition:.4s;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2)}input:checked+.slider{background-color:var(--accent-color)}input:checked+.slider:before{transform:translateX(20px)}.chat-message{padding:.6rem 1rem;border-radius:18px;max-width:85%;line-height:1.5;word-wrap:break-word}.chat-message strong{display:block;font-size:.75rem;margin-bottom:.2rem;color:var(--accent-color);opacity:.8}#chat-messages{display:flex;flex-direction:column;gap:.75rem;flex-grow:1}.chat-message.other{background-color:var(--input-bg);align-self:flex-start;border-bottom-left-radius:4px}.chat-message.own{background:var(--accent-color);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}.chat-message.own strong{color:rgba(255,255,255,.8)}#chat-message-area{display:flex;align-items:center;gap:.75rem}
+                    #demo-notice-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.6);backdrop-filter:blur(5px);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:1;visibility:visible;transition:opacity .4s ease,visibility .4s ease}#demo-notice-overlay.hidden{opacity:0;visibility:hidden}#demo-notice-box{background-color:var(--container-bg);color:var(--text-color);padding:2rem 2.5rem;border-radius:var(--border-radius);max-width:550px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.2);border:1px solid var(--border-color);transform:scale(.95);opacity:0;animation:fadeInScaleUp .5s .2s forwards cubic-bezier(.18,.89,.32,1.28)}@keyframes fadeInScaleUp{to{transform:scale(1);opacity:1}}#demo-notice-box h2{font-family:"Poppins",sans-serif;font-size:1.5rem;color:var(--subtitle-color);margin-bottom:1.5rem;display:flex;align-items:center;justify-content:center;gap:.75rem}#demo-notice-box p{font-size:1rem;line-height:1.7;margin-bottom:1rem}#demo-notice-box p:last-of-type{margin-bottom:2rem}#demo-notice-box strong{color:var(--subtitle-color);font-weight:600}#close-demo-notice{padding:.8rem 1.5rem;font-size:1rem;font-weight:600;color:#fff;background:var(--accent-gradient);border:none;border-radius:8px;cursor:pointer;transition:all var(--transition-speed);box-shadow:0 4px 15px var(--shadow-color-light)}#close-demo-notice:hover{transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow-color-heavy);background:var(--accent-gradient-hover)}
+                <\/style>
+            </head>
+            <body>
+                <div id="demo-notice-overlay">
+                    <div id="demo-notice-box">
+                      <h2><i class="fas fa-info-circle"></i> AVISO DE DEMOSTRACIÓN</h2>
+                      <p>
+                        Este proyecto es una <strong>simulación</strong> de la interfaz principal. El contenido es generado automáticamente para fines de demostración.
+                      </p>
+                      <p>
+                        En la versión completa, la transcripción se obtiene en tiempo real desde nuestra <strong>aplicación de escritorio</strong>, que se vincula directamente con esta interfaz web.
+                      </p>
+                      <button id="close-demo-notice">Entendido</button>
+                    </div>
+                </div>
+
+                <div class="container">
+                  <header class="main-header"><h1><svg class="logo-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect class="soundwave-bar" x="2" y="6" width="4" height="12" rx="2"></rect><rect class="soundwave-bar" x="8" y="2" width="4" height="20" rx="2"></rect><rect class="soundwave-bar" x="14" y="4" width="4" height="16" rx="2"></rect><rect class="soundwave-bar" x="20" y="8" width="4" height="8" rx="2"></rect></svg> STTVAR</h1><div class="header-controls"><div id="user-counter" title="Usuarios Conectados"><i class="fas fa-users"></i> <span id="user-count-number">1</span></div><div class="header-buttons"><button id="chatToggleBtn" class="icon-button" title="Chat Global"><i class="fas fa-comments"></i> <span id="unread-badge" class="unread-badge hidden">0</span></button> <button id="notesToggleBtn" class="icon-button" title="Mostrar/Ocular Apuntes"><i class="fas fa-clipboard"></i></button> <button id="zenModeBtn" class="icon-button" title="Modo Pantalla Completa"><i class="fas fa-expand"></i></button> <button id="themeToggle" class="icon-button" title="Cambiar tema"><i class="fas fa-moon"></i></button> <button id="settingsBtn" class="icon-button" title="Opciones"><i class="fas fa-cog"></i></button></div></div></header>
+                  <div class="main-content">
+                    <div class="main-column">
+                      <div id="subtitulo">Esperando transmisión...</div>
+                      <div class="text-area-wrapper"><div id="acumulado"></div><button class="copy-button" onclick="copyText('acumulado', this)" title="Copiar transcripción"><i class="fas fa-copy"></i><i class="fas fa-check hidden"></i></button></div>
+                      <div id="acumulado-counter" class="counter"></div>
+                      <div class="quick-actions-section"><button class="quick-action-btn" onclick="quickAction('summarize')"><i class="fas fa-align-left"></i> Resumir</button> <button class="quick-action-btn" onclick="quickAction('keywords')"><i class="fas fa-key"></i> Puntos Clave</button> <button class="quick-action-btn" onclick="quickAction('correct')"><i class="fas fa-check-double"></i> Corregir</button> <button id="downloadAudioBtn" class="quick-action-btn" disabled><i class="fas fa-volume-up"></i> Descargar Audio</button></div>
+                      <div class="question-section">
+                        <div class="ai-question-wrapper"><input type="text" id="ai_question" placeholder="Haz una pregunta sobre el texto..."/> <button id="questionHistoryBtn" class="icon-button" title="Historial de preguntas"><i class="fas fa-history"></i></button><div id="questionHistoryPopup" class="hidden"></div></div>
+                        <button id="sendQuestion"><span class="button-content"><i class="fas fa-paper-plane"></i></span> <span class="button-loader hidden"><i class="fas fa-spinner fa-spin"></i></span></button>
+                      </div>
+                      <div id="ai_response" class="hidden"></div>
+                      <div class="status" id="status">Conectado</div>
+                    </div>
+                    <div id="notes-wrapper">
+                      <div id="notes-header">
+                        <h2 id="notes-title"><i class="fas fa-pencil-alt"></i> Mis Apuntes</h2>
+                        <div class="header-buttons"><button id="shareNotesBtn" class="icon-button" title="Compartir Apuntes en el Chat"><i class="fas fa-share-alt"></i></button> <button id="exportNotesBtn" class="icon-button" title="Exportar Apuntes"><i class="fas fa-save"></i></button></div>
+                      </div>
+                      <div class="text-area-wrapper"><textarea id="notes-area" placeholder="Escribe tus notas aquí..."></textarea> <button class="copy-button" onclick="copyText('notes-area', this)" title="Copiar apuntes"><i class="fas fa-copy"></i><i class="fas fa-check hidden"></i></button></div>
+                      <div id="notes-counter" class="counter"></div>
+                    </div>
+                  </div>
+                </div>
+                <div id="zen-mode-container"><div id="zen-controls"><button id="zen-font-decrease-btn" class="icon-button zen-control-btn" title="Disminuir Tamaño"><i class="fas fa-font" style="font-size: .8em;"></i>-</button> <button id="zen-font-increase-btn" class="icon-button zen-control-btn" title="Aumentar Tamaño"><i class="fas fa-font" style="font-size: .8em;"></i>+</button> <button id="zen-view-toggle-btn" class="icon-button zen-control-btn" title="Ver Texto Acumulado"><i class="fas fa-file-alt"></i></button> <button id="zen-close-btn" class="icon-button zen-control-btn" title="Cerrar"><i class="fas fa-compress"></i></button></div><div id="zen-subtitulo"></div><div id="zen-acumulado"></div></div>
+                <div class="popup-overlay" id="chatModalOverlay"><div class="popup-menu"><div class="popup-header"><h2><i class="fas fa-comments"></i> Chat Global<span id="chat-current-user"></span></h2><button id="closeChatBtn" class="icon-button"><i class="fas fa-times"></i></button></div><div class="popup-content" id="chat-messages" style="flex-grow: 1;"></div><div class="popup-content" style="padding-top: 1rem; border-top: 1px solid var(--border-color);"><div id="chat-name-prompt"><input type="text" id="chat-username-input" placeholder="Elige un nombre para el chat..." style="margin: 0;"/> <button id="chat-save-name-btn" class="action-button">Guardar y Entrar</button></div><div id="chat-message-area" class="hidden"><input type="text" id="chat-message-input" placeholder="Escribe un mensaje..." style="margin: 0; flex-grow:1;"/> <button id="chat-send-btn" class="action-button" title="Enviar Mensaje"><i class="fas fa-paper-plane"></i></button></div></div></div></div>
+                <div class="popup-overlay" id="settingsModalOverlay"><div class="popup-menu"><div class="popup-header"><h2><i class="fas fa-cog"></i> Opciones</h2><button id="closePopupBtn" class="icon-button"><i class="fas fa-times"></i></button></div><div class="popup-content"><div class="setting-title">General</div><div class="setting-item"><label for="autoScrollToggle">Scroll Automático</label><label class="switch"><input type="checkbox" id="autoScrollToggle" checked /><span class="slider"></span></label></div><div class="setting-title">Idiomas</div><label for="idioma">Idioma de Subtítulos</label><div class="select-wrapper"><select id="idioma"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div><label for="idiomaAcumulado" style="margin-top: 1rem;">Idioma de Transcripción</label><div class="select-wrapper"><select id="idiomaAcumulado"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div><div class="setting-title">Acciones</div><button id="clearTextBtn" class="action-button secondary"><i class="fas fa-eraser"></i> Limpiar Transcripción</button></div></div></div>
+                <div class="popup-overlay" id="sharedNotesModalOverlay"><div class="popup-menu"><div class="popup-header"><h2>Apuntes Compartidos por <span id="sharedNotesUser"></span></h2><button id="closeSharedNotesBtn" class="icon-button"><i class="fas fa-times"></i></button></div><div class="popup-content"><pre id="sharedNotesContent"></pre></div><div class="popup-footer"><button id="downloadSharedNotesTxtBtn" class="action-button secondary"><i class="fas fa-file-alt"></i> Descargar .txt</button> <button id="downloadSharedNotesDocxBtn" class="action-button"><i class="fas fa-file-word"></i> Descargar .docx</button></div></div></div>
+                <script>
+                    const{jsPDF}=window.jspdf,clientId=Math.random().toString(36).substr(2,9),clientState={isAutoScrollActive:!0,zenFontSize:6,questionHistory:[]};let unreadMessageCount=0;const elements={subtitulo:document.getElementById("subtitulo"),acumulado:document.getElementById("acumulado"),aiResponse:document.getElementById("ai_response"),status:document.getElementById("status"),aiQuestion:document.getElementById("ai_question"),sendQuestionBtn:document.getElementById("sendQuestion"),themeToggle:document.getElementById("themeToggle"),settingsModalOverlay:document.getElementById("settingsModalOverlay"),closePopupBtn:document.getElementById("closePopupBtn"),autoScrollToggle:document.getElementById("autoScrollToggle"),idiomaSelect:document.getElementById("idioma"),idiomaAcumuladoSelect:document.getElementById("idiomaAcumulado"),settingsBtn:document.getElementById("settingsBtn"),clearTextBtn:document.getElementById("clearTextBtn"),questionHistoryBtn:document.getElementById("questionHistoryBtn"),questionHistoryPopup:document.getElementById("questionHistoryPopup"),notesToggleBtn:document.getElementById("notesToggleBtn"),notesArea:document.getElementById("notes-area"),exportNotesBtn:document.getElementById("exportNotesBtn"),acumuladoCounter:document.getElementById("acumulado-counter"),notesCounter:document.getElementById("notes-counter"),downloadAudioBtn:document.getElementById("downloadAudioBtn"),userCounter:document.getElementById("user-counter"),userCountNumber:document.getElementById("user-count-number"),unreadBadge:document.getElementById("unread-badge"),zenModeContainer:document.getElementById("zen-mode-container"),zenSubtitulo:document.getElementById("zen-subtitulo"),zenAcumulado:document.getElementById("zen-acumulado"),zenModeBtn:document.getElementById("zenModeBtn"),zenCloseBtn:document.getElementById("zen-close-btn"),zenViewToggleBtn:document.getElementById("zen-view-toggle-btn"),zenFontIncreaseBtn:document.getElementById("zen-font-increase-btn"),zenFontDecreaseBtn:document.getElementById("zen-font-decrease-btn"),chatToggleBtn:document.getElementById("chatToggleBtn"),chatModalOverlay:document.getElementById("chatModalOverlay"),closeChatBtn:document.getElementById("closeChatBtn"),chatMessages:document.getElementById("chat-messages"),chatCurrentUser:document.getElementById("chat-current-user"),chatNamePrompt:document.getElementById("chat-name-prompt"),chatUsernameInput:document.getElementById("chat-username-input"),chatSaveNameBtn:document.getElementById("chat-save-name-btn"),chatMessageArea:document.getElementById("chat-message-area"),chatMessageInput:document.getElementById("chat-message-input"),chatSendBtn:document.getElementById("chat-send-btn"),shareNotesBtn:document.getElementById("shareNotesBtn"),sharedNotesModalOverlay:document.getElementById("sharedNotesModalOverlay"),closeSharedNotesBtn:document.getElementById("closeSharedNotesBtn"),sharedNotesUser:document.getElementById("sharedNotesUser"),sharedNotesContent:document.getElementById("sharedNotesContent"),downloadSharedNotesTxtBtn:document.getElementById("downloadSharedNotesTxtBtn"),downloadSharedNotesDocxBtn:document.getElementById("downloadSharedNotesDocxBtn"),demoNoticeOverlay:document.getElementById("demo-notice-overlay"),closeDemoNoticeBtn:document.getElementById("close-demo-notice")};let statusTimeout;const fakeTranscript=["Buenos días a todos y bienvenidos a esta demostración.","Hoy vamos a explorar las capacidades de la inteligencia artificial en tiempo real.","Como pueden ver, el sistema está transcribiendo mis palabras casi instantáneamente.","Esto es posible gracias a los avances en el procesamiento del lenguaje natural.","Podemos analizar grandes volúmenes de texto para extraer información clave.","Por ejemplo, la plataforma puede identificar temas, resumir contenido y responder preguntas.","Esto tiene aplicaciones en muchos campos: educación, negocios, accesibilidad...","Imaginen las posibilidades para reuniones, conferencias o clases en línea.","La precisión ha mejorado drásticamente en los últimos años.","Ahora, vamos a probar algunas de las funciones interactivas.","Pueden usar el panel de la derecha para hacer preguntas sobre el texto.","La IA analizará el contexto completo de la transcripción para responder.","Gracias por su atención, espero que encuentren útil esta herramienta."];let transcriptIndex=0,fakeAcumuladoText="",fakeUserCount=Math.floor(5*Math.random())+8,simulationIntervals=[];function runSimulation(){simulationIntervals.push(setInterval(()=>{if(transcriptIndex>=fakeTranscript.length)return void(elements.subtitulo.textContent="La transmisión de demostración ha finalizado.");const e=fakeTranscript[transcriptIndex];fakeAcumuladoText+=(fakeAcumuladoText?" ":"")+e,elements.subtitulo.textContent=e,elements.acumulado.textContent=fakeAcumuladoText,elements.zenSubtitulo.textContent=e,elements.zenAcumulado.textContent=fakeAcumuladoText,updateCounters("acumulado"),clientState.isAutoScrollActive&&(elements.acumulado.scrollTop=elements.acumulado.scrollHeight,elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight),transcriptIndex++},4e3)),simulationIntervals.push(setInterval(()=>{const e=.5<Math.random()?1:-1,t=Math.max(5,fakeUserCount+e);fakeUserCount=t,elements.userCountNumber.textContent!=fakeUserCount&&(elements.userCountNumber.textContent=fakeUserCount,elements.userCountNumber.classList.add("count-update"),setTimeout(()=>elements.userCountNumber.classList.remove("count-update"),400))},8e3));const e=["Ana","Carlos","Laura","David"],t=["Muy interesante esta función.","Estoy de acuerdo.","¿Se puede exportar el texto?","Sí, creo que hay un botón para eso.","¿Qué pasa si le pido un poema?","¡Inténtalo!","La transcripción es bastante precisa.","Me sorprende la velocidad."];let n=0;simulationIntervals.push(setInterval(()=>{const o={user:e[Math.floor(Math.random()*e.length)],message:t[n%t.length]};n++,renderChatMessage(o),elements.chatModalOverlay.classList.contains("active")||(unreadMessageCount++,elements.unreadBadge.textContent=9<unreadMessageCount?"9+":unreadMessageCount,elements.unreadBadge.classList.remove("hidden"))},12e3));let o=!1;simulationIntervals.push(setInterval(()=>{o=!o,elements.downloadAudioBtn.disabled=!o,o?(elements.downloadAudioBtn.title="Descargar audio_demo.mp3",elements.downloadAudioBtn.onclick=()=>{alert("Esta es una demostración. La descarga de audio no está activa.")}):elements.downloadAudioBtn.title=""},15e3))}function stopSimulation(){simulationIntervals.forEach(e=>clearInterval(e)),simulationIntervals=[]}function sendQuestion(e){const t=e||elements.aiQuestion.value.trim();if(!t)return void updateStatus("Por favor, escribe una pregunta.","error");const n=elements.sendQuestionBtn.querySelector(".button-content"),o=elements.sendQuestionBtn.querySelector(".button-loader");elements.sendQuestionBtn.disabled=!0,n.classList.add("hidden"),o.classList.remove("hidden"),elements.aiResponse.classList.remove("hidden"),elements.aiResponse.textContent="Procesando...",e||addQuestionToHistory(t),setTimeout(()=>{let e="Como modelo de lenguaje, mi análisis del texto proporcionado indica que la pregunta es relevante para el contexto actual. La respuesta se puede encontrar en los segmentos que discuten la tecnología y sus aplicaciones.";const a=t.toLowerCase();a.includes("resumir")||a.includes("resumen")?e="Resumen del texto: La presentación introduce una herramienta de transcripción en tiempo real impulsada por IA. Destaca su velocidad, precisión y funciones adicionales como resumir, extraer puntos clave y responder preguntas. Se mencionan sus aplicaciones en educación y negocios para mejorar la accesibilidad y la eficiencia en reuniones y conferencias.":a.includes("puntos clave")||a.includes("keywords")?e="Aquí están los puntos clave del texto:\\n\\n1.  **Transcripción en Tiempo Real:** La herramienta convierte la voz en texto casi instantáneamente.\\n2.  **Procesamiento de Lenguaje Natural:** Utiliza IA avanzada para analizar el contenido.\\n3.  **Funciones Interactivas:** Permite resumir, corregir y hacer preguntas sobre el texto.\\n4.  **Aplicaciones Amplias:** Es útil para educación, negocios y para mejorar la accesibilidad.\\n5.  **Alta Precisión:** La calidad de la transcripción ha mejorado significativamente.":a.includes("corregir")?e="El texto ha sido revisado en busca de errores gramaticales y parece estar bien estructurado. Una sugerencia podría ser variar el vocabulario en frases como 'Esto es posible gracias a...' para mayor dinamismo.":a.includes("nombre")&&(e="La herramienta se llama STTVAR, como se indica en el encabezado de la página."),elements.aiResponse.textContent=e,elements.sendQuestionBtn.disabled=!1,n.classList.remove("hidden"),o.classList.add("hidden")},2500),e||(elements.aiQuestion.value="")}function sendChatMessage(e){e.isNote?(updateStatus("Apuntes compartidos.","success"),renderChatMessage(e)):e.message?(elements.chatMessageInput.value="",renderChatMessage(e)):updateStatus("Error al enviar.","error"),elements.chatMessageInput.focus()}function makeRequest(e,t,n){console.log("Llamada simulada a: "+e),updateStatus("Opción cambiada (simulado).","success")}function renderChatMessage(e){const t=document.createElement("div"),n=localStorage.getItem("stttvar_username"),o=n&&e.user===n;t.classList.add("chat-message",o?"own":"other"),e.isNote?(t.innerHTML='<strong>Apuntes de '+(o?"ti":e.user)+'</strong><p style="font-style: italic; opacity: 0.8; margin-bottom: 0.5rem;">"Se ha compartido un conjunto de apuntes."</p><button class="action-button view-shared-notes-btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Ver</button>',t.querySelector(".view-shared-notes-btn").dataset.notesContent=e.content,t.querySelector(".view-shared-notes-btn").dataset.notesUser=e.user):(t.innerHTML="<strong></strong><p></p>",t.querySelector("strong").textContent=o?"Tú":e.user,t.querySelector("p").textContent=e.message);const a=elements.chatMessages.scrollHeight-elements.chatMessages.clientHeight<=elements.chatMessages.scrollTop+20;elements.chatMessages.appendChild(t),a&&(elements.chatMessages.scrollTop=elements.chatMessages.scrollHeight)}function initializeChat(){const e=localStorage.getItem("stttvar_username");e?(elements.chatCurrentUser.textContent="("+e+")",elements.chatNamePrompt.classList.add("hidden"),elements.chatMessageArea.classList.remove("hidden"),elements.chatMessageInput.focus()):(elements.chatCurrentUser.textContent="",elements.chatNamePrompt.classList.remove("hidden"),elements.chatMessageArea.classList.add("hidden"),elements.chatUsernameInput.focus())}function openSharedNotesModal(e,t){elements.sharedNotesUser.textContent=t,elements.sharedNotesContent.textContent=e,elements.sharedNotesModalOverlay.classList.add("active"),elements.downloadSharedNotesTxtBtn.onclick=()=>downloadFile(e,"txt","apuntes_de_"+t),elements.downloadSharedNotesDocxBtn.onclick=()=>downloadFile(e,"docx","apuntes_de_"+t)}function downloadFile(e,t,n){if(!e||!e.trim())return void updateStatus("No hay contenido para descargar.","error");if("txt"===t){const o=new Blob([e],{type:"text/plain;charset=utf-8"}),a=URL.createObjectURL(o),s=document.createElement("a");s.href=a,s.download=n+".txt",s.click(),URL.revokeObjectURL(a)}else"docx"===t&&alert("Función no implementada en esta demo. Normalmente generaría un archivo .docx")}function quickAction(e){const t=elements.acumulado.textContent;if(!t.trim())return void updateStatus("No hay texto para procesar.","error");sendQuestion({summarize:"Resume el texto:\\n\\n",keywords:"Extrae 5 puntos clave:\\n\\n",correct:"Corrige la gramática:\\n\\n"}[e]+t)}function addQuestionToHistory(e){clientState.questionHistory=clientState.questionHistory.filter(t=>t!==e),clientState.questionHistory.unshift(e),10<clientState.questionHistory.length&&clientState.questionHistory.pop(),localStorage.setItem("stttvar_q_history",JSON.stringify(clientState.questionHistory))}function updateStatus(e,t="normal",n=3e3){clearTimeout(statusTimeout),elements.status.textContent=e,elements.status.className="status visible "+t,statusTimeout=setTimeout(()=>elements.status.classList.remove("visible","success","error"),n)}function updateCounters(e){let t,n;if("acumulado"===e)t=elements.acumulado.textContent||"",n=elements.acumuladoCounter;else{if("notes"!==e)return;t=elements.notesArea.value||"",n=elements.notesCounter}const o=t.length,a=t.trim().split(/\\s+/).filter(e=>0<e.length);n.textContent = o + ' caracteres | ' + (""===t.trim()?0:a.length) + ' palabras'}function copyText(e,t){const n=document.getElementById(e),o="TEXTAREA"===n.tagName||"INPUT"===n.tagName?n.value:n.textContent;o&&o.trim()?navigator.clipboard.writeText(o).then(()=>{updateStatus("Copiado al portapeles.","success");const e=t.querySelector(".fa-copy"),n=t.querySelector(".fa-check");e&&n&&(e.classList.add("hidden"),n.classList.remove("hidden"),setTimeout(()=>{e.classList.remove("hidden"),n.classList.add("hidden")},2e3))}).catch(e=>{console.error("Error al copiar:",e),updateStatus("Error al copiar.","error")}):updateStatus("Nada que copiar.","error")}function applyZenFontSize(){elements.zenSubtitulo.style.fontSize = clientState.zenFontSize + 'vmin';elements.zenAcumulado.style.fontSize = Math.max(2.2,.4*clientState.zenFontSize) + 'vmin'}function toggleZenMode(){document.body.classList.toggle("zen-active"),document.body.classList.contains("zen-active")&&(document.body.classList.remove("zen-view-acumulado"),elements.zenViewToggleBtn.innerHTML='<i class="fas fa-file-alt"></i>',elements.zenViewToggleBtn.title="Ver Texto Acumulado",clientState.zenFontSize=6,applyZenFontSize())}document.addEventListener("DOMContentLoaded",()=>{updateStatus("Demo cargada","success",1500)}),elements.closeDemoNoticeBtn.addEventListener("click",()=>{elements.demoNoticeOverlay.classList.add("hidden"),runSimulation()}),elements.clearTextBtn.addEventListener("click",()=>{confirm("¿Seguro que quieres borrar la transcripción y las respuestas de la IA? Esto reiniciará la demostración.")&&(stopSimulation(),fakeAcumuladoText="",transcriptIndex=0,elements.acumulado.textContent="",elements.subtitulo.textContent="Esperando transmisión...",elements.aiResponse.textContent="",elements.aiResponse.classList.add("hidden"),updateCounters("acumulado"),updateStatus("Demostración reiniciada.","success"),runSimulation())}),elements.chatToggleBtn.addEventListener("click",()=>{elements.chatModalOverlay.classList.add("active"),initializeChat(),elements.chatMessages.scrollTop=elements.chatMessages.scrollHeight,unreadMessageCount=0,elements.unreadBadge.classList.add("hidden")}),elements.closeChatBtn.addEventListener("click",()=>elements.chatModalOverlay.classList.remove("active")),elements.chatSaveNameBtn.addEventListener("click",()=>{const e=elements.chatUsernameInput.value.trim();e?localStorage.setItem("stttvar_username",e):updateStatus("Introduce un nombre.","error"),initializeChat()}),elements.chatUsernameInput.addEventListener("keypress",e=>{"Enter"===e.key&&elements.chatSaveNameBtn.click()}),elements.chatSendBtn.addEventListener("click",()=>sendChatMessage({user:localStorage.getItem("stttvar_username"),message:elements.chatMessageInput.value.trim()})),elements.chatMessageInput.addEventListener("keypress",e=>{"Enter"===e.key&&(e.preventDefault(),elements.chatSendBtn.click())}),elements.shareNotesBtn.addEventListener("click",()=>{const e=localStorage.getItem("stttvar_username"),t=elements.notesArea.value.trim();e?t?sendChatMessage({user:e,isNote:!0,content:t}):updateStatus("No hay apuntes para compartir.","error"):(updateStatus("Define tu nombre en el chat para poder compartir.","error"),elements.chatToggleBtn.click())}),elements.chatMessages.addEventListener("click",e=>{const t=e.target.closest(".view-shared-notes-btn");t&&openSharedNotesModal(t.dataset.notesContent,t.dataset.notesUser)}),elements.closeSharedNotesBtn.addEventListener("click",()=>elements.sharedNotesModalOverlay.classList.remove("active")),elements.idiomaSelect.addEventListener("change",()=>makeRequest("/set_language/"+clientId+"/"+elements.idiomaSelect.value)),elements.idiomaAcumuladoSelect.addEventListener("change",()=>makeRequest("/set_language_acumulado/"+clientId+"/"+elements.idiomaAcumuladoSelect.value)),elements.themeToggle.addEventListener("click",()=>{document.body.classList.toggle("dark-theme");const e=document.body.classList.contains("dark-theme");elements.themeToggle.innerHTML=e?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'}),elements.settingsBtn.addEventListener("click",()=>elements.settingsModalOverlay.classList.add("active")),elements.closePopupBtn.addEventListener("click",()=>elements.settingsModalOverlay.classList.remove("active")),elements.sendQuestionBtn.addEventListener("click",()=>sendQuestion()),elements.aiQuestion.addEventListener("keypress",e=>{"Enter"===e.key&&sendQuestion()}),elements.notesToggleBtn.addEventListener("click",()=>document.body.classList.toggle("notes-active")),elements.zenModeBtn.addEventListener("click",toggleZenMode),elements.zenCloseBtn.addEventListener("click",toggleZenMode),elements.zenViewToggleBtn.addEventListener("click",()=>{document.body.classList.toggle("zen-view-acumulado");const e=document.body.classList.contains("zen-view-acumulado");elements.zenViewToggleBtn.innerHTML=e?'<i class="fas fa-quote-left"></i>':'<i class="fas fa-file-alt"></i>',elements.zenViewToggleBtn.title=e?"Ver Subtítulo":"Ver Transcripción",e&&(elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight)}),elements.zenFontIncreaseBtn.addEventListener("click",()=>{clientState.zenFontSize<15&&(clientState.zenFontSize+=.5,applyZenFontSize())}),elements.zenFontDecreaseBtn.addEventListener("click",()=>{2<clientState.zenFontSize&&(clientState.zenFontSize-=.5,applyZenFontSize())}),[elements.settingsModalOverlay,elements.chatModalOverlay,elements.sharedNotesModalOverlay].forEach(e=>{e.addEventListener("click",t=>{t.target===e&&e.classList.remove("active")})}),elements.notesArea.addEventListener("input",()=>updateCounters("notes")),elements.exportNotesBtn.addEventListener("click",()=>{const e=elements.notesArea.value;e.trim()?downloadFile(e,"txt","mis_apuntes"):updateStatus("No hay apuntes para exportar.","error")});
+                <\/script>
+            </body>
+            </html>
+        `;
+
+        let isDemoLoaded = false;
+        function loadDemo() {
+            if (!isDemoLoaded && demoIframe) {
+                demoIframe.srcdoc = demoHtmlContent;
+                isDemoLoaded = true;
+            }
+        }
+
+        if (openDemoModalBtn && demoModalOverlay && closeDemoModalBtn) {
+            openDemoModalBtn.addEventListener('click', () => {
+                loadDemo(); // Carga el contenido en el iframe la primera vez que se hace clic
+                demoModalOverlay.classList.add('active');
+                body.classList.add('modal-active');
+            });
+
+            const closeModal = () => {
+                demoModalOverlay.classList.remove('active');
+                body.classList.remove('modal-active');
+            };
+
+            closeDemoModalBtn.addEventListener('click', closeModal);
+            demoModalOverlay.addEventListener('click', (e) => {
+                if (e.target === demoModalOverlay) {
+                    closeModal();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && demoModalOverlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        }
     });
 </script>
 </body>
