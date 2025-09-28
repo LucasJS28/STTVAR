@@ -112,17 +112,10 @@
     transition: background-color 0.3s ease;
     border: 3px solid var(--container-bg);
   }
-  /* --- INICIO: CÓDIGO AÑADIDO --- */
   @media (min-width: 601px) {
-    #settingsBtn {
-      margin-right: 10px; /* Crea espacio para el punto */
-    }
-    #connection-status-indicator {
-      top: -6px; /* Sube el punto */
-      right: -2px; /* Lo mueve un poco a la derecha */
-    }
+    #settingsBtn { margin-right: 10px; }
+    #connection-status-indicator { top: -6px; right: -2px; }
   }
-  /* --- FIN: CÓDIGO AÑADIDO --- */
   #connection-status-indicator.connected {
     background-color: var(--status-connected);
     animation: pulse-green 2s infinite;
@@ -286,71 +279,83 @@ body.zen-active.zen-view-acumulado #zen-acumulado { display: block; }
   visibility: hidden;
   pointer-events: none;
 }
-.history-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1rem;
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
-  border-bottom: 1px solid var(--border-color);
-}
-.history-item:last-child {
-  border-bottom: none;
-}
-.history-item:hover {
-  background-color: var(--input-bg);
-}
-.history-item span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
-  margin-right: 1rem;
-  font-size: 0.95rem;
-}
-.history-delete-btn {
-  background: none;
-  border: none;
-  color: var(--text-color);
-  opacity: 0.4;
-  cursor: pointer;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-  padding: 0.3rem;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-speed);
-}
-.history-delete-btn:hover {
-  opacity: 1;
-  color: #c53030;
-  background-color: var(--input-bg);
-}
-.history-item-empty {
-  padding: 1rem;
-  text-align: center;
-  opacity: 0.6;
-  font-size: 0.9rem;
-}
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; cursor: pointer; transition: background-color var(--transition-speed); border-bottom: 1px solid var(--border-color); }
+.history-item:last-child { border-bottom: none; }
+.history-item:hover { background-color: var(--input-bg); }
+.history-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; margin-right: 1rem; font-size: 0.95rem; }
+.history-delete-btn { background: none; border: none; color: var(--text-color); opacity: 0.4; cursor: pointer; font-size: 0.9rem; flex-shrink: 0; padding: 0.3rem; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transition: all var(--transition-speed); }
+.history-delete-btn:hover { opacity: 1; color: #c53030; background-color: var(--input-bg); }
+.history-item-empty { padding: 1rem; text-align: center; opacity: 0.6; font-size: 0.9rem; }
 #previewModalOverlay .popup-menu, #sharedNotesModalOverlay .popup-menu { max-width: 800px; }
 #previewContent, #sharedNotesContent { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; max-height: 50vh; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; font-size: 1rem; line-height: 1.6; }
-.setting-item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 1rem; }
-.setting-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-color); opacity: 0.5; margin: 1rem 0 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+
+/* --- INICIO: ESTILOS CORREGIDOS Y MEJORADOS PARA EL PANEL DE OPCIONES --- */
+#settingsModalOverlay .popup-menu { max-width: 500px; }
+#settingsModalOverlay .popup-content { padding: 1rem 1.5rem; gap: 0.5rem; }
+.setting-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-color);
+  opacity: 0.5;
+  margin-top: 1.5rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.setting-title:first-child { margin-top: 0; }
+.setting-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.setting-item-label { display: flex; align-items: center; gap: 0.8rem; font-weight: 500; font-size: 0.95rem; }
+.setting-item-label i { color: var(--subtitle-color); font-size: 1rem; width: 20px; text-align: center; }
+.popup-content label { margin-bottom: 0.5rem; font-weight: 500; display: block; }
 .select-wrapper { position: relative; }
 .select-wrapper::after { content: "\f078"; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); pointer-events: none; opacity: 0.5; }
-.popup-content select, .popup-content input[type="text"] { width: 100%; padding: 0.8rem 1rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); appearance: none; -webkit-appearance: none; }
-.popup-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; gap: 1rem; justify-content: flex-end; }
+.popup-content select { width: 100%; padding: 0.8rem 1rem; font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); appearance: none; -webkit-appearance: none; }
 .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 24px; }
 .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 input:checked + .slider { background-color: var(--accent-color); }
 input:checked + .slider:before { transform: translateX(20px); }
+#export-options {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.4s ease;
+  margin-top: 0;
+  padding-top: 0;
+}
+#export-options.active {
+  max-height: 300px; /* Aumentado para asegurar visibilidad */
+  opacity: 1;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+.export-format-selector {
+  margin-bottom: 0.5rem;
+}
+.export-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.export-buttons-grid #exportBothBtn {
+  grid-column: 1 / -1; /* Botón "Ambos" ocupa todo el ancho */
+}
+/* --- FIN: ESTILOS CORREGIDOS Y MEJORADOS PARA EL PANEL DE OPCIONES --- */
+
 .chat-message { padding: 0.6rem 1rem; border-radius: 18px; max-width: 85%; line-height: 1.5; word-wrap: break-word; }
 .chat-message strong { display: block; font-size: 0.75rem; margin-bottom: 0.2rem; color: var(--accent-color); opacity: 0.8; }
 #chat-messages { display: flex; flex-direction: column; gap: 0.75rem; flex-grow: 1; }
@@ -521,28 +526,52 @@ input:checked + .slider:before { transform: translateX(20px); }
     </div>
   </div>
 </div>
+
 <div class="popup-overlay" id="settingsModalOverlay">
   <div class="popup-menu">
     <div class="popup-header">
       <h2><i class="fas fa-cog"></i> Opciones</h2>
-      <button id="closePopupBtn" class="icon-button"><i class="fas fa-times"></i></button>
+      <button id="closeSettingsBtn" class="icon-button"><i class="fas fa-times"></i></button>
     </div>
     <div class="popup-content">
-      <div class="setting-title">General</div>
+      <div class="setting-title"><i class="fas fa-sliders-h"></i> General</div>
       <div class="setting-item">
-        <label for="autoScrollToggle">Scroll Automático</label>
+        <label for="autoScrollToggle" class="setting-item-label"><i class="fas fa-long-arrow-alt-down"></i> Scroll Automático</label>
         <label class="switch"><input type="checkbox" id="autoScrollToggle" checked /><span class="slider"></span></label>
       </div>
-      <div class="setting-title">Idiomas</div>
+       <div class="setting-item">
+          <label for="saveSettingsToggle" class="setting-item-label"><i class="fas fa-save"></i> Recordar mis preferencias</label>
+          <label class="switch"><input type="checkbox" id="saveSettingsToggle" /><span class="slider"></span></label>
+      </div>
+
+      <div class="setting-title"><i class="fas fa-language"></i> Idiomas</div>
       <label for="idioma">Idioma de Subtítulos</label>
       <div class="select-wrapper"><select id="idioma"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div>
       <label for="idiomaAcumulado" style="margin-top: 1rem;">Idioma de Transcripción</label>
       <div class="select-wrapper"><select id="idiomaAcumulado"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div>
-      <div class="setting-title">Acciones</div>
-      <button id="clearTextBtn" class="action-button secondary"><i class="fas fa-eraser"></i> Limpiar Transcripción</button>
+
+      <div class="setting-title"><i class="fas fa-file-export"></i> Exportar</div>
+      <button id="exportBtn" class="action-button"><i class="fas fa-download"></i> Exportar Contenido</button>
+      <div id="export-options">
+          <div class="export-format-selector">
+            <label for="exportFormatSelect">Formato de Archivo</label>
+            <div class="select-wrapper">
+              <select id="exportFormatSelect">
+                <option value="txt">Texto (.txt)</option>
+                <option value="pdf">PDF (.pdf)</option>
+              </select>
+            </div>
+          </div>
+          <div class="export-buttons-grid">
+            <button id="exportTranscriptBtn" class="action-button secondary">Transcripción</button>
+            <button id="exportNotesBtn" class="action-button secondary">Apuntes</button>
+            <button id="exportBothBtn" class="action-button secondary">Ambos</button>
+          </div>
+      </div>
     </div>
   </div>
 </div>
+
 <div class="popup-overlay" id="sharedNotesModalOverlay">
     <div class="popup-menu">
         <div class="popup-header">
@@ -556,6 +585,7 @@ input:checked + .slider:before { transform: translateX(20px); }
         </div>
     </div>
 </div>
+
 <script>
   const { jsPDF } = window.jspdf;
   const clientId = Math.random().toString(36).substr(2, 9);
@@ -573,17 +603,15 @@ input:checked + .slider:before { transform: translateX(20px); }
     sendQuestionBtn: document.getElementById("sendQuestion"),
     themeToggle: document.getElementById("themeToggle"),
     settingsModalOverlay: document.getElementById("settingsModalOverlay"),
-    closePopupBtn: document.getElementById('closePopupBtn'),
+    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
     autoScrollToggle: document.getElementById('autoScrollToggle'),
     idiomaSelect: document.getElementById('idioma'),
     idiomaAcumuladoSelect: document.getElementById('idiomaAcumulado'),
     settingsBtn: document.getElementById('settingsBtn'),
-    clearTextBtn: document.getElementById('clearTextBtn'),
     questionHistoryBtn: document.getElementById('questionHistoryBtn'),
     questionHistoryPopup: document.getElementById('questionHistoryPopup'),
     notesToggleBtn: document.getElementById('notesToggleBtn'),
     notesArea: document.getElementById('notes-area'),
-    exportNotesBtn: document.getElementById('exportNotesBtn'),
     acumuladoCounter: document.getElementById('acumulado-counter'),
     notesCounter: document.getElementById('notes-counter'),
     downloadAudioBtn: document.getElementById('downloadAudioBtn'),
@@ -628,6 +656,13 @@ input:checked + .slider:before { transform: translateX(20px); }
     classicView: document.getElementById('classic-view'),
     copyBtn: document.getElementById('copyBtn'),
     connectionStatusIndicator: document.getElementById('connection-status-indicator'),
+    exportBtn: document.getElementById('exportBtn'),
+    exportOptions: document.getElementById('export-options'),
+    exportFormatSelect: document.getElementById('exportFormatSelect'),
+    exportTranscriptBtn: document.getElementById('exportTranscriptBtn'),
+    exportNotesBtn: document.getElementById('exportNotesBtn'),
+    exportBothBtn: document.getElementById('exportBothBtn'),
+    saveSettingsToggle: document.getElementById('saveSettingsToggle'),
   };
   
   let statusTimeout;
@@ -860,8 +895,53 @@ input:checked + .slider:before { transform: translateX(20px); }
   function checkAudioStatus() { fetch('/audio_status').then(res => res.json()).then(data => { elements.downloadAudioBtn.disabled = !data.available; if (data.available) { elements.downloadAudioBtn.title = `Descargar ${data.filename}`; elements.downloadAudioBtn.onclick = () => window.location.href = '/download_audio'; } }).catch(err => elements.downloadAudioBtn.disabled = true); }
   function formatText(command) { elements.notesArea.focus(); document.execCommand(command, false, null); }
   function initializeChat() { const savedUsername=localStorage.getItem('stttvar_username');if(savedUsername){elements.chatCurrentUser.textContent=`(${savedUsername})`;elements.chatNamePrompt.classList.add('hidden');elements.chatMessageArea.classList.remove('hidden');elements.chatMessageInput.focus();}else{elements.chatCurrentUser.textContent='';elements.chatNamePrompt.classList.remove('hidden');elements.chatMessageArea.classList.add('hidden');elements.chatUsernameInput.focus();}}
-  function openSharedNotesModal(content,user){elements.sharedNotesUser.textContent=user;elements.sharedNotesContent.textContent=content;elements.sharedNotesModalOverlay.classList.add('active');elements.downloadSharedNotesTxtBtn.onclick=()=>downloadFile(content,'txt',`apuntes_de_${user}`);elements.downloadSharedNotesDocxBtn.onclick=()=>downloadFile(content,'docx',`apuntes_de_${user}`);}
-  function downloadFile(content,format,filename){if(!content||!content.trim()){updateStatus("No hay contenido para descargar.","error");return;}if(format==='txt'){const blob=new Blob([content],{type:'text/plain;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${filename}.txt`;a.click();URL.revokeObjectURL(url);}else if(format==='docx'){alert("Función no implementada en esta demo.");}}
+  function openSharedNotesModal(content,user){elements.sharedNotesUser.textContent=user;elements.sharedNotesContent.textContent=content;elements.sharedNotesModalOverlay.classList.add('active');elements.downloadSharedNotesTxtBtn.onclick=()=>downloadFile('txt', content,`apuntes_de_${user}`);elements.downloadSharedNotesDocxBtn.onclick=()=>alert("Función no implementada en esta demo.");}
+  
+  function downloadFile(format, content, filename){
+      if(!content || !content.trim()){
+          updateStatus("No hay contenido para exportar.", "error");
+          return;
+      }
+      if(format === 'txt'){
+          const blob=new Blob([content],{type:'text/plain;charset=utf-8'});
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement('a');
+          a.href=url;
+          a.download=`${filename}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      } else if (format === 'pdf'){
+          const doc = new jsPDF({unit: "pt", format: "a4"});
+          const splitText = doc.splitTextToSize(content, 550); // 595 pt width A4 - 2*20pt margin
+          doc.setFontSize(11);
+          doc.text(splitText, 20, 20);
+          doc.save(`${filename}.pdf`);
+      }
+  }
+
+  function handleExport(type) {
+    const format = elements.exportFormatSelect.value;
+    const transcriptText = elements.acumulado.dataset.flatText || "";
+    const notesText = elements.notesArea.textContent || "";
+    let contentToExport = "";
+    let filename = "exportacion";
+
+    if (type === 'transcript') {
+      contentToExport = transcriptText;
+      filename = "transcripcion";
+    } else if (type === 'notes') {
+      contentToExport = notesText;
+      filename = "apuntes";
+    } else if (type === 'both') {
+      contentToExport = `--- TRANSCRIPCIÓN ---\n\n${transcriptText}\n\n\n--- APUNTES ---\n\n${notesText}`;
+      filename = "transcripcion_y_apuntes";
+    }
+    
+    downloadFile(format, contentToExport, filename);
+  }
+
   function quickAction(type){ const text = elements.acumulado.dataset.flatText; if(!text.trim()){updateStatus("No hay texto para procesar.","error");return} const prompts={summarize:"Resume el texto:\n\n",keywords:"Extrae 5 puntos clave:\n\n",correct:"Corrige la gramática:\n\n"};sendQuestion(prompts[type]+text) }
   function updateStatus(e,t="normal",n=3e3){clearTimeout(statusTimeout),elements.status.textContent=e,elements.status.className=`status visible ${t}`,statusTimeout=setTimeout(()=>elements.status.classList.remove("visible","success","error"),n)}
   function makeRequest(e,t,n){fetch(e,{method:"POST"}).then(res=>res.ok||(n?updateStatus(n,"error"):0))}
@@ -870,9 +950,37 @@ input:checked + .slider:before { transform: translateX(20px); }
   function applyZenFontSize(){elements.zenSubtitulo.style.fontSize=`${clientState.zenFontSize}vmin`;elements.zenAcumulado.style.fontSize=`${Math.max(2.2,clientState.zenFontSize*.4)}vmin`}
   function toggleZenMode(){document.body.classList.toggle("zen-active");if(document.body.classList.contains("zen-active")){document.body.classList.remove("zen-view-acumulado");elements.zenViewToggleBtn.innerHTML='<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title="Ver Texto Acumulado";clientState.zenFontSize=6;applyZenFontSize()}}
   
+  function saveSettings() {
+      if (!elements.saveSettingsToggle.checked) return;
+      const settings = {
+          theme: document.body.classList.contains('dark-theme') ? 'dark' : 'light',
+          autoScroll: elements.autoScrollToggle.checked,
+          subLanguage: elements.idiomaSelect.value,
+          transcriptLanguage: elements.idiomaAcumuladoSelect.value
+      };
+      localStorage.setItem('stttvar_settings', JSON.stringify(settings));
+  }
+
+  function loadSettings() {
+      const savedSettings = localStorage.getItem('stttvar_settings');
+      if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.theme === 'dark') {
+              document.body.classList.add('dark-theme');
+              elements.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+          }
+          elements.autoScrollToggle.checked = settings.autoScroll;
+          clientState.isAutoScrollActive = settings.autoScroll;
+          elements.idiomaSelect.value = settings.subLanguage;
+          elements.idiomaAcumuladoSelect.value = settings.transcriptLanguage;
+          elements.saveSettingsToggle.checked = true;
+      }
+  }
+
   document.addEventListener('DOMContentLoaded',()=>{ 
     setDisconnectedState();
     loadQuestionHistory();
+    loadSettings();
     checkAudioStatus();
     setInterval(checkAudioStatus,5000); 
     
@@ -900,47 +1008,35 @@ input:checked + .slider:before { transform: translateX(20px); }
   elements.shareNotesBtn.addEventListener('click',()=>{const user=localStorage.getItem('stttvar_username');const notesContent=elements.notesArea.textContent.trim();if(!user){updateStatus("Define tu nombre en el chat.","error");elements.chatToggleBtn.click();return;}if(!notesContent){updateStatus("No hay apuntes para compartir.","error");return;}sendChatMessage({user:user,isNote:true,content:notesContent});});
   elements.chatMessages.addEventListener('click',e=>{const button=e.target.closest('.view-shared-notes-btn');if(button){openSharedNotesModal(button.dataset.notesContent,button.dataset.notesUser);}});
   elements.closeSharedNotesBtn.addEventListener('click',()=>elements.sharedNotesModalOverlay.classList.remove('active'));
-  elements.idiomaSelect.addEventListener('change',()=>makeRequest(`/set_language/${clientId}/${elements.idiomaSelect.value}`));
-  elements.idiomaAcumuladoSelect.addEventListener('change',()=>makeRequest(`/set_language_acumulado/${clientId}/${elements.idiomaAcumuladoSelect.value}`));
-  elements.themeToggle.addEventListener('click',()=>{document.body.classList.toggle('dark-theme');const isDark=document.body.classList.contains('dark-theme');elements.themeToggle.innerHTML=isDark?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>';});
+  elements.idiomaSelect.addEventListener('change',()=>{makeRequest(`/set_language/${clientId}/${elements.idiomaSelect.value}`); saveSettings();});
+  elements.idiomaAcumuladoSelect.addEventListener('change',()=>{makeRequest(`/set_language_acumulado/${clientId}/${elements.idiomaAcumuladoSelect.value}`); saveSettings();});
+  elements.themeToggle.addEventListener('click',()=>{document.body.classList.toggle('dark-theme');const isDark=document.body.classList.contains('dark-theme');elements.themeToggle.innerHTML=isDark?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; saveSettings();});
   elements.settingsBtn.addEventListener('click',()=>elements.settingsModalOverlay.classList.add('active'));
-  elements.closePopupBtn.addEventListener('click',()=>elements.settingsModalOverlay.classList.remove('active'));
+  elements.closeSettingsBtn.addEventListener('click',()=>elements.settingsModalOverlay.classList.remove('active'));
   elements.sendQuestionBtn.addEventListener("click",()=>sendQuestion());
   elements.aiQuestion.addEventListener("keypress",e=>{if(e.key==="Enter")sendQuestion();});
   
-  elements.questionHistoryBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isHidden = elements.questionHistoryPopup.classList.toggle('hidden');
-    if (!isHidden) {
-      renderQuestionHistory();
-    }
-  });
+  elements.questionHistoryBtn.addEventListener('click', (e) => { e.stopPropagation(); const isHidden = elements.questionHistoryPopup.classList.toggle('hidden'); if (!isHidden) { renderQuestionHistory(); } });
+  elements.questionHistoryPopup.addEventListener('click', (e) => { e.stopPropagation(); const item = e.target.closest('.history-item'); const deleteBtn = e.target.closest('.history-delete-btn'); if (deleteBtn) { const index = parseInt(deleteBtn.dataset.index, 10); deleteQuestionFromHistory(index); renderQuestionHistory(); } else if (item) { elements.aiQuestion.value = item.dataset.question; elements.questionHistoryPopup.classList.add('hidden'); elements.aiQuestion.focus(); } });
+  document.addEventListener('click', () => { if (!elements.questionHistoryPopup.classList.contains('hidden')) { elements.questionHistoryPopup.classList.add('hidden'); } });
 
-  elements.questionHistoryPopup.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const item = e.target.closest('.history-item');
-    const deleteBtn = e.target.closest('.history-delete-btn');
-
-    if (deleteBtn) {
-      const index = parseInt(deleteBtn.dataset.index, 10);
-      deleteQuestionFromHistory(index);
-      renderQuestionHistory();
-    } else if (item) {
-      elements.aiQuestion.value = item.dataset.question;
-      elements.questionHistoryPopup.classList.add('hidden');
-      elements.aiQuestion.focus();
-    }
-  });
-
-  document.addEventListener('click', () => {
-    if (!elements.questionHistoryPopup.classList.contains('hidden')) {
-      elements.questionHistoryPopup.classList.add('hidden');
-    }
+  elements.exportBtn.addEventListener('click', () => { elements.exportOptions.classList.toggle('active'); });
+  elements.exportTranscriptBtn.addEventListener('click', () => handleExport('transcript'));
+  elements.exportNotesBtn.addEventListener('click', () => handleExport('notes'));
+  elements.exportBothBtn.addEventListener('click', () => handleExport('both'));
+  elements.autoScrollToggle.addEventListener('change', () => { clientState.isAutoScrollActive = elements.autoScrollToggle.checked; saveSettings(); });
+  elements.saveSettingsToggle.addEventListener('change', () => {
+      if(!elements.saveSettingsToggle.checked) {
+          localStorage.removeItem('stttvar_settings');
+          updateStatus('Preferencias automáticas desactivadas.', 'normal', 2000);
+      } else {
+          saveSettings();
+          updateStatus('Preferencias automáticas activadas.', 'success', 2000);
+      }
   });
 
   elements.notesToggleBtn.addEventListener('click',()=>document.body.classList.toggle('notes-active'));
   elements.zenModeBtn.addEventListener('click',toggleZenMode);elements.zenCloseBtn.addEventListener('click',toggleZenMode);elements.zenViewToggleBtn.addEventListener('click',()=>{document.body.classList.toggle('zen-view-acumulado');const i=document.body.classList.contains('zen-view-acumulado');elements.zenViewToggleBtn.innerHTML=i?'<i class="fas fa-quote-left"></i>':'<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title=i?"Ver Subtítulo":"Ver Transcripción";if(i)elements.zenAcumulado.scrollTop=elements.zenAcumulado.scrollHeight});elements.zenFontIncreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize<15){clientState.zenFontSize+=0.5;applyZenFontSize()}});elements.zenFontDecreaseBtn.addEventListener('click',()=>{if(clientState.zenFontSize>2){clientState.zenFontSize-=0.5;applyZenFontSize()}});
-  elements.exportNotesBtn.addEventListener('click', () => { const content = elements.notesArea.textContent.trim(); if (!content) { updateStatus("No hay apuntes para exportar.", "error"); return; } downloadFile(content, 'txt', 'mis_apuntes'); });
   [elements.settingsModalOverlay, elements.chatModalOverlay, elements.sharedNotesModalOverlay].forEach(overlay => { overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('active'); }); });
   elements.notesArea.addEventListener('input', () => updateCounters('notes'));
 </script>
