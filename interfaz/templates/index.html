@@ -30,6 +30,9 @@
     --subtitle-color: #0056b3;
     --border-radius: 12px;
     --transition-speed: 0.2s;
+    --status-connected: #28a745;
+    --status-disconnected: #dc3545;
+    --sticky-top-offset: 1rem;
   }
   .dark-theme {
     --bg-color: #121212;
@@ -81,7 +84,7 @@
   .soundwave-bar:nth-child(2) { animation-delay: -0.2s; }
   .soundwave-bar:nth-child(3) { animation-delay: -0.4s; }
   .soundwave-bar:nth-child(4) { animation-delay: -0.6s; }
-  .header-controls { display: flex; align-items: center; gap: 0.5rem; }
+  .header-controls { display: flex; align-items: center; gap: 0.75rem; }
   #user-counter { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 500; color: var(--text-color); opacity: 0.7; padding: 0.4rem 0.8rem; background-color: var(--input-bg); border-radius: 20px; transition: all var(--transition-speed); }
   #user-count-number { font-weight: 700; min-width: 12px; text-align: center; }
   .count-update { animation: pop-in 0.4s ease; }
@@ -91,12 +94,74 @@
   .icon-button:hover { opacity: 1; background: var(--input-bg); transform: scale(1.1); color: var(--accent-color); }
   .unread-badge { position: absolute; top: 0; right: 0; background-color: var(--accent-color); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 2px solid var(--container-bg); transform: scale(0); transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
   .unread-badge:not(.hidden) { transform: scale(1); }
+  #connection-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+  #connection-status-indicator.connected {
+    background-color: var(--status-connected);
+    animation: pulse-green 2s infinite;
+  }
+  #connection-status-indicator.disconnected {
+    background-color: var(--status-disconnected);
+    animation: none;
+  }
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+  }
+
   .text-area-wrapper { position: relative; display: flex; flex-direction: column; flex-grow: 1; }
-  #subtitulo, #acumulado, #ai_response, #notes-area { padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); transition: all var(--transition-speed); }
-  #subtitulo { font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 600; color: var(--subtitle-color); min-height: 80px; display: flex; align-items: center; justify-content: center; text-align: center; margin-bottom: 1.5rem; line-height: 1.4; background-color: var(--input-bg); text-shadow: 0 1px 2px var(--shadow-color-light); }
+  #subtitulo { 
+    font-size: clamp(1.2rem, 3vw, 1.6rem); 
+    font-weight: 600; 
+    color: var(--subtitle-color); 
+    min-height: 80px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    text-align: center; 
+    margin-bottom: 1.5rem; 
+    line-height: 1.4; 
+    background-color: var(--input-bg); 
+    text-shadow: 0 1px 2px var(--shadow-color-light);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* --- ESTILOS PARA SUBTITULO STICKY --- */
+  @keyframes slideDownIn {
+    from { transform: translateY(-120%); opacity: 0.8; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .subtitulo-is-sticky .main-column {
+    padding-top: var(--subtitulo-placeholder-height, 100px);
+  }
+  .subtitulo-is-sticky #subtitulo {
+    position: fixed;
+    top: var(--sticky-top-offset);
+    left: var(--subtitulo-sticky-left, 20px);
+    width: var(--subtitulo-sticky-width, 500px);
+    z-index: 1000;
+    margin-bottom: 0;
+    min-height: 0;
+    padding: 0.75rem 1rem;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    background-color: var(--container-bg);
+    box-shadow: 0 8px 32px var(--shadow-color-heavy);
+    animation: slideDownIn 0.4s ease-out;
+  }
+  /* --- FIN ESTILOS STICKY --- */
+
+
   #ai_response, #notes-area { min-height: 150px; overflow-y: auto; font-size: 1rem; flex-grow: 1; }
   
-  #acumulado { height: 400px; overflow-y: auto; font-size: 1rem; flex-grow: 1; padding: 0; }
+  #acumulado { height: 400px; overflow-y: auto; font-size: 1rem; flex-grow: 1; padding: 0; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-color); }
   #chunked-view, #classic-view { height: 100%; width: 100%; overflow-y: auto; }
   #classic-view { white-space: pre-wrap; line-height: 1.7; padding: 1.25rem; }
   #chunked-view { padding: 0.5rem 1.25rem; }
@@ -115,8 +180,8 @@
   .audio-play-btn:hover { background-color: var(--container-bg); color: var(--accent-color); border-color: var(--border-color); }
   .audio-play-btn .fa-exclamation-circle { color: #dc3545; }
   
-  #ai_response { margin-top: 1.5rem; white-space: pre-wrap; line-height: 1.7; }
-  #notes-area { outline: none; resize: vertical; white-space: pre-wrap; line-height: 1.7; }
+  #ai_response { padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--bg-color); margin-top: 1.5rem; white-space: pre-wrap; line-height: 1.7; }
+  #notes-area { padding: 1.25rem; border-radius: var(--border-radius); border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); outline: none; resize: vertical; white-space: pre-wrap; line-height: 1.7; }
   #notes-area:empty::before { content: attr(data-placeholder); color: var(--text-color); opacity: 0.5; pointer-events: none; position: absolute; top: 1.25rem; left: 1.25rem; }
   
   .counter { font-size: 0.8rem; color: var(--text-color); opacity: 0.6; text-align: right; padding: 0.25rem 0.5rem 1.5rem; height: 1em; }
@@ -142,12 +207,10 @@
   mark { background-color: rgba(0, 123, 255, 0.3); border-radius: 3px; padding: 1px 2px; color: inherit; transition: background-color 0.3s; }
   mark.current-match { background-color: var(--accent-color); color: white; box-shadow: 0 0 0 2px var(--accent-color); }
   
-  /* --- INICIO: CSS PARA VISIBILIDAD DE BOTONES --- */
   body:not(.classic-view-active) #copyBtn,
   body:not(.classic-view-active) #searchToggleBtn {
     display: none;
   }
-  /* --- FIN: CSS PARA VISIBILIDAD DE BOTONES --- */
   
   .quick-actions-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; padding: 1.5rem 0; }
   .quick-action-btn { padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); border-radius: 8px; cursor: pointer; transition: all var(--transition-speed); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
@@ -162,8 +225,8 @@
   #sendQuestion:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow-color-heavy); background: var(--accent-gradient-hover); }
   #status { font-size: 0.8rem; text-align: center; margin-top: 1.5rem; padding: 0.4rem 1rem; border-radius: 8px; background-color: var(--input-bg); border: 1px solid transparent; transition: all var(--transition-speed); opacity: 0; }
   .status.visible { opacity: 1; }
-  .status.success { border-color: #28a745; color: #28a745; }
-  .status.error { border-color: #dc3545; color: #dc3545; }
+  .status.success { border-color: var(--status-connected); color: var(--status-connected); }
+  .status.error { border-color: var(--status-disconnected); color: var(--status-disconnected); }
   #zen-mode-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #121212; color: #e9ecef; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity var(--transition-speed); }
   body.zen-active #zen-mode-container { opacity: 1; visibility: visible; }
   #zen-subtitulo { font-size: 6vmin; font-weight: 600; padding: 2rem; text-align: center; line-height: 1.4; max-width: 90vw; color: #80bfff; }
@@ -233,6 +296,7 @@
             STTVAR
         </h1>
         <div class="header-controls">
+          <div id="connection-status-indicator"></div>
           <div id="user-counter" class="hidden" title="Usuarios Conectados">
             <i class="fas fa-users"></i>
             <span id="user-count-number">1</span>
@@ -427,6 +491,8 @@
   const clientState = { isAutoScrollActive: true, zenFontSize: 6, questionHistory: [], currentAudio: null, currentlyPlayingButton: null, };
   let unreadMessageCount = 0;
   let lastTranscriptionData = null;
+  let lastTypedAIResponse = null;
+  let typewriterTimeout;
   
   const elements = {
     subtitulo: document.getElementById("subtitulo"),
@@ -491,15 +557,51 @@
     chunkedView: document.getElementById('chunked-view'),
     classicView: document.getElementById('classic-view'),
     copyBtn: document.getElementById('copyBtn'),
+    connectionStatusIndicator: document.getElementById('connection-status-indicator'),
   };
   
   let statusTimeout;
   const source = new EventSource(`/stream?client_id=${clientId}`);
   let searchState = { matches: [], currentIndex: -1 };
+  let subtituloTriggerPoint = 0;
+
+  function setConnectedState() {
+    const indicator = elements.connectionStatusIndicator;
+    indicator.classList.remove('disconnected');
+    indicator.classList.add('connected');
+    indicator.title = 'Conectado al servidor';
+  }
+
+  function setDisconnectedState() {
+    const indicator = elements.connectionStatusIndicator;
+    indicator.classList.remove('connected');
+    indicator.classList.add('disconnected');
+    indicator.title = 'Desconectado. Intentando reconectar...';
+  }
   
+  function typeWriterEffect(element, text, speed = 20) {
+    clearTimeout(typewriterTimeout);
+    element.textContent = '';
+    let i = 0;
+  
+    function typing() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        element.scrollTop = element.scrollHeight; 
+        typewriterTimeout = setTimeout(typing, speed);
+      }
+    }
+    typing();
+  }
+
   function updateTranscriptionView(data) {
     elements.subtitulo.textContent = data.subtitulo || " ";
     elements.acumulado.dataset.flatText = data.acumulado_flat || "";
+    
+    elements.zenSubtitulo.textContent = data.subtitulo || " ";
+    elements.zenAcumulado.textContent = data.acumulado_flat || "";
+    
     lastTranscriptionData = data;
 
     const isClassic = document.body.classList.contains('classic-view-active');
@@ -527,15 +629,54 @@
     if (clientState.isAutoScrollActive && wasScrolledToBottom) { 
       currentViewElement.scrollTop = currentViewElement.scrollHeight; 
     }
+    
+    if (document.body.classList.contains('zen-active') && document.body.classList.contains('zen-view-acumulado')) {
+      elements.zenAcumulado.scrollTop = elements.zenAcumulado.scrollHeight;
+    }
 
-    if (data.ai_response && data.ai_response.trim()) {
+    if (data.ai_response && data.ai_response.trim() && data.ai_response !== lastTypedAIResponse) {
       elements.aiResponse.classList.remove('hidden');
-      elements.aiResponse.textContent = data.ai_response;
+      lastTypedAIResponse = data.ai_response;
+      typeWriterEffect(elements.aiResponse, data.ai_response);
     }
   }
 
-  source.onmessage = event => { const payload = JSON.parse(event.data); if (payload.type === 'system_info') { const userCount = payload.data.user_count; const currentCount = parseInt(elements.userCountNumber.textContent, 10); if (elements.userCountNumber && userCount !== currentCount) { elements.userCountNumber.textContent = userCount; elements.userCountNumber.classList.add('count-update'); setTimeout(() => elements.userCountNumber.classList.remove('count-update'), 400); } elements.userCounter.classList.remove('hidden'); } else if (payload.type === 'transcript') { updateTranscriptionView(payload.data); } else if (payload.type === 'chat') { renderChatMessage(payload.data); if (!elements.chatModalOverlay.classList.contains('active')) { const currentUser = localStorage.getItem('stttvar_username'); if (payload.data.user !== currentUser) { unreadMessageCount++; elements.unreadBadge.textContent = unreadMessageCount > 9 ? '9+' : unreadMessageCount; elements.unreadBadge.classList.remove('hidden'); } } } };
-  source.onerror = () => updateStatus("Desconectado. Reconectando...", "error");
+  source.onopen = () => {
+    setConnectedState();
+    updateStatus("Conectado al servidor.", "success", 2000);
+  };
+  
+  source.onmessage = event => { 
+    setConnectedState();
+    const payload = JSON.parse(event.data); 
+    if (payload.type === 'system_info') { 
+      const userCount = payload.data.user_count; 
+      const currentCount = parseInt(elements.userCountNumber.textContent, 10); 
+      if (elements.userCountNumber && userCount !== currentCount) { 
+        elements.userCountNumber.textContent = userCount; 
+        elements.userCountNumber.classList.add('count-update'); 
+        setTimeout(() => elements.userCountNumber.classList.remove('count-update'), 400); 
+      } 
+      elements.userCounter.classList.remove('hidden'); 
+    } else if (payload.type === 'transcript') { 
+      updateTranscriptionView(payload.data); 
+    } else if (payload.type === 'chat') { 
+      renderChatMessage(payload.data); 
+      if (!elements.chatModalOverlay.classList.contains('active')) { 
+        const currentUser = localStorage.getItem('stttvar_username'); 
+        if (payload.data.user !== currentUser) { 
+          unreadMessageCount++; 
+          elements.unreadBadge.textContent = unreadMessageCount > 9 ? '9+' : unreadMessageCount; 
+          elements.unreadBadge.classList.remove('hidden'); 
+        } 
+      } 
+    } 
+  };
+  
+  source.onerror = () => {
+    setDisconnectedState();
+    updateStatus("Desconectado. Reconectando...", "error");
+  };
   
   async function playAudioChunk(button) { if (clientState.currentAudio) { clientState.currentAudio.pause(); if (clientState.currentlyPlayingButton) { clientState.currentlyPlayingButton.querySelector('i').className = 'fas fa-play'; } } if (clientState.currentlyPlayingButton === button) { clientState.currentlyPlayingButton = null; return; } const start = button.dataset.start; const end = button.dataset.end; const icon = button.querySelector('i'); clientState.currentlyPlayingButton = button; try { icon.className = 'fas fa-spinner fa-spin'; const response = await fetch(`/get_audio_chunk?start=${start}&end=${end}`); if (!response.ok) throw new Error(`Error del servidor: ${response.statusText}`); const audioBlob = await response.blob(); const audioUrl = URL.createObjectURL(audioBlob); clientState.currentAudio = new Audio(audioUrl); icon.className = 'fas fa-pause'; clientState.currentAudio.play(); clientState.currentAudio.onended = () => { icon.className = 'fas fa-play'; URL.revokeObjectURL(audioUrl); clientState.currentAudio = null; clientState.currentlyPlayingButton = null; }; clientState.currentAudio.onerror = () => { throw new Error('Error al reproducir el audio.'); }; } catch (error) { console.error("Error al reproducir el chunk de audio:", error); icon.className = 'fas fa-exclamation-circle'; updateStatus("Error al cargar el audio.", "error"); clientState.currentAudio = null; setTimeout(() => { if(clientState.currentlyPlayingButton === button) icon.className = 'fas fa-play'; clientState.currentlyPlayingButton = null; }, 3000); } }
   
@@ -549,7 +690,77 @@
 
   function renderChatMessage(data) { const msgDiv = document.createElement('div'); const currentUser = localStorage.getItem('stttvar_username'); msgDiv.classList.add('chat-message', currentUser && data.user === currentUser ? 'own' : 'other'); if (data.isNote) { msgDiv.innerHTML = `<strong>Apuntes de ${data.user}</strong><p style="font-style: italic; opacity: 0.8; margin-bottom: 0.5rem;">"Se ha compartido un conjunto de apuntes."</p><button class="action-button view-shared-notes-btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">Ver</button>`; msgDiv.querySelector('.view-shared-notes-btn').dataset.notesContent = data.content; msgDiv.querySelector('.view-shared-notes-btn').dataset.notesUser = data.user; } else { msgDiv.innerHTML = `<strong></strong><p></p>`; msgDiv.querySelector('strong').textContent = data.user; msgDiv.querySelector('p').textContent = data.message; } const wasScrolledToBottom = elements.chatMessages.scrollHeight - elements.chatMessages.clientHeight <= elements.chatMessages.scrollTop + 20; elements.chatMessages.appendChild(msgDiv); if(wasScrolledToBottom) elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; }
   function sendChatMessage(payload) { fetch('/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(res => { if (!res.ok) updateStatus("Error al enviar.", "error"); else if (payload.message) elements.chatMessageInput.value = ''; else if (payload.isNote) updateStatus("Apuntes compartidos.", "success"); }).catch(() => updateStatus("Error de red.", "error")).finally(() => { if(payload.message) elements.chatMessageInput.focus(); }); }
-  function sendQuestion(customPrompt) { const question = customPrompt || elements.aiQuestion.value.trim(); if (!question) { updateStatus("Por favor, escribe una pregunta.", "error"); return; } const btnContent = elements.sendQuestionBtn.querySelector('.button-content'), btnLoader = elements.sendQuestionBtn.querySelector('.button-loader'); elements.sendQuestionBtn.disabled = true; btnContent.classList.add('hidden'); btnLoader.classList.remove('hidden'); elements.aiResponse.classList.remove('hidden'); elements.aiResponse.textContent = "Procesando..."; if (!customPrompt) addQuestionToHistory(question); fetch(`/ask_ai/${clientId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }).catch(err => updateStatus("Error al enviar pregunta.", "error")).finally(() => { elements.sendQuestionBtn.disabled = false; btnContent.classList.remove('hidden'); btnLoader.classList.add('hidden'); }); if (!customPrompt) elements.aiQuestion.value = ""; }
+  
+  function sendQuestion(customPrompt) {
+    const question = customPrompt || elements.aiQuestion.value.trim();
+    if (!question) {
+        updateStatus("Por favor, escribe una pregunta.", "error");
+        return;
+    }
+    const btnContent = elements.sendQuestionBtn.querySelector('.button-content');
+    const btnLoader = elements.sendQuestionBtn.querySelector('.button-loader');
+    
+    elements.sendQuestionBtn.disabled = true;
+    btnContent.classList.add('hidden');
+    btnLoader.classList.remove('hidden');
+
+    clearTimeout(typewriterTimeout);
+    
+    elements.aiResponse.classList.remove('hidden');
+    elements.aiResponse.textContent = "Procesando...";
+    
+    if (!customPrompt) {
+        addQuestionToHistory(question);
+    }
+    
+    fetch(`/ask_ai/${clientId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ question })
+    })
+    .catch(err => updateStatus("Error al enviar pregunta.", "error"))
+    .finally(() => {
+        elements.sendQuestionBtn.disabled = false;
+        btnContent.classList.remove('hidden');
+        btnLoader.classList.add('hidden');
+    });
+
+    if (!customPrompt) {
+        elements.aiQuestion.value = "";
+    }
+  }
+
+  function setupStickySubtitulo() {
+      const mainColumn = document.querySelector('.main-column');
+      if (!elements.subtitulo || !mainColumn) return;
+
+      document.body.classList.remove('subtitulo-is-sticky');
+      subtituloTriggerPoint = elements.subtitulo.getBoundingClientRect().top + window.scrollY;
+      
+      const subtituloHeight = elements.subtitulo.offsetHeight;
+      const marginBottom = parseFloat(getComputedStyle(elements.subtitulo).marginBottom);
+      const mainColumnRect = mainColumn.getBoundingClientRect();
+      
+      document.documentElement.style.setProperty('--subtitulo-placeholder-height', `${subtituloHeight + marginBottom}px`);
+      document.documentElement.style.setProperty('--subtitulo-sticky-width', `${mainColumnRect.width}px`);
+      document.documentElement.style.setProperty('--subtitulo-sticky-left', `${mainColumnRect.left}px`);
+  }
+
+  function handleScroll() {
+      if (window.scrollY > subtituloTriggerPoint) {
+          if (!document.body.classList.contains('subtitulo-is-sticky')) {
+              document.body.classList.add('subtitulo-is-sticky');
+          }
+      } else {
+          if (document.body.classList.contains('subtitulo-is-sticky')) {
+              document.body.classList.remove('subtitulo-is-sticky');
+          }
+      }
+  }
+
+
   function checkAudioStatus() { fetch('/audio_status').then(res => res.json()).then(data => { elements.downloadAudioBtn.disabled = !data.available; if (data.available) { elements.downloadAudioBtn.title = `Descargar ${data.filename}`; elements.downloadAudioBtn.onclick = () => window.location.href = '/download_audio'; } }).catch(err => elements.downloadAudioBtn.disabled = true); }
   function formatText(command) { elements.notesArea.focus(); document.execCommand(command, false, null); }
   function initializeChat() { const savedUsername=localStorage.getItem('stttvar_username');if(savedUsername){elements.chatCurrentUser.textContent=`(${savedUsername})`;elements.chatNamePrompt.classList.add('hidden');elements.chatMessageArea.classList.remove('hidden');elements.chatMessageInput.focus();}else{elements.chatCurrentUser.textContent='';elements.chatNamePrompt.classList.remove('hidden');elements.chatMessageArea.classList.add('hidden');elements.chatUsernameInput.focus();}}
@@ -564,7 +775,18 @@
   function applyZenFontSize(){elements.zenSubtitulo.style.fontSize=`${clientState.zenFontSize}vmin`;elements.zenAcumulado.style.fontSize=`${Math.max(2.2,clientState.zenFontSize*.4)}vmin`}
   function toggleZenMode(){document.body.classList.toggle("zen-active");if(document.body.classList.contains("zen-active")){document.body.classList.remove("zen-view-acumulado");elements.zenViewToggleBtn.innerHTML='<i class="fas fa-file-alt"></i>';elements.zenViewToggleBtn.title="Ver Texto Acumulado";clientState.zenFontSize=6;applyZenFontSize()}}
   
-  document.addEventListener('DOMContentLoaded',()=>{ updateStatus("Listo","success",1500);checkAudioStatus();setInterval(checkAudioStatus,5000); });
+  document.addEventListener('DOMContentLoaded',()=>{ 
+    setDisconnectedState();
+    checkAudioStatus();
+    setInterval(checkAudioStatus,5000); 
+    
+    setTimeout(() => {
+        setupStickySubtitulo();
+        handleScroll();
+    }, 100);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', setupStickySubtitulo);
+  });
   elements.acumulado.addEventListener('click', (event) => { const playButton = event.target.closest('.audio-play-btn'); if (playButton) { playAudioChunk(playButton); } });
   elements.viewToggleBtn.addEventListener('click', () => { document.body.classList.toggle('classic-view-active'); const isClassic = document.body.classList.contains('classic-view-active'); const icon = elements.viewToggleBtn.querySelector('i'); icon.className = isClassic ? 'fas fa-list' : 'fas fa-stream'; elements.viewToggleBtn.title = isClassic ? 'Cambiar a vista interactiva' : 'Cambiar a vista de texto plano'; if (lastTranscriptionData) { updateTranscriptionView(lastTranscriptionData); } performSearch(); });
   elements.searchToggleBtn.addEventListener('click', toggleSearchBar);

@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QComboBox, QPushButton, QMessageBox, QSpacerItem, QSizePolicy, QApplication, QProgressDialog, QInputDialog
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation
+from PyQt5.QtGui import QCursor
 import sounddevice as sd
 import numpy as np
 from transcripcion.transcriber import TranscriberThread
@@ -29,7 +30,7 @@ from pyngrok import ngrok, conf
 import io
 
 # =====================================================================
-# Sección de Flask y Variables Globales
+# Sección de Flask y Variables Globales (Sin cambios)
 # =====================================================================
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -53,7 +54,8 @@ shared_in_memory_audio_buffer = []
 model = None
 q = queue.Queue(maxsize=20)
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "mistral:7b-instruct-q4_K_M"
+#MODEL_NAME = "mistral:7b-instruct-q4_K_M"
+MODEL_NAME = "phi3.5:latest"
 
 def check_ollama():
     try:
@@ -117,7 +119,6 @@ def stream():
                     yield f"data: {json.dumps(system_payload)}\n\n"
                     last_sent_user_count = current_user_count
                 
-                # --- INICIO: LÓGICA DE TRADUCCIÓN REINTEGRADA ---
                 idioma_sub = clientes_idioma.get(client_id, "es")
                 idioma_acum = clientes_idioma_acumulado.get(client_id, "es")
                 
@@ -127,23 +128,19 @@ def stream():
                 ai_response_text = client_ai_responses.get(client_id, "")
 
                 if source_lang:
-                    # Traducir subtítulo
                     if idioma_sub != "es" and subtitulo_text.strip():
                         try:
                             target_lang = next((l for l in installed_languages if l.code == idioma_sub), None)
                             if target_lang: subtitulo_text = source_lang.get_translation(target_lang).translate(subtitulo_text)
                         except Exception as e: print(f"Error traduciendo subtítulo: {e}")
                     
-                    # Traducir texto acumulado y chunks
                     if idioma_acum != "es":
                         try:
                             target_lang_acum = next((l for l in installed_languages if l.code == idioma_acum), None)
                             if target_lang_acum:
-                                # Traducir texto plano
                                 if acumulado_text_flat.strip():
                                     acumulado_text_flat = source_lang.get_translation(target_lang_acum).translate(acumulado_text_flat)
                                 
-                                # Traducir cada chunk (creando una nueva lista)
                                 translated_chunks = []
                                 for chunk in transcription_chunks:
                                     translated_text = source_lang.get_translation(target_lang_acum).translate(chunk["text"])
@@ -152,7 +149,6 @@ def stream():
                                     translated_chunks.append(new_chunk)
                                 acumulado_chunks_final = translated_chunks
                         except Exception as e: print(f"Error traduciendo acumulado: {e}")
-                # --- FIN: LÓGICA DE TRADUCCIÓN ---
 
                 current_data = {
                     "subtitulo": subtitulo_text,
@@ -302,6 +298,23 @@ class TranscriptionWindow(QWidget):
         self._connect_signals()
         self._initialize_ui_state()
         self.old_pos = None
+        self._hide_button_timer = QTimer(self)
+        self._hide_button_timer.setSingleShot(True)
+        self._hide_button_timer.timeout.connect(self._fade_out_buttons)
+        self.mouse_check_timer = QTimer(self)
+        self.mouse_check_timer.setInterval(200)
+        self.mouse_check_timer.timeout.connect(self._check_mouse_hover)
+
+    def _check_mouse_hover(self):
+        if not self.transcription_active or self.language_combo.view().isVisible(): return
+        # Cambiamos la detección para que sea sobre el widget base visible
+        under_mouse = self.base_widget.underMouse() # <-- ¡Esta es la corrección!
+        if under_mouse:
+            self._hide_button_timer.stop()
+            self._fade_in_buttons()
+        else:
+            if not self._hide_button_timer.isActive():
+                self._hide_button_timer.start(300)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = event.globalPos()
@@ -309,13 +322,7 @@ class TranscriptionWindow(QWidget):
         if event.buttons() == Qt.LeftButton and self.old_pos: delta = event.globalPos() - self.old_pos; self.move(self.pos() + delta); self.old_pos = event.globalPos()
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = None
-    def enterEvent(self, event):
-        if self.transcription_active: self._fade_in_buttons()
-        super().enterEvent(event)
-    def leaveEvent(self, event):
-        if self.transcription_active and not self.language_combo.view().isVisible():
-            self._fade_out_buttons()
-        super().leaveEvent(event)
+    
     def _get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -410,13 +417,11 @@ class TranscriptionWindow(QWidget):
     def _format_timestamp(self, seconds: float) -> str:
         m, s = divmod(int(seconds), 60); h, m = divmod(m, 60)
         return f"[{h:02d}:{m:02d}:{s:02d}]"
-        
     def _toggle_recording(self):
         if self.transcription_active:
             self._stop_transcription()
         else:
             self._start_transcription()
-            
     def _start_transcription(self):
         global transcripcion_con_timestamps, transcripcion_plana, current_partial, qtextedit_buffer, shared_audio_data, transcription_chunks, shared_in_memory_audio_buffer
         transcripcion_con_timestamps = ""; transcripcion_plana = ""; current_partial = ""; qtextedit_buffer = ""
@@ -437,6 +442,7 @@ class TranscriptionWindow(QWidget):
             self.transcriber_thread.new_text.connect(self._update_text_area)
             self.transcriber_thread.finished.connect(self._on_transcription_finished)
             self.transcriber_thread.start()
+            self.mouse_check_timer.start()
             self.transcriber_thread.set_mute(self.mute_button.isChecked())
             self.transcription_active = True; self.transcription_status_changed.emit(True); self.text_area.clear(); self._already_stopped = False
         except Exception as e: progress.close(); QMessageBox.critical(self, "Error", str(e)); return
@@ -445,6 +451,7 @@ class TranscriptionWindow(QWidget):
         if self._already_stopped: return
         self._already_stopped = True
         if self.transcriber_thread: self.transcriber_thread.stop(); self.transcriber_thread.wait(); self.transcriber_thread = None
+        self.mouse_check_timer.stop()
         self.transcription_active = False; self.transcription_status_changed.emit(False)
         self._prompt_save_or_discard()
     def _on_transcription_finished(self): self._stop_transcription()
@@ -453,10 +460,12 @@ class TranscriptionWindow(QWidget):
         if self.transcriber_thread: self.transcriber_thread.set_mute(muted)
     def _fade_in_buttons(self):
         for w in [self.toggle_recording_button, self.mute_button, self.language_combo, self.qr_button]:
-            w.setVisible(True); anim = QPropertyAnimation(w, b"windowOpacity"); anim.setDuration(200); anim.setStartValue(w.windowOpacity() if w.isVisible() else 0); anim.setEndValue(1); anim.start()
+            if not w.isVisible() or w.windowOpacity() < 1.0:
+                w.setVisible(True); anim = QPropertyAnimation(w, b"windowOpacity"); anim.setDuration(200); anim.setStartValue(w.windowOpacity()); anim.setEndValue(1); anim.start()
     def _fade_out_buttons(self):
         for w in [self.toggle_recording_button, self.mute_button, self.language_combo, self.qr_button]:
-            anim = QPropertyAnimation(w, b"windowOpacity"); anim.setDuration(200); anim.setStartValue(w.windowOpacity()); anim.setEndValue(0); anim.finished.connect(lambda wid=w: wid.setVisible(False)); anim.start()
+            if w.isVisible():
+                anim = QPropertyAnimation(w, b"windowOpacity"); anim.setDuration(200); anim.setStartValue(w.windowOpacity()); anim.setEndValue(0); anim.finished.connect(lambda wid=w: wid.setVisible(False)); anim.start()
     def _update_ui_for_transcription_status(self, active: bool):
         for w in [self.device_label, self.device_combo, self.settings_button, self.close_button, self.window_title_label]: w.setVisible(not active)
         self.text_area.setVisible(active)
@@ -491,14 +500,33 @@ class TranscriptionWindow(QWidget):
                     transcripcion_plana += f"{texto_limpio} "
                 current_partial = ""
                 qtextedit_buffer = texto_limpio
+            
             if is_partial and current_time - last_qtextedit_update < qtextedit_update_interval:
                 return
+
             text_to_display = qtextedit_buffer
+            
+            # --- INICIO: LÓGICA DE TRADUCCIÓN PARA LA VENTANA QT ---
+            if self.selected_language != "es" and text_to_display.strip() and source_lang:
+                try:
+                    target_lang = next((l for l in installed_languages if l.code == self.selected_language), None)
+                    if target_lang:
+                        text_to_display = source_lang.get_translation(target_lang).translate(text_to_display)
+                except Exception as e:
+                    print(f"Error al traducir en la ventana local: {e}")
+                    text_to_display = "[Error de traducción] " + text_to_display
+            # --- FIN: LÓGICA DE TRADUCCIÓN ---
+
             self.text_area.setPlainText(text_to_display)
             self.text_area.verticalScrollBar().setValue(self.text_area.verticalScrollBar().maximum())
             last_qtextedit_update = current_time
             
-    def _on_language_changed(self, index): self.selected_language = self.language_combo.itemData(index)
+    def _on_language_changed(self, index):
+        self.selected_language = self.language_combo.itemData(index)
+        # Forzar una actualización de la UI con el texto actual para que se traduzca
+        if self.transcription_active and qtextedit_buffer.strip():
+            self._update_text_area({"text": qtextedit_buffer, "is_partial": True})
+
     def _prompt_save_or_discard(self):
         global shared_audio_data
         has_transcription, has_audio = (self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)), (self.current_audio_filepath and os.path.exists(self.current_audio_filepath))
