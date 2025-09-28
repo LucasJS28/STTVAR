@@ -22,7 +22,7 @@ import json
 import time
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory
 import threading
-import requests
+import requests  # <-- Dependencia ya existente
 from docx import Document
 from io import StringIO, BytesIO
 import socket
@@ -30,7 +30,7 @@ from pyngrok import ngrok, conf
 import io
 
 # =====================================================================
-# Sección de Flask y Variables Globales (Sin cambios)
+# Sección de Flask y Variables Globales (Con Optimizaciones)
 # =====================================================================
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -54,8 +54,15 @@ shared_in_memory_audio_buffer = []
 model = None
 q = queue.Queue(maxsize=20)
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-#MODEL_NAME = "mistral:7b-instruct-q4_K_M"
 MODEL_NAME = "phi3.5:latest"
+
+# =====================================================================
+# >>>>> OPTIMIZACIÓN 1: Sesión HTTP Persistente <<<<<
+# Se crea una única sesión para reutilizar la conexión con Ollama,
+# eliminando la latencia de crear una nueva conexión en cada llamada.
+# =====================================================================
+http_session = requests.Session()
+
 
 def check_ollama():
     try:
@@ -252,19 +259,72 @@ def download_audio():
         except Exception as e: print(f"Error al servir el archivo de audio: {e}"); return "Error al leer el archivo.", 500
     return "No hay archivo de audio disponible para descargar.", 404
 
-def process_ai_question(question, client_id):
-    if not ollama_available: client_ai_responses[client_id] = "Error: Ollama no está disponible."; return
-    if not question.strip(): client_ai_responses[client_id] = "Error: La pregunta está vacía."; return
-    try:
-        context = transcripcion_plana.strip() or "No hay contexto disponible."
-        prompt = (f"Eres un asistente que responde en español, usando el siguiente texto como referencia:\n\n{context}\n\nPregunta: {question}\nRespuesta:")
-        payload = {"model": MODEL_NAME, "prompt": prompt, "stream": False, "options": {"temperature": 0.7, "top_p": 0.9, "max_tokens": 512}}
-        response = requests.post(OLLAMA_API_URL, json=payload, timeout=30)
-        if response.status_code == 200:
-            client_ai_responses[client_id] = response.json().get("response", "No se recibió respuesta.").strip()
-        else: client_ai_responses[client_id] = f"Error en la API de Ollama: Código {response.status_code}."
-    except Exception as e: client_ai_responses[client_id] = f"Error al procesar la pregunta: {e}"
 
+# =====================================================================
+# >>>>> FUNCIÓN DE IA TOTALMENTE OPTIMIZADA <<<<<
+# Esta es la nueva función que implementa todas las mejoras.
+# =====================================================================
+def process_ai_question(question, client_id):
+    if not ollama_available:
+        client_ai_responses[client_id] = "Error: El servicio de IA (Ollama) no está disponible."
+        return
+    if not question.strip():
+        client_ai_responses[client_id] = "Error: La pregunta no puede estar vacía."
+        return
+
+    try:
+        # >>>>> OPTIMIZACIÓN 2: Limitar el contexto enviado <<<<<
+        # Se envían solo las últimas 1000 palabras para una respuesta más rápida.
+        context = transcripcion_plana.strip() or "No hay contexto disponible."
+        if len(context.split()) > 1000:
+            context = " ".join(context.split()[-1000:])
+
+        prompt = (f"Usando el siguiente texto como referencia:\n\n{context}\n\nPregunta: {question}\nRespuesta concisa en español:")
+        
+        payload = {
+            "model": MODEL_NAME,
+            "prompt": prompt,
+            # >>>>> OPTIMIZACIÓN 3: Habilitar streaming <<<<<
+            "stream": True,
+            "options": {
+                "temperature": 0.6,
+                # >>>>> OPTIMIZACIÓN 4: Limitar longitud de respuesta <<<<<
+                # 'num_predict' es el equivalente de 'max_tokens'. 256 es un buen balance.
+                "num_predict": 256
+            }
+        }
+        
+        # Se inicializa la respuesta para que el frontend la reciba vacía al principio.
+        client_ai_responses[client_id] = ""
+
+        # Se usa la sesión HTTP persistente (http_session) para la petición.
+        with http_session.post(OLLAMA_API_URL, json=payload, stream=True, timeout=60) as response:
+            if response.status_code == 200:
+                # Se procesa la respuesta línea por línea a medida que llega.
+                for line in response.iter_lines():
+                    if line:
+                        try:
+                            chunk = json.loads(line)
+                            content = chunk.get("response", "")
+                            if content:
+                                # Se añade cada fragmento a la respuesta global.
+                                client_ai_responses[client_id] += content
+                            
+                            # Si Ollama indica que ha terminado, se sale del bucle.
+                            if chunk.get("done"):
+                                break
+                        except json.JSONDecodeError:
+                            print(f"Error decodificando la respuesta JSON de Ollama: {line}")
+            else:
+                client_ai_responses[client_id] = f"Error en la API de Ollama: Código {response.status_code}."
+
+    except requests.exceptions.RequestException as e:
+        client_ai_responses[client_id] = f"Error de conexión con Ollama: {e}"
+    except Exception as e:
+        client_ai_responses[client_id] = f"Error inesperado al procesar la pregunta: {e}"
+
+# =====================================================================
+# El resto de la clase TranscriptionWindow y la UI no necesita cambios
 # =====================================================================
 
 class TranscriptionWindow(QWidget):
@@ -307,8 +367,7 @@ class TranscriptionWindow(QWidget):
 
     def _check_mouse_hover(self):
         if not self.transcription_active or self.language_combo.view().isVisible(): return
-        # Cambiamos la detección para que sea sobre el widget base visible
-        under_mouse = self.base_widget.underMouse() # <-- ¡Esta es la corrección!
+        under_mouse = self.base_widget.underMouse()
         if under_mouse:
             self._hide_button_timer.stop()
             self._fade_in_buttons()
@@ -506,7 +565,6 @@ class TranscriptionWindow(QWidget):
 
             text_to_display = qtextedit_buffer
             
-            # --- INICIO: LÓGICA DE TRADUCCIÓN PARA LA VENTANA QT ---
             if self.selected_language != "es" and text_to_display.strip() and source_lang:
                 try:
                     target_lang = next((l for l in installed_languages if l.code == self.selected_language), None)
@@ -515,7 +573,6 @@ class TranscriptionWindow(QWidget):
                 except Exception as e:
                     print(f"Error al traducir en la ventana local: {e}")
                     text_to_display = "[Error de traducción] " + text_to_display
-            # --- FIN: LÓGICA DE TRADUCCIÓN ---
 
             self.text_area.setPlainText(text_to_display)
             self.text_area.verticalScrollBar().setValue(self.text_area.verticalScrollBar().maximum())
@@ -523,7 +580,6 @@ class TranscriptionWindow(QWidget):
             
     def _on_language_changed(self, index):
         self.selected_language = self.language_combo.itemData(index)
-        # Forzar una actualización de la UI con el texto actual para que se traduzca
         if self.transcription_active and qtextedit_buffer.strip():
             self._update_text_area({"text": qtextedit_buffer, "is_partial": True})
 
