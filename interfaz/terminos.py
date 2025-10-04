@@ -1,4 +1,8 @@
+# terminos.py
+
 import sys
+import json
+import os
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QVBoxLayout, QCheckBox, QPushButton, QTextEdit,
     QHBoxLayout, QMessageBox, QLabel, QWidget, QFrame, QGraphicsDropShadowEffect
@@ -29,15 +33,17 @@ class DraggableDialog(QDialog):
             self.old_pos = None
 
 class TermsAndConditionsDialog(DraggableDialog):
-    def __init__(self, parent=None):
+    # NUEVO: Se añade el parámetro config_file para consistencia
+    def __init__(self, parent=None, config_file='config.json'):
         super().__init__(parent)
+        self.config_file = config_file # NUEVO: Guardar la ruta del archivo de config
         self.setWindowTitle("Términos y Condiciones - STTVAR")
         self.setMinimumSize(620, 700)
         self.init_ui()
         self._apply_styles()
 
     def init_ui(self):
-        # Contenedor principal con sombra y bordes
+        # ... (El resto de la UI es idéntico al que ya tenías)
         container = QWidget(self)
         container.setObjectName("containerWidget")
         
@@ -52,7 +58,6 @@ class TermsAndConditionsDialog(DraggableDialog):
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # --- CABECERA DE MARCA ---
         header_frame = QFrame()
         header_layout = QHBoxLayout(header_frame)
         header_layout.setContentsMargins(25, 20, 15, 15)
@@ -76,13 +81,11 @@ class TermsAndConditionsDialog(DraggableDialog):
         header_layout.addWidget(close_button, 0, Qt.AlignTop)
         layout.addWidget(header_frame)
         
-        # --- SEPARADOR DE CABECERA ---
         header_separator = QFrame()
         header_separator.setObjectName("separatorLine")
         header_separator.setFrameShape(QFrame.HLine)
         layout.addWidget(header_separator)
         
-        # --- CONTENIDO DE TÉRMINOS ---
         self.terms_text = QTextEdit()
         self.terms_text.setObjectName("termsText")
         self.terms_text.setReadOnly(True)
@@ -93,7 +96,6 @@ class TermsAndConditionsDialog(DraggableDialog):
         text_container_layout.addWidget(self.terms_text)
         layout.addLayout(text_container_layout)
         
-        # --- FOOTER CON ACCIONES ---
         footer_frame = QFrame()
         footer_frame.setObjectName("footerFrame")
         footer_layout = QVBoxLayout(footer_frame)
@@ -107,13 +109,11 @@ class TermsAndConditionsDialog(DraggableDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
 
-        # --- BOTÓN AÑADIDO ---
         self.learn_more_button = QPushButton("Saber más sobre STTVAR")
         self.learn_more_button.setObjectName("learnMoreButton")
         self.learn_more_button.setCursor(QCursor(Qt.PointingHandCursor))
         self.learn_more_button.clicked.connect(self.open_link)
         button_layout.addWidget(self.learn_more_button)
-        # --- FIN DEL BOTÓN AÑADIDO ---
 
         self.cancel_button = QPushButton("Rechazar")
         self.cancel_button.setObjectName("cancelButton")
@@ -137,6 +137,7 @@ class TermsAndConditionsDialog(DraggableDialog):
         main_layout.setContentsMargins(20, 20, 20, 20)
 
     def get_terms_html(self):
+        # ... (idéntico a tu versión)
         return """
         <style>
             body { color: #c0c0c0; font-family: 'Segoe UI', sans-serif; font-size: 14px; }
@@ -167,7 +168,8 @@ class TermsAndConditionsDialog(DraggableDialog):
             </ul>
         </body>
         """
-
+    
+    # MODIFICADO: Se añade la lógica de guardado
     def accept_terms(self):
         if not self.accept_checkbox.isChecked():
             msg_box = QMessageBox(self)
@@ -186,14 +188,41 @@ class TermsAndConditionsDialog(DraggableDialog):
             """)
             msg_box.exec_()
         else:
+            # NUEVO: Lógica para guardar la aceptación en config.json
+            self._save_acceptance()
             self.accept()
 
+    # NUEVO: Método para manejar el guardado en config.json
+    def _save_acceptance(self):
+        config_data = {}
+        try:
+            # Leer la configuración existente para no sobreescribir otros datos
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    config_data = json.load(f)
+        except (IOError, json.JSONDecodeError):
+            # Si el archivo está corrupto o es ilegible, empezamos de cero
+            pass
+        
+        # Añadir o actualizar la clave de aceptación de términos
+        config_data['terms_accepted'] = True
+        
+        # Escribir de vuelta al archivo
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(config_data, f, indent=4)
+        except IOError as e:
+            print(f"Error al guardar la configuración: {e}")
+            # Opcional: Mostrar un mensaje de error al usuario
+            QMessageBox.critical(self, "Error", "No se pudo guardar la configuración de los términos.")
+
+
     def open_link(self):
-        """Abre la URL del proyecto en el navegador."""
         url = QUrl("https://lucasjs28.github.io/STTVAR")
         QDesktopServices.openUrl(url)
 
     def _apply_styles(self):
+        # ... (idéntico a tu versión)
         self.setStyleSheet("""
             #containerWidget {
                 background: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, 
@@ -244,7 +273,6 @@ class TermsAndConditionsDialog(DraggableDialog):
             #cancelButton:hover { background-color: #444; color: #e0e0e0; }
             #cancelButton:pressed { background-color: #2f2f2f; }
             
-            /* --- ESTILOS PARA EL NUEVO BOTÓN --- */
             #learnMoreButton {
                 background-color: transparent;
                 color: #a0a0a0;
@@ -260,6 +288,7 @@ class TermsAndConditionsDialog(DraggableDialog):
             }
         """)
 
+# ... (El if __name__ == '__main__': se mantiene igual para pruebas)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     dialog = TermsAndConditionsDialog()

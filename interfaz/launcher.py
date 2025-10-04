@@ -2,6 +2,7 @@ import sys
 import time
 import subprocess
 import os
+import json # NUEVO: Importación para manejar el archivo de configuración
 import argostranslate.translate
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QLabel, QVBoxLayout, QMessageBox, QProgressBar,
@@ -12,6 +13,23 @@ from PyQt5.QtGui import QFont, QColor
 from transcripcion.vosk_utils import cargar_modelo
 from .grabadora import TranscriptionWindow
 from .terminos import TermsAndConditionsDialog
+
+# NUEVO: Constante para la ruta del archivo de configuración
+CONFIG_FILE = 'config.json'
+
+# NUEVO: Función para comprobar si los términos ya fueron aceptados
+def check_terms_acceptance():
+    """Comprueba si los términos han sido aceptados en config.json."""
+    if not os.path.exists(CONFIG_FILE):
+        return False
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            config = json.load(f)
+        # .get() es seguro, si la clave no existe devuelve False por defecto
+        return config.get('terms_accepted', False)
+    except (IOError, json.JSONDecodeError):
+        # Si hay un error, es más seguro asumir que no han sido aceptados
+        return False
 
 
 class DraggableDialog(QDialog):
@@ -71,14 +89,12 @@ class Launcher:
     def create_loading_dialog(self):
         dialog = DraggableDialog()
         dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        dialog.setAttribute(Qt.WA_TranslucentBackground) # Importante para la sombra
+        dialog.setAttribute(Qt.WA_TranslucentBackground)
         dialog.setFixedSize(400, 280)
 
-        # Contenedor principal para aplicar sombra y bordes
         container = QWidget(dialog)
         container.setObjectName("containerWidget")
         
-        # Sombra sutil para un efecto elevado
         shadow = QGraphicsDropShadowEffect(dialog)
         shadow.setBlurRadius(30)
         shadow.setXOffset(0)
@@ -105,13 +121,12 @@ class Launcher:
 
         self.progress_bar = QProgressBar(container)
         self.progress_bar.setObjectName("progressBar")
-        self.progress_bar.setTextVisible(False) # Ocultamos el texto por defecto
+        self.progress_bar.setTextVisible(False)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         
-        # --- NUEVO: Animación para la barra de progreso ---
         self.progress_animation = QPropertyAnimation(self.progress_bar, b"value")
-        self.progress_animation.setDuration(400) # Duración de la animación en ms
+        self.progress_animation.setDuration(400)
         self.progress_animation.setEasingCurve(QEasingCurve.InOutCubic)
 
         layout.addWidget(icon_label)
@@ -120,7 +135,6 @@ class Launcher:
         layout.addWidget(self.loading_label)
         layout.addWidget(self.progress_bar)
 
-        # Layout principal para el diálogo (necesario para la sombra)
         main_layout = QVBoxLayout(dialog)
         main_layout.addWidget(container)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -155,7 +169,7 @@ class Launcher:
                 border: 1px solid #4a4a4a;
                 border-radius: 9px;
                 background-color: #212121;
-                height: 18px; /* Altura fija para un mejor look */
+                height: 18px;
             }
             #progressBar::chunk {
                 background-color: #E74C3C;
@@ -204,7 +218,6 @@ class Launcher:
 
     def update_progress(self, text, value):
         self.loading_label.setText(text)
-        # Inicia la animación hacia el nuevo valor
         self.progress_animation.setStartValue(self.progress_bar.value())
         self.progress_animation.setEndValue(value)
         self.progress_animation.start()
@@ -217,15 +230,25 @@ class Launcher:
         QMessageBox.critical(None, "Error", f"No se pudo cargar los modelos: {str(error_message)}")
         sys.exit(1)
 
+    # MODIFICADO: Lógica para comprobar los términos antes de iniciar
     def _on_loading_finished(self):
         self.dialog.close()
-        terms_dialog = TermsAndConditionsDialog()
-        if terms_dialog.exec_() == QDialog.Accepted:
+        
+        # Comprobar si los términos ya fueron aceptados
+        if check_terms_acceptance():
+            # Si es así, abrir la ventana principal directamente
             self.open_main_window()
         else:
-            if self.ollama_process:
-                self.ollama_process.terminate()
-            sys.exit(0)
+            # Si no, mostrar el diálogo de términos
+            terms_dialog = TermsAndConditionsDialog(config_file=CONFIG_FILE)
+            if terms_dialog.exec_() == QDialog.Accepted:
+                # Si el usuario los acepta, abrir la ventana principal
+                self.open_main_window()
+            else:
+                # Si el usuario rechaza o cierra, terminar la aplicación
+                if self.ollama_process:
+                    self.ollama_process.terminate()
+                sys.exit(0)
 
     def open_main_window(self):
         self.main_window = TranscriptionWindow(self.model)

@@ -1,6 +1,9 @@
+# interfaz/menu.py
+
 import subprocess
 import os
 import sys
+import json
 import requests
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem,
@@ -14,6 +17,8 @@ from argostranslate import translate
 import pyttsx3
 from collections import Counter
 import re
+
+CONFIG_FILE = 'config.json'
 
 class TextHighlighter(QSyntaxHighlighter):
     def __init__(self, parent, original_text):
@@ -41,36 +46,56 @@ class TextHighlighter(QSyntaxHighlighter):
                 self.setFormat(start_idx, len(word), self.new_word_format)
             current_pos = start_idx + len(word)
 
+# =====================================================================
+# >>>>> OLLAMA WORKER TOTALMENTE MODIFICADO PARA STREAMING <<<<<
+# =====================================================================
 class OllamaWorker(QThread):
-    result_signal = pyqtSignal(str)
+    chunk_received = pyqtSignal(str)
+    finished = pyqtSignal()
     error_signal = pyqtSignal(str)
 
-    def __init__(self, prompt):
+    def __init__(self, prompt, model_name):
         super().__init__()
         self.prompt = prompt
+        self.model_name = model_name
 
     def run(self):
         try:
-            response = requests.post(
-                'http://localhost:11434/api/generate',
-                json={
-                    "model": "mistral:7b-instruct-q4_K_M",
-                    "prompt": self.prompt,
-                    "stream": False
-                },
-                timeout=60
-            )
-            if response.status_code == 200:
-                result = response.json()
-                self.result_signal.emit(result.get("response", "Error: No se recibió respuesta válida."))
-            else:
-                self.error_signal.emit(f"Error: Código de estado HTTP {response.status_code}")
+            payload = {
+                "model": self.model_name,
+                "prompt": self.prompt,
+                "stream": True,
+                "options": {
+                    "temperature": 0.6,
+                    "num_predict": 256
+                }
+            }
+            
+            with requests.post('http://localhost:11434/api/generate', json=payload, stream=True, timeout=60) as response:
+                if response.status_code == 200:
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line)
+                                content = chunk.get("response", "")
+                                if content:
+                                    self.chunk_received.emit(content)
+                                if chunk.get("done"):
+                                    break
+                            except json.JSONDecodeError:
+                                print(f"Error decodificando chunk de Ollama: {line}")
+                else:
+                    self.error_signal.emit(f"Error: Código de estado HTTP {response.status_code}")
+        
         except requests.exceptions.Timeout:
             self.error_signal.emit("Error: La consulta a Ollama excedió el tiempo límite.")
         except requests.exceptions.RequestException as e:
             self.error_signal.emit(f"Error al conectar con Ollama: {str(e)}")
         except Exception as e:
             self.error_signal.emit(f"Error inesperado: {str(e)}")
+        finally:
+            self.finished.emit()
+
 
 class TranslationWorker(QThread):
     result_signal = pyqtSignal(str)
@@ -109,6 +134,11 @@ class NuevaVentana(QWidget):
         self.setObjectName("MainWindow")
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(900, 600)
+        
+        self.ollama_available = False
+        self.ollama_model_name = "No disponible"
+        self._load_ollama_config()
+
         self.folder_path = "stt_guardados"
         self.audio_folder_path = "sttaudio_guardados"
         self.current_file = None
@@ -141,6 +171,7 @@ class NuevaVentana(QWidget):
             QPushButton { background-color: #0984e3; color: white; border: none; border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-top: 10px; }
             QPushButton:hover { background-color: #0652dd; }
             QPushButton:pressed { background-color: #0549b5; }
+            QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
             QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton { background-color: #ffffff; color: #0984e3; border: 2px solid #dfe6e9; padding: 0px; font-size: 14px; min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px; border-radius: 8px; margin: 4px; border-top: none; }
             QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled { background-color: #e6f0fa; color: #0652dd; border: 2px solid #b3d4fc; }
             QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled { background-color: #cce0ff; color: #0549b5; border: 2px solid #b3d4fc; }
@@ -161,6 +192,7 @@ class NuevaVentana(QWidget):
             #exportContainer, #iaQueryContainer, #iaResponseContainer { background-color: #f0f4f8; border: 2px solid #dfe6e9; border-radius: 12px; margin-top: 10px; padding: 12px; border-top: none; }
             QLineEdit { background-color: #ffffff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 8px; font-size: 13px; border-top: none; }
             QLineEdit:hover { background-color: #f8fafc; border: 2px solid #b3d4fc; }
+            QLabel#iaModelLabel { font-size: 10px; color: #6c757d; padding: 0 12px; margin-top: -5px; }
         """
 
         self.dark_theme = """
@@ -174,6 +206,7 @@ class NuevaVentana(QWidget):
             QPushButton { background-color: #0984e3; color: white; border: none; border-radius: 12px; padding: 8px 12px; font-size: 13px; margin-top: 10px; }
             QPushButton:hover { background-color: #0652dd; }
             QPushButton:pressed { background-color: #0549b5; }
+            QPushButton:disabled { background-color: #57606f; color: #a4b0be; }
             QPushButton#themeButton, QPushButton#ttsButton, QPushButton#speakerButton { background-color: #353b48; color: #74b9ff; border: 2px solid #4b5468; padding: 0px; font-size: 14px; min-width: 32px; max-width: 32px; min-height: 32px; max-height: 32px; border-radius: 8px; margin: 4px; border-top: none; }
             QPushButton#themeButton:hover, QPushButton#ttsButton:hover, QPushButton#speakerButton:hover:enabled { background-color: #34495e; color: #54a0ff; border: 2px solid #74b9ff; }
             QPushButton#themeButton:pressed, QPushButton#ttsButton:pressed, QPushButton#speakerButton:pressed:enabled { background-color: #2c3e50; color: #339af0; border: 2px solid #74b9ff; }
@@ -194,6 +227,7 @@ class NuevaVentana(QWidget):
             #exportContainer, #iaQueryContainer, #iaResponseContainer { background-color: #2d3436; border: 2px solid #4b5468; border-radius: 12px; margin-top: 10px; padding: 12px; border-top: none; }
             QLineEdit { background-color: #353b48; border: 2px solid #4b5468; border-radius: 12px; padding: 8px; font-size: 13px; color: #dfe6e9; border-top: none; }
             QLineEdit:hover { background-color: #3b434f; border: 2px solid #74b9ff; }
+            QLabel#iaModelLabel { font-size: 10px; color: #868e96; padding: 0 12px; margin-top: -5px; }
         """
 
         self.setStyleSheet(self.light_theme)
@@ -318,24 +352,29 @@ class NuevaVentana(QWidget):
         export_layout.setContentsMargins(10, 5, 10, 5)
         left_layout.addWidget(export_container)
 
-        ia_query_container = QWidget()
-        ia_query_container.setObjectName("iaQueryContainer")
+        self.ia_query_container = QWidget()
+        self.ia_query_container.setObjectName("iaQueryContainer")
         ia_query_layout = QHBoxLayout()
-        ia_query_container.setLayout(ia_query_layout)
+        self.ia_query_container.setLayout(ia_query_layout)
 
         ia_query_layout.addWidget(QLabel("💬 Preguntar a IA:"))
-
         self.ia_query_input = QLineEdit()
         self.ia_query_input.setPlaceholderText("Escribe tu consulta aquí...")
         ia_query_layout.addWidget(self.ia_query_input)
-
         self.ia_query_button = QPushButton("🤖 Enviar")
         self.ia_query_button.clicked.connect(self.handle_ia_query)
         ia_query_layout.addWidget(self.ia_query_button)
-
         ia_query_layout.setSpacing(12)
         ia_query_layout.setContentsMargins(10, 5, 10, 5)
-        left_layout.addWidget(ia_query_container)
+        left_layout.addWidget(self.ia_query_container)
+
+        self.ia_model_label = QLabel(f"Usando el modelo: {self.ollama_model_name}")
+        self.ia_model_label.setObjectName("iaModelLabel")
+        self.ia_model_label.setAlignment(Qt.AlignRight)
+        left_layout.addWidget(self.ia_model_label)
+        
+        self.ia_query_container.setVisible(self.ollama_available)
+        self.ia_model_label.setVisible(self.ollama_available)
 
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("🔍 Buscar por nombre de archivo...")
@@ -371,6 +410,28 @@ class NuevaVentana(QWidget):
 
         self.load_file_list()
         self.installed_languages = translate.get_installed_languages()
+
+    def _load_ollama_config(self):
+        try:
+            if os.path.exists(CONFIG_FILE):
+                with open(CONFIG_FILE, 'r') as f:
+                    config = json.load(f)
+                    self.ollama_model_name = config.get('ollama_model', 'No configurado')
+            else:
+                self.ollama_model_name = 'phi3.5:latest'
+        except (IOError, json.JSONDecodeError):
+            self.ollama_model_name = 'Error al leer config'
+
+        try:
+            response = requests.get('http://localhost:11434/api/tags', timeout=2)
+            if response.status_code == 200 and response.json().get("models"):
+                self.ollama_available = True
+            else:
+                self.ollama_available = False
+                self.ollama_model_name = "IA no disponible"
+        except requests.exceptions.RequestException:
+            self.ollama_available = False
+            self.ollama_model_name = "IA no disponible"
 
     def initialize_tts_engine(self):
         try:
@@ -417,14 +478,12 @@ class NuevaVentana(QWidget):
             self.translate_container.show()
             return
 
-        # Mostrar mensaje de carga
         self.ia_response_box.setPlainText("Traduciendo, por favor espera...")
         self.ia_response_box.show()
         self.tts_button.hide()
         self.translate_container.show()
         QApplication.processEvents()
 
-        # Crear y ejecutar el hilo de traducción
         self.translation_worker = TranslationWorker(self.texto_original, idioma_origen, idioma_destino, self.installed_languages)
         self.translation_worker.result_signal.connect(self.handle_translation_result)
         self.translation_worker.error_signal.connect(self.handle_translation_error)
@@ -599,26 +658,17 @@ class NuevaVentana(QWidget):
         if not self.current_file:
             QMessageBox.warning(self, "Advertencia", "Debes seleccionar un archivo para exportar.")
             return
-
         format_selected = self.export_combo.currentText()
-        if "PDF" in format_selected:
-            self.export_to_pdf()
-        elif "Word" in format_selected:
-            self.export_to_word()
-        elif "Markdown" in format_selected:
-            self.export_to_markdown()
+        if "PDF" in format_selected: self.export_to_pdf()
+        elif "Word" in format_selected: self.export_to_word()
+        elif "Markdown" in format_selected: self.export_to_markdown()
 
     def export_to_pdf(self):
-        from reportlab.lib.pagesizes import letter
-        from reportlab.pdfgen import canvas
-
-        export_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar como PDF", self.current_file.replace(".txt", ".pdf"), "Archivos PDF (*.pdf)"
-        )
-        if not export_path:
-            return
-
         try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            export_path, _ = QFileDialog.getSaveFileName(self, "Guardar como PDF", self.current_file.replace(".txt", ".pdf"), "Archivos PDF (*.pdf)")
+            if not export_path: return
             text = self.textbox.toPlainText()
             c = canvas.Canvas(export_path, pagesize=letter)
             width, height = letter
@@ -626,183 +676,124 @@ class NuevaVentana(QWidget):
             for line in text.splitlines():
                 c.drawString(40, y, line[:100])
                 y -= 15
-                if y < 40:
-                    c.showPage()
-                    y = height - 40
+                if y < 40: c.showPage(); y = height - 40
             c.save()
             QMessageBox.information(self, "Éxito", f"Archivo exportado a PDF:\n{export_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo exportar a PDF:\n{e}")
+        except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo exportar a PDF:\n{e}")
 
     def export_to_word(self):
-        from docx import Document
-
-        export_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar como Word", self.current_file.replace(".txt", ".docx"), "Documentos Word (*.docx)"
-        )
-        if not export_path:
-            return
-
         try:
+            from docx import Document
+            export_path, _ = QFileDialog.getSaveFileName(self, "Guardar como Word", self.current_file.replace(".txt", ".docx"), "Documentos Word (*.docx)")
+            if not export_path: return
             text = self.textbox.toPlainText()
             doc = Document()
-            for line in text.splitlines():
-                doc.add_paragraph(line)
+            for line in text.splitlines(): doc.add_paragraph(line)
             doc.save(export_path)
             QMessageBox.information(self, "Éxito", f"Archivo exportado a Word:\n{export_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo exportar a Word:\n{e}")
+        except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo exportar a Word:\n{e}")
 
     def export_to_markdown(self):
-        export_path, _ = QFileDialog.getSaveFileName(
-            self, "Guardar como Markdown", self.current_file.replace(".txt", ".md"), "Archivos Markdown (*.md)"
-        )
-        if not export_path:
-            return
-
+        export_path, _ = QFileDialog.getSaveFileName(self, "Guardar como Markdown", self.current_file.replace(".txt", ".md"), "Archivos Markdown (*.md)")
+        if not export_path: return
         try:
             text = self.textbox.toPlainText()
-            with open(export_path, "w", encoding="utf-8") as f:
-                f.write(text)
+            with open(export_path, "w", encoding="utf-8") as f: f.write(text)
             QMessageBox.information(self, "Éxito", f"Archivo exportado a Markdown:\n{export_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
+        except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo exportar a Markdown:\n{e}")
 
     def rename_file(self, row, column):
         item = self.file_list.item(row, 0)
-        if not item or item.text() == "⚠️ No se encontraron archivos.":
-            return
-
+        if not item or item.text() == "⚠️ No se encontraron archivos.": return
         old_name = item.data(Qt.UserRole)
         new_name, ok = QInputDialog.getText(self, "Renombrar archivo", "Nuevo nombre:", text=old_name)
         if ok and new_name:
-            if not new_name.endswith(".txt"):
-                new_name += ".txt"
-
+            if not new_name.endswith(".txt"): new_name += ".txt"
             old_path = os.path.join(self.folder_path, old_name)
             new_path = os.path.join(self.folder_path, new_name)
-            if os.path.exists(new_path):
-                QMessageBox.warning(self, "Error", "Ya existe un archivo con ese nombre.")
-                return
-
+            if os.path.exists(new_path): QMessageBox.warning(self, "Error", "Ya existe un archivo con ese nombre."); return
             try:
                 os.rename(old_path, new_path)
                 old_audio_path = os.path.join(self.audio_folder_path, os.path.splitext(old_name)[0] + ".wav")
                 new_audio_path = os.path.join(self.audio_folder_path, os.path.splitext(new_name)[0] + ".wav")
-                if os.path.exists(old_audio_path):
-                    os.rename(old_audio_path, new_audio_path)
+                if os.path.exists(old_audio_path): os.rename(old_audio_path, new_audio_path)
                 self.load_file_list()
-                if self.current_file == old_path:
-                    self.current_file = new_path
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
+                if self.current_file == old_path: self.current_file = new_path
+            except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo renombrar el archivo:\n{e}")
 
     def show_context_menu(self, position: QPoint):
         item = self.file_list.itemAt(position)
-        if not item or item.text() == "⚠️ No se encontraron archivos.":
-            return
-
+        if not item or item.text() == "⚠️ No se encontraron archivos.": return
         menu = QMenu()
         rename_action = menu.addAction("Renombrar archivo")
         delete_action = menu.addAction("Eliminar archivo")
         view_location_action = menu.addAction("Ver ubicación del archivo")
-        
         action = menu.exec_(self.file_list.viewport().mapToGlobal(position))
-
-        if action == rename_action:
-            self.rename_file(self.file_list.row(item), 0)
-        elif action == delete_action:
-            self.delete_file(item)
-        elif action == view_location_action:
-            self.open_file_location(item)
+        if action == rename_action: self.rename_file(self.file_list.row(item), 0)
+        elif action == delete_action: self.delete_file(item)
+        elif action == view_location_action: self.open_file_location(item)
 
     def open_file_location(self, item: QTableWidgetItem):
         filename = item.data(Qt.UserRole)
         if filename and filename != "⚠️ No se encontraron archivos.":
             filepath = os.path.join(self.folder_path, filename)
             if os.path.exists(filepath):
-                try:
-                    subprocess.Popen(['explorer.exe', '/select,', filepath])
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"No se pudo abrir la ubicación: {e}")
-            else:
-                QMessageBox.warning(self, "Advertencia", "El archivo no existe.")
+                try: subprocess.Popen(['explorer.exe', '/select,', filepath])
+                except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo abrir la ubicación: {e}")
+            else: QMessageBox.warning(self, "Advertencia", "El archivo no existe.")
 
     def delete_file(self, item: QTableWidgetItem):
         filename = item.data(Qt.UserRole)
-        if filename == "⚠️ No se encontraron archivos.":
-            return
-
+        if filename == "⚠️ No se encontraron archivos.": return
         filepath = os.path.join(self.folder_path, filename)
         audio_path = os.path.join(self.audio_folder_path, os.path.splitext(filename)[0] + ".wav")
-
-        reply = QMessageBox.question(
-            self, "Confirmar eliminación",
-            f"¿Estás seguro de que quieres eliminar el archivo:\n{filename}?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
-
+        reply = QMessageBox.question(self, "Confirmar eliminación", f"¿Estás seguro de que quieres eliminar:\n{filename}?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             try:
-                if self.current_audio_file == audio_path:
-                    self.audio_player.stop()
-                    self.current_audio_file = None
+                if self.current_audio_file == audio_path: self.audio_player.stop(); self.current_audio_file = None
                 os.remove(filepath)
-                if os.path.exists(audio_path):
-                    os.remove(audio_path)
+                if os.path.exists(audio_path): os.remove(audio_path)
                 if self.current_file == filepath:
-                    self.current_file = None
-                    self.textbox.clear()
-                    self.original_text = ""
-                    self.ia_response_box.clear()
-                    self.ia_response_box.hide()
-                    self.tts_button.hide()
-                    self.translate_container.hide()
-                    self.ia_query_input.clear()
-                    self.texto_original = ""
-                    self.stop_text_to_speech()
-                    self.save_button.hide()
-                    self.highlighter = None
+                    self.current_file = None; self.textbox.clear(); self.original_text = ""
+                    self.ia_response_box.clear(); self.ia_response_box.hide()
+                    self.tts_button.hide(); self.translate_container.hide()
+                    self.ia_query_input.clear(); self.texto_original = ""; self.stop_text_to_speech()
+                    self.save_button.hide(); self.highlighter = None
                 self.load_file_list()
-                QMessageBox.information(self, "Éxito", f"El archivo '{filename}' y su audio asociado (si existía) han sido eliminados.")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"No se pudo eliminar el archivo:\n{e}")
+                QMessageBox.information(self, "Éxito", f"'{filename}' y su audio asociado han sido eliminados.")
+            except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo eliminar el archivo:\n{e}")
 
     def handle_ia_query(self):
         pregunta = self.ia_query_input.text().strip()
-        if not pregunta:
-            QMessageBox.warning(self, "Advertencia", "Debes escribir una pregunta para consultar.")
-            return
-
+        if not pregunta: QMessageBox.warning(self, "Advertencia", "Debes escribir una pregunta."); return
         contenido = self.textbox.toPlainText().strip()
-        if not contenido:
-            QMessageBox.warning(self, "Advertencia", "El archivo está vacío, no hay contexto para la IA.")
-            return
-
-        prompt = (
-            "Eres un asistente que responde en español de forma clara y concreta, "
-            "usando el siguiente texto como referencia:\n\n"
-            f"{contenido}\n\n"
-            f"Pregunta: {pregunta}\n"
-            "Respuesta:"
-        )
-
-        self.ia_response_box.setPlainText("Consultando a la IA, por favor espera...")
+        if not contenido: QMessageBox.warning(self, "Advertencia", "No hay contexto para la IA."); return
+        prompt = f"Eres un asistente que responde en español claro y concreto, usando el siguiente texto como referencia:\n\n{contenido}\n\nPregunta: {pregunta}\nRespuesta:"
+        
+        self.ia_query_button.setEnabled(False)
+        self.ia_response_box.clear()
+        self.ia_response_box.setPlaceholderText("Consultando a la IA, por favor espera...")
         self.ia_response_box.show()
-        self.tts_button.show()
+        self.tts_button.hide()
         self.translate_container.show()
         QApplication.processEvents()
 
-        self.worker = OllamaWorker(prompt)
-        self.worker.result_signal.connect(self.handle_ia_response)
+        self.worker = OllamaWorker(prompt, self.ollama_model_name)
+        self.worker.chunk_received.connect(self.handle_ia_chunk)
+        self.worker.finished.connect(self.handle_ia_finished)
         self.worker.error_signal.connect(self.handle_ia_error)
         self.worker.start()
 
-    def handle_ia_response(self, response):
-        self.texto_original = response
-        self.ia_response_box.setPlainText(response)
+    def handle_ia_chunk(self, chunk):
+        self.ia_response_box.insertPlainText(chunk)
+        self.ia_response_box.verticalScrollBar().setValue(self.ia_response_box.verticalScrollBar().maximum())
+
+    def handle_ia_finished(self):
+        self.ia_query_button.setEnabled(True)
         self.ia_query_input.clear()
+        self.texto_original = self.ia_response_box.toPlainText()
         self.translate_combo.setCurrentIndex(0)
+        self.tts_button.show()
         self.stop_text_to_speech()
         self.is_reading = False
         self.tts_button.setText("🔊")
@@ -810,19 +801,13 @@ class NuevaVentana(QWidget):
 
     def handle_ia_error(self, error):
         self.ia_response_box.setPlainText(error)
-        self.ia_query_input.clear()
-        self.translate_combo.setCurrentIndex(0)
-        self.stop_text_to_speech()
-        self.is_reading = False
-        self.tts_button.setText("🔊")
+        self.ia_query_button.setEnabled(True)
+        self.tts_button.hide()
         self.worker = None
 
     def toggle_text_to_speech(self):
         text = self.ia_response_box.toPlainText().strip()
-        if not text:
-            QMessageBox.warning(self, "Advertencia", "No hay texto para leer.")
-            return
-
+        if not text: QMessageBox.warning(self, "Advertencia", "No hay texto para leer."); return
         try:
             if self.is_reading:
                 self.stop_text_to_speech()
@@ -846,19 +831,19 @@ class NuevaVentana(QWidget):
 
     def stop_text_to_speech(self):
         try:
-            if self.tts_engine:
-                self.tts_engine.stop()
-        except Exception:
-            pass
+            if self.tts_engine: self.tts_engine.stop()
+        except Exception: pass
 
     def closeEvent(self, event):
         self.stop_text_to_speech()
         self.audio_player.stop()
-        self.parent_transcription_window.show()
+        if self.parent_transcription_window: self.parent_transcription_window.show()
         event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = NuevaVentana(None)
+    class MockParent:
+        def show(self): print("Volviendo a la ventana de transcripción (simulado)")
+    window = NuevaVentana(MockParent())
     window.show()
     sys.exit(app.exec_())

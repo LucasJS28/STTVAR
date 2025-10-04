@@ -1,4 +1,4 @@
-# grabadora.py
+# interfaz/grabadora.py
 
 from PyQt5.QtWidgets import (
     QWidget, QTextEdit, QVBoxLayout, QHBoxLayout, QLabel,
@@ -22,16 +22,18 @@ import json
 import time
 from flask import Flask, Response, render_template, request, jsonify, send_from_directory
 import threading
-import requests  # <-- Dependencia ya existente
+import requests
 from docx import Document
 from io import StringIO, BytesIO
 import socket
 from pyngrok import ngrok, conf
 import io
+from .configuraciones import ConfiguracionIA
 
 # =====================================================================
-# Sección de Flask y Variables Globales (Con Optimizaciones)
+# Sección de Flask y Variables Globales
 # =====================================================================
+# MODIFICADO: Flask ahora busca la carpeta 'templates' relativa a este archivo.
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
@@ -42,7 +44,6 @@ current_partial = ""
 client_ai_responses = {}
 clientes_idioma = {}
 clientes_idioma_acumulado = {}
-translation_cache = {}
 chat_messages = []
 qtextedit_buffer = ""
 last_qtextedit_update = 0
@@ -54,25 +55,56 @@ shared_in_memory_audio_buffer = []
 model = None
 q = queue.Queue(maxsize=20)
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "phi3.5:latest"
+CONFIG_FILE = 'config.json'
+MODEL_NAME = None
+
+OLLAMA_AVAILABLE = False
+OLLAMA_STATUS_MESSAGE = "Iniciando..."
 
 # =====================================================================
-# >>>>> OPTIMIZACIÓN 1: Sesión HTTP Persistente <<<<<
-# Se crea una única sesión para reutilizar la conexión con Ollama,
-# eliminando la latencia de crear una nueva conexión en cada llamada.
+# Sesión HTTP y Funciones de Ayuda
 # =====================================================================
 http_session = requests.Session()
 
-
-def check_ollama():
+def load_config():
+    global MODEL_NAME
+    default_model = "phi3.5:latest"
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=5)
-        if response.status_code == 200 and any(model["name"] == MODEL_NAME for model in response.json().get("models", [])):
-            return True
-        return False
-    except:
-        return False
-ollama_available = check_ollama()
+        # La ruta del config.json es relativa al directorio raíz del proyecto
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                MODEL_NAME = json.load(f).get('ollama_model', default_model)
+        else:
+            MODEL_NAME = default_model
+    except (IOError, json.JSONDecodeError):
+        MODEL_NAME = default_model
+    print(f"Modelo de IA por defecto cargado: {MODEL_NAME}")
+
+def update_ollama_status():
+    global OLLAMA_AVAILABLE, OLLAMA_STATUS_MESSAGE
+    load_config()
+    try:
+        response = requests.get("http://localhost:11434/api/tags", timeout=3)
+        if response.status_code == 200:
+            models = response.json().get("models", [])
+            if not models:
+                OLLAMA_AVAILABLE = False
+                OLLAMA_STATUS_MESSAGE = "Error: IA activa, pero sin modelos. Usa 'ollama pull <modelo>'."
+            elif any(m['name'] == MODEL_NAME for m in models):
+                OLLAMA_AVAILABLE = True
+                OLLAMA_STATUS_MESSAGE = f"Ollama conectado con el modelo {MODEL_NAME}."
+            else:
+                OLLAMA_AVAILABLE = False
+                OLLAMA_STATUS_MESSAGE = f"Error: Modelo '{MODEL_NAME}' no instalado. Selecciona otro en la config 🧠."
+        else:
+            OLLAMA_AVAILABLE = False
+            OLLAMA_STATUS_MESSAGE = f"Error: No se pudo comunicar con Ollama (Código: {response.status_code})."
+    except requests.exceptions.RequestException:
+        OLLAMA_AVAILABLE = False
+        OLLAMA_STATUS_MESSAGE = "Error: IA no disponible. Asegúrate de que Ollama esté en ejecución."
+    print(f"Estado de Ollama: {OLLAMA_STATUS_MESSAGE}")
+
+update_ollama_status()
 
 def setup_argos():
     try:
@@ -87,8 +119,12 @@ setup_argos()
 installed_languages = argostranslate.translate.get_installed_languages()
 source_lang = next((l for l in installed_languages if l.code == "es"), None)
 
+# =====================================================================
+# Rutas de la Aplicación Flask
+# =====================================================================
 @app.route("/")
-def index(): return render_template("index.html")
+def index():
+    return render_template('index.html', ollama_is_available=OLLAMA_AVAILABLE)
 
 @app.route('/chat/send', methods=['POST'])
 def send_chat_message():
@@ -259,77 +295,42 @@ def download_audio():
         except Exception as e: print(f"Error al servir el archivo de audio: {e}"); return "Error al leer el archivo.", 500
     return "No hay archivo de audio disponible para descargar.", 404
 
-
-# =====================================================================
-# >>>>> FUNCIÓN DE IA TOTALMENTE OPTIMIZADA <<<<<
-# Esta es la nueva función que implementa todas las mejoras.
-# =====================================================================
 def process_ai_question(question, client_id):
-    if not ollama_available:
-        client_ai_responses[client_id] = "Error: El servicio de IA (Ollama) no está disponible."
+    if not OLLAMA_AVAILABLE:
+        client_ai_responses[client_id] = OLLAMA_STATUS_MESSAGE
         return
     if not question.strip():
         client_ai_responses[client_id] = "Error: La pregunta no puede estar vacía."
         return
-
     try:
-        # >>>>> OPTIMIZACIÓN 2: Limitar el contexto enviado <<<<<
-        # Se envían solo las últimas 1000 palabras para una respuesta más rápida.
         context = transcripcion_plana.strip() or "No hay contexto disponible."
         if len(context.split()) > 1000:
             context = " ".join(context.split()[-1000:])
-
         prompt = (f"Usando el siguiente texto como referencia:\n\n{context}\n\nPregunta: {question}\nRespuesta concisa en español:")
-        
-        payload = {
-            "model": MODEL_NAME,
-            "prompt": prompt,
-            # >>>>> OPTIMIZACIÓN 3: Habilitar streaming <<<<<
-            "stream": True,
-            "options": {
-                "temperature": 0.6,
-                # >>>>> OPTIMIZACIÓN 4: Limitar longitud de respuesta <<<<<
-                # 'num_predict' es el equivalente de 'max_tokens'. 256 es un buen balance.
-                "num_predict": 256
-            }
-        }
-        
-        # Se inicializa la respuesta para que el frontend la reciba vacía al principio.
+        payload = {"model": MODEL_NAME, "prompt": prompt, "stream": True, "options": {"temperature": 0.6, "num_predict": 256}}
         client_ai_responses[client_id] = ""
-
-        # Se usa la sesión HTTP persistente (http_session) para la petición.
         with http_session.post(OLLAMA_API_URL, json=payload, stream=True, timeout=60) as response:
             if response.status_code == 200:
-                # Se procesa la respuesta línea por línea a medida que llega.
                 for line in response.iter_lines():
                     if line:
                         try:
                             chunk = json.loads(line)
                             content = chunk.get("response", "")
-                            if content:
-                                # Se añade cada fragmento a la respuesta global.
-                                client_ai_responses[client_id] += content
-                            
-                            # Si Ollama indica que ha terminado, se sale del bucle.
-                            if chunk.get("done"):
-                                break
-                        except json.JSONDecodeError:
-                            print(f"Error decodificando la respuesta JSON de Ollama: {line}")
+                            if content: client_ai_responses[client_id] += content
+                            if chunk.get("done"): break
+                        except json.JSONDecodeError: print(f"Error decodificando la respuesta JSON de Ollama: {line}")
             else:
                 client_ai_responses[client_id] = f"Error en la API de Ollama: Código {response.status_code}."
-
     except requests.exceptions.RequestException as e:
         client_ai_responses[client_id] = f"Error de conexión con Ollama: {e}"
     except Exception as e:
         client_ai_responses[client_id] = f"Error inesperado al procesar la pregunta: {e}"
 
 # =====================================================================
-# El resto de la clase TranscriptionWindow y la UI no necesita cambios
+# Clase de la Ventana de Transcripción con UI
 # =====================================================================
-
 class TranscriptionWindow(QWidget):
     transcription_status_changed = pyqtSignal(bool)
-
     def __init__(self, model):
         super().__init__()
         self.model = model
@@ -348,11 +349,10 @@ class TranscriptionWindow(QWidget):
         self.ngrok_tunnel = None
         self.public_url = None
         self.config_file = 'config.json'
-        
+        self.ia_settings_window = None
         self.flask_thread = threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 5000, 'debug': False, 'use_reloader': False})
         self.flask_thread.daemon = True
         self.flask_thread.start()
-
         self._setup_ui()
         self._populate_devices()
         self._connect_signals()
@@ -364,24 +364,22 @@ class TranscriptionWindow(QWidget):
         self.mouse_check_timer = QTimer(self)
         self.mouse_check_timer.setInterval(200)
         self.mouse_check_timer.timeout.connect(self._check_mouse_hover)
-
     def _check_mouse_hover(self):
         if not self.transcription_active or self.language_combo.view().isVisible(): return
-        under_mouse = self.base_widget.underMouse()
-        if under_mouse:
+        if self.base_widget.underMouse():
             self._hide_button_timer.stop()
             self._fade_in_buttons()
-        else:
-            if not self._hide_button_timer.isActive():
-                self._hide_button_timer.start(300)
-
+        elif not self._hide_button_timer.isActive():
+            self._hide_button_timer.start(300)
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = event.globalPos()
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton and self.old_pos: delta = event.globalPos() - self.old_pos; self.move(self.pos() + delta); self.old_pos = event.globalPos()
+        if event.buttons() == Qt.LeftButton and self.old_pos:
+            delta = event.globalPos() - self.old_pos
+            self.move(self.pos() + delta)
+            self.old_pos = event.globalPos()
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton: self.old_pos = None
-    
     def _get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -396,35 +394,44 @@ class TranscriptionWindow(QWidget):
             with open(self.config_file, 'r') as f:
                 try: token = json.load(f).get('ngrok_authtoken')
                 except json.JSONDecodeError: pass
-        
         if not token:
             token, ok = QInputDialog.getText(self, 'Configuración de Ngrok', 'Por favor, introduce tu Authtoken de Ngrok.')
             if ok and token:
                 with open(self.config_file, 'w') as f: json.dump({'ngrok_authtoken': token}, f)
             else: return False
-        
-        try: ngrok.set_auth_token(token); return True
-        except Exception as e: QMessageBox.critical(self, "Error de Ngrok", f"No se pudo configurar el token: {e}"); return False
+        try:
+            ngrok.set_auth_token(token)
+            return True
+        except Exception as e:
+            QMessageBox.critical(self, "Error de Ngrok", f"No se pudo configurar el token: {e}")
+            return False
     def _on_qr_button_clicked(self):
         if self.ngrok_tunnel: self._show_qr_window(); return
-        if not self._setup_ngrok_authtoken(): QMessageBox.warning(self, "Cancelado", "Se necesita el Authtoken."); return
+        if not self._setup_ngrok_authtoken():
+            QMessageBox.warning(self, "Cancelado", "Se necesita el Authtoken.")
+            return
         progress = QProgressDialog("Creando enlace...", None, 0, 0, self)
         progress.setWindowModality(Qt.WindowModal); progress.setCancelButton(None); progress.show(); QApplication.processEvents()
         try:
             ngrok.kill()
             self.ngrok_tunnel = ngrok.connect(5000)
             self.public_url = self.ngrok_tunnel.public_url
-            progress.close(); self._show_qr_window()
-        except Exception as e: progress.close(); QMessageBox.critical(self, "Error de Ngrok", f"No se pudo crear el túnel: {e}")
+            progress.close()
+            self._show_qr_window()
+        except Exception as e:
+            progress.close()
+            QMessageBox.critical(self, "Error de Ngrok", f"No se pudo crear el túnel: {e}")
     def _show_qr_window(self):
         local_ip = self._get_local_ip()
         try:
             import subprocess
             current_dir = os.path.dirname(os.path.abspath(__file__))
             qr_app_path = os.path.join(current_dir, "qr_app.py")
-            if not os.path.exists(qr_app_path): qr_app_path = os.path.join(os.path.dirname(current_dir), "interfaz", "qr_app.py")
+            if not os.path.exists(qr_app_path):
+                qr_app_path = os.path.join(os.path.dirname(current_dir), "interfaz", "qr_app.py")
             subprocess.Popen([sys.executable, qr_app_path, f"http://{local_ip}:5000", self.public_url])
-        except Exception as e: QMessageBox.critical(self, "Error", f"No se pudo abrir la ventana de QR: {e}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo abrir la ventana de QR: {e}")
     def _setup_ui(self):
         self.base_widget = QWidget(self); self.base_widget.setObjectName("baseWidget"); self.base_widget.setMouseTracking(True); self.setMouseTracking(True)
         self.base_widget.setStyleSheet("#baseWidget { background-color: rgba(30, 30, 30, 200); border: 1px solid rgba(70, 70, 70, 150); border-radius: 10px; }")
@@ -447,12 +454,15 @@ class TranscriptionWindow(QWidget):
         self.qr_button = QPushButton("🌐"); self.qr_button.setToolTip("Compartir"); self.qr_button.setCursor(Qt.PointingHandCursor); self.qr_button.setFixedSize(36, 36)
         self.qr_button.setStyleSheet("QPushButton { background-color: #444; border: 2px solid #666; border-radius: 18px; color: #ddd; font-size: 18px; } QPushButton:hover { border-color: #e74c3c; }")
         self.buttons_layout = QHBoxLayout(); self.buttons_layout.setSpacing(10); self.buttons_layout.addWidget(self.toggle_recording_button); self.buttons_layout.addWidget(self.mute_button); self.buttons_layout.addWidget(self.qr_button); self.buttons_layout.addWidget(self.language_combo)
-        self.settings_button = QPushButton("⚙️"); self.settings_button.setFixedSize(32, 32); self.settings_button.setCursor(Qt.PointingHandCursor)
+        self.ai_settings_button = QPushButton("🧠"); self.ai_settings_button.setFixedSize(32, 32); self.ai_settings_button.setCursor(Qt.PointingHandCursor); self.ai_settings_button.setToolTip("Configurar modelo de Inteligencia Artificial")
+        self.ai_settings_button.setStyleSheet("QPushButton { background-color: #4a4a4a; border: 1px solid #5a5a5a; color: #dddddd; border-radius: 8px; font-size: 16px; } QPushButton:hover { background-color: #5a5a5a; }")
+        self.settings_button = QPushButton("⚙️"); self.settings_button.setFixedSize(32, 32); self.settings_button.setCursor(Qt.PointingHandCursor); self.settings_button.setToolTip("Abrir menú principal y ajustes")
         self.settings_button.setStyleSheet("QPushButton { background-color: #4a4a4a; border: 1px solid #5a5a5a; color: #dddddd; border-radius: 8px; } QPushButton:hover { background-color: #5a5a5a; }")
         self.text_area = QTextEdit(); self.text_area.setReadOnly(True); self.text_area.setPlaceholderText("Transcribiendo...")
         self.text_area.setStyleSheet("QTextEdit { background-color: rgba(0,0,0,0); font-family: 'Segoe UI'; font-size: 18px; padding: 5px 10px; border: none; color: #f0f0f0; }")
         self.control_layout = QHBoxLayout(); self.control_layout.setContentsMargins(10, 5, 10, 5); self.control_layout.setSpacing(8)
-        self.control_layout.addWidget(self.device_label); self.control_layout.addWidget(self.device_combo, 1); self.control_layout.addLayout(self.buttons_layout); self.control_layout.addWidget(self.settings_button)
+        self.control_layout.addWidget(self.device_label); self.control_layout.addWidget(self.device_combo, 1); self.control_layout.addLayout(self.buttons_layout)
+        self.control_layout.addWidget(self.ai_settings_button); self.control_layout.addWidget(self.settings_button)
         self.main_layout = QVBoxLayout(self.base_widget); self.main_layout.setContentsMargins(5, 5, 5, 5); self.main_layout.setSpacing(5); self.main_layout.addLayout(self.title_bar_layout)
         self.main_layout.addLayout(self.control_layout); self.main_layout.addWidget(self.text_area); self.main_layout.addItem(QSpacerItem(20, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
         self.setLayout(QVBoxLayout()); self.layout().setContentsMargins(0, 0, 0, 0); self.layout().addWidget(self.base_widget)
@@ -460,13 +470,27 @@ class TranscriptionWindow(QWidget):
         self.toggle_recording_button.clicked.connect(self._toggle_recording)
         self.transcription_status_changed.connect(self._update_ui_for_transcription_status)
         self.settings_button.clicked.connect(self._open_settings_window)
+        self.ai_settings_button.clicked.connect(self._open_ai_settings)
         self.mute_button.clicked.connect(self._toggle_mute)
         self.qr_button.clicked.connect(self._on_qr_button_clicked)
         self.language_combo.currentIndexChanged.connect(self._on_language_changed)
+    def _open_ai_settings(self):
+        if not self.ia_settings_window or not self.ia_settings_window.isVisible():
+            self.ia_settings_window = ConfiguracionIA(self, config_file=self.config_file)
+            self.ia_settings_window.config_saved.connect(self._on_ai_config_saved)
+            self.ia_settings_window.show()
+    def _on_ai_config_saved(self):
+        print("Recargando configuración de IA tras guardado...")
+        update_ollama_status()
+        if not OLLAMA_AVAILABLE:
+            QMessageBox.warning(self, "Advertencia de IA", OLLAMA_STATUS_MESSAGE)
     def _initialize_ui_state(self):
-        self.device_label.setVisible(True); self.device_combo.setVisible(True); self.text_area.setVisible(False); self.toggle_recording_button.setVisible(True)
-        self.toggle_recording_button.setWindowOpacity(1); self.mute_button.setVisible(False); self.mute_button.setWindowOpacity(0); self.language_combo.setVisible(False)
-        self.language_combo.setWindowOpacity(0); self.qr_button.setVisible(False); self.qr_button.setWindowOpacity(0)
+        for w in [self.device_label, self.device_combo, self.settings_button, self.ai_settings_button]: w.setVisible(True)
+        self.text_area.setVisible(False)
+        self.toggle_recording_button.setVisible(True); self.toggle_recording_button.setWindowOpacity(1)
+        self.mute_button.setVisible(False); self.mute_button.setWindowOpacity(0)
+        self.language_combo.setVisible(False); self.language_combo.setWindowOpacity(0)
+        self.qr_button.setVisible(False); self.qr_button.setWindowOpacity(0)
     def _populate_devices(self):
         try:
             devices = sd.query_devices(); input_devices = [(i, d['name']) for i, d in enumerate(devices) if d['max_input_channels'] > 0]
@@ -477,10 +501,8 @@ class TranscriptionWindow(QWidget):
         m, s = divmod(int(seconds), 60); h, m = divmod(m, 60)
         return f"[{h:02d}:{m:02d}:{s:02d}]"
     def _toggle_recording(self):
-        if self.transcription_active:
-            self._stop_transcription()
-        else:
-            self._start_transcription()
+        if self.transcription_active: self._stop_transcription()
+        else: self._start_transcription()
     def _start_transcription(self):
         global transcripcion_con_timestamps, transcripcion_plana, current_partial, qtextedit_buffer, shared_audio_data, transcription_chunks, shared_in_memory_audio_buffer
         transcripcion_con_timestamps = ""; transcripcion_plana = ""; current_partial = ""; qtextedit_buffer = ""
@@ -493,8 +515,8 @@ class TranscriptionWindow(QWidget):
         output_dir, audio_output_dir = "stt_guardados", "sttaudio_guardados"
         os.makedirs(output_dir, exist_ok=True); os.makedirs(audio_output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.current_transcription_filepath = f"{output_dir}/{timestamp}.txt"
-        self.current_audio_filepath = f"{audio_output_dir}/{timestamp}.wav"
+        self.current_transcription_filepath = os.path.join(output_dir, f"{timestamp}.txt")
+        self.current_audio_filepath = os.path.join(audio_output_dir, f"{timestamp}.wav")
         try:
             shared_audio_data.clear()
             self.transcriber_thread = TranscriberThread(self.model, device_index, self.current_transcription_filepath, self.current_audio_filepath, shared_in_memory_audio_buffer)
@@ -526,7 +548,7 @@ class TranscriptionWindow(QWidget):
             if w.isVisible():
                 anim = QPropertyAnimation(w, b"windowOpacity"); anim.setDuration(200); anim.setStartValue(w.windowOpacity()); anim.setEndValue(0); anim.finished.connect(lambda wid=w: wid.setVisible(False)); anim.start()
     def _update_ui_for_transcription_status(self, active: bool):
-        for w in [self.device_label, self.device_combo, self.settings_button, self.close_button, self.window_title_label]: w.setVisible(not active)
+        for w in [self.device_label, self.device_combo, self.settings_button, self.ai_settings_button, self.close_button, self.window_title_label]: w.setVisible(not active)
         self.text_area.setVisible(active)
         if active:
             self.toggle_recording_button.setText("■ Detener"); self.mute_button.setText("🎙️" if not self.mute_button.isChecked() else "🔇")
@@ -534,7 +556,6 @@ class TranscriptionWindow(QWidget):
         else:
             self.toggle_recording_button.setText("🔴 Iniciar"); self.toggle_recording_button.setVisible(True); self.toggle_recording_button.setWindowOpacity(1)
             for w in [self.mute_button, self.language_combo, self.qr_button]: w.setVisible(False); w.setWindowOpacity(0)
-    
     def _update_text_area(self, data: dict):
         global transcripcion_con_timestamps, transcripcion_plana, current_partial, qtextedit_buffer, last_qtextedit_update, transcription_chunks
         text_es = data.get("text", "")
@@ -542,50 +563,35 @@ class TranscriptionWindow(QWidget):
         if text_es.strip() or not is_partial:
             current_time = time.time()
             if is_partial:
-                qtextedit_buffer = text_es
-                current_partial = text_es
+                qtextedit_buffer = text_es; current_partial = text_es
             else:
                 start_sec, end_sec = data.get("start_sec"), data.get("end_sec")
                 if start_sec is None: start_sec = time.time() - self.start_time
-                timestamp_str = self._format_timestamp(start_sec)
-                texto_limpio = text_es.strip()
+                timestamp_str = self._format_timestamp(start_sec); texto_limpio = text_es.strip()
                 if texto_limpio:
-                    chunk_data = {
-                        "timestamp": timestamp_str, "text": texto_limpio,
-                        "start_sec": start_sec, "end_sec": end_sec if end_sec is not None else start_sec + 2
-                    }
+                    chunk_data = {"timestamp": timestamp_str, "text": texto_limpio, "start_sec": start_sec, "end_sec": end_sec if end_sec is not None else start_sec + 2}
                     transcription_chunks.append(chunk_data)
                     transcripcion_con_timestamps += f"{timestamp_str} {texto_limpio}\n"
                     transcripcion_plana += f"{texto_limpio} "
-                current_partial = ""
-                qtextedit_buffer = texto_limpio
-            
-            if is_partial and current_time - last_qtextedit_update < qtextedit_update_interval:
-                return
-
+                current_partial = ""; qtextedit_buffer = texto_limpio
+            if is_partial and current_time - last_qtextedit_update < qtextedit_update_interval: return
             text_to_display = qtextedit_buffer
-            
             if self.selected_language != "es" and text_to_display.strip() and source_lang:
                 try:
                     target_lang = next((l for l in installed_languages if l.code == self.selected_language), None)
-                    if target_lang:
-                        text_to_display = source_lang.get_translation(target_lang).translate(text_to_display)
-                except Exception as e:
-                    print(f"Error al traducir en la ventana local: {e}")
-                    text_to_display = "[Error de traducción] " + text_to_display
-
+                    if target_lang: text_to_display = source_lang.get_translation(target_lang).translate(text_to_display)
+                except Exception as e: print(f"Error al traducir en la ventana local: {e}"); text_to_display = "[Error de traducción] " + text_to_display
             self.text_area.setPlainText(text_to_display)
             self.text_area.verticalScrollBar().setValue(self.text_area.verticalScrollBar().maximum())
             last_qtextedit_update = current_time
-            
     def _on_language_changed(self, index):
         self.selected_language = self.language_combo.itemData(index)
         if self.transcription_active and qtextedit_buffer.strip():
             self._update_text_area({"text": qtextedit_buffer, "is_partial": True})
-
     def _prompt_save_or_discard(self):
         global shared_audio_data
-        has_transcription, has_audio = (self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)), (self.current_audio_filepath and os.path.exists(self.current_audio_filepath))
+        has_transcription = self.current_transcription_filepath and os.path.exists(self.current_transcription_filepath)
+        has_audio = self.current_audio_filepath and os.path.exists(self.current_audio_filepath)
         if not has_transcription and not has_audio: shared_audio_data.clear(); return
         save_transcription, save_audio, share_audio = False, False, False
         if has_transcription: save_transcription = (QMessageBox.question(self, "Guardar", "¿Guardar transcripción?", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes)

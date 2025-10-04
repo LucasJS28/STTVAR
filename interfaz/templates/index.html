@@ -438,6 +438,10 @@ input:checked + .slider:before { transform: translateX(20px); }
 
   <div id="acumulado-counter" class="counter"></div>
   
+  <!-- ========================================================== -->
+  <!-- INICIO DEL BLOQUE CONDICIONAL PARA LAS FUNCIONES DE IA -->
+  <!-- ========================================================== -->
+  {% if ollama_is_available %}
   <div class="quick-actions-section">
     <button class="quick-action-btn" onclick="quickAction('summarize')">
       <i class="fas fa-align-left"></i> Resumir
@@ -469,6 +473,17 @@ input:checked + .slider:before { transform: translateX(20px); }
   </div>
   
   <div id="ai_response" class="hidden"></div>
+  {% else %}
+  <!-- Si la IA no está disponible, solo mostramos el botón de descargar audio en su propia sección -->
+  <div class="quick-actions-section" style="grid-template-columns: 1fr; padding-top: 1.5rem; padding-bottom: 0;">
+      <button id="downloadAudioBtn" class="quick-action-btn" disabled>
+          <i class="fas fa-volume-up"></i> Descargar Audio
+      </button>
+  </div>
+  {% endif %}
+  <!-- ========================================================== -->
+  <!-- FIN DEL BLOQUE CONDICIONAL -->
+  <!-- ========================================================== -->
   
   <div class="status" id="status">Conectado</div>
 </div>
@@ -723,7 +738,7 @@ input:checked + .slider:before { transform: translateX(20px); }
       elements.zenAcumulado.scrollTop = elements.zenAcumulado.scrollHeight;
     }
 
-    if (data.ai_response && data.ai_response.trim()) {
+    if (elements.aiResponse && data.ai_response && data.ai_response.trim()) {
         if (elements.aiResponse.textContent !== data.ai_response) {
             elements.aiResponse.classList.remove('hidden');
             elements.aiResponse.textContent = data.ai_response;
@@ -785,6 +800,10 @@ input:checked + .slider:before { transform: translateX(20px); }
   function sendChatMessage(payload) { fetch('/chat/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(res => { if (!res.ok) updateStatus("Error al enviar.", "error"); else if (payload.message) elements.chatMessageInput.value = ''; else if (payload.isNote) updateStatus("Apuntes compartidos.", "success"); }).catch(() => updateStatus("Error de red.", "error")).finally(() => { if(payload.message) elements.chatMessageInput.focus(); }); }
   
   function sendQuestion(customPrompt) {
+    if (!elements.aiQuestion) {
+        console.warn("Intento de enviar pregunta sin UI de IA disponible.");
+        return;
+    }
     const question = customPrompt || elements.aiQuestion.value.trim();
     if (!question) {
         updateStatus("Por favor, escribe una pregunta.", "error");
@@ -861,6 +880,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 
   function renderQuestionHistory() {
       const popup = elements.questionHistoryPopup;
+      if (!popup) return;
       popup.innerHTML = ''; 
       if (clientState.questionHistory.length === 0) {
         popup.innerHTML = '<div class="history-item-empty">No hay historial de preguntas.</div>';
@@ -1013,12 +1033,19 @@ input:checked + .slider:before { transform: translateX(20px); }
   elements.themeToggle.addEventListener('click',()=>{document.body.classList.toggle('dark-theme');const isDark=document.body.classList.contains('dark-theme');elements.themeToggle.innerHTML=isDark?'<i class="fas fa-sun"></i>':'<i class="fas fa-moon"></i>'; saveSettings();});
   elements.settingsBtn.addEventListener('click',()=>elements.settingsModalOverlay.classList.add('active'));
   elements.closeSettingsBtn.addEventListener('click',()=>elements.settingsModalOverlay.classList.remove('active'));
-  elements.sendQuestionBtn.addEventListener("click",()=>sendQuestion());
-  elements.aiQuestion.addEventListener("keypress",e=>{if(e.key==="Enter")sendQuestion();});
+  if (elements.sendQuestionBtn) {
+    elements.sendQuestionBtn.addEventListener("click",()=>sendQuestion());
+  }
+  if (elements.aiQuestion) {
+    elements.aiQuestion.addEventListener("keypress",e=>{if(e.key==="Enter")sendQuestion();});
+  }
   
-  elements.questionHistoryBtn.addEventListener('click', (e) => { e.stopPropagation(); const isHidden = elements.questionHistoryPopup.classList.toggle('hidden'); if (!isHidden) { renderQuestionHistory(); } });
-  elements.questionHistoryPopup.addEventListener('click', (e) => { e.stopPropagation(); const item = e.target.closest('.history-item'); const deleteBtn = e.target.closest('.history-delete-btn'); if (deleteBtn) { const index = parseInt(deleteBtn.dataset.index, 10); deleteQuestionFromHistory(index); renderQuestionHistory(); } else if (item) { elements.aiQuestion.value = item.dataset.question; elements.questionHistoryPopup.classList.add('hidden'); elements.aiQuestion.focus(); } });
-  document.addEventListener('click', () => { if (!elements.questionHistoryPopup.classList.contains('hidden')) { elements.questionHistoryPopup.classList.add('hidden'); } });
+  if (elements.questionHistoryBtn) {
+    elements.questionHistoryBtn.addEventListener('click', (e) => { e.stopPropagation(); const isHidden = elements.questionHistoryPopup.classList.toggle('hidden'); if (!isHidden) { renderQuestionHistory(); } });
+    elements.questionHistoryPopup.addEventListener('click', (e) => { e.stopPropagation(); const item = e.target.closest('.history-item'); const deleteBtn = e.target.closest('.history-delete-btn'); if (deleteBtn) { const index = parseInt(deleteBtn.dataset.index, 10); deleteQuestionFromHistory(index); renderQuestionHistory(); } else if (item) { elements.aiQuestion.value = item.dataset.question; elements.questionHistoryPopup.classList.add('hidden'); elements.aiQuestion.focus(); } });
+  }
+
+  document.addEventListener('click', () => { if (elements.questionHistoryPopup && !elements.questionHistoryPopup.classList.contains('hidden')) { elements.questionHistoryPopup.classList.add('hidden'); } });
 
   elements.exportBtn.addEventListener('click', () => { elements.exportOptions.classList.toggle('active'); });
   elements.exportTranscriptBtn.addEventListener('click', () => handleExport('transcript'));
