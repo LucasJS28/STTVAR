@@ -1212,7 +1212,7 @@ class TranscriptionWindow(QWidget):
             if not self.main_menu_window or not self.main_menu_window.isVisible():
                 self.main_menu_window = NuevaVentana(self)
                 self.main_menu_window.show()
-                self.hide()
+                # self.hide()  # <--- ELIMINA O COMENTA ESTA LÍNEA
         except NameError:
             QMessageBox.critical(self, "Error", "La ventana 'NuevaVentana' no está disponible. Revisa las importaciones.")
 
@@ -1282,23 +1282,29 @@ class TranscriptionWindow(QWidget):
             QMessageBox.critical(self, "Error al mostrar QR", f"No se pudo abrir la ventana de QR: {e}\n\nURL Local: http://{local_ip}:5000\nURL Pública: {public_url}")
 
     def closeEvent(self, event):
+        print("Iniciando secuencia de cierre forzado...")
+
+        # 1. Detener la transcripción si está activa (esto ya lo hacías bien)
         if self.transcription_active:
-            reply = QMessageBox.question(self, "Salir",
-                                         "La transcripción está activa. ¿Seguro que quieres detenerla y salir?",
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self._stop_transcription()
-            else:
-                event.ignore()
-                return
-        
+            print("Deteniendo hilo de transcripción...")
+            self.transcriber_thread.stop()
+            self.transcriber_thread.wait(2000) # Espera un máximo de 2 segundos
+
+        # 2. Matar el túnel de Ngrok de forma explícita
         if self.ngrok_tunnel:
             print("Cerrando túnel de Ngrok...")
-            ngrok.disconnect(self.public_url)
-            ngrok.kill()
-            self.ngrok_tunnel = None
-        
-        event.accept()
+            try:
+                ngrok.kill()
+            except Exception as e:
+                print(f"Error al intentar cerrar Ngrok (puede que ya estuviera cerrado): {e}")
+
+        # 3. Forzar la terminación de todo el proceso de Python
+        # Esta es la línea clave. os._exit(0) termina el programa inmediatamente,
+        # cerrando todos los hilos (incluido Flask) sin contemplaciones.
+        print("Terminando el proceso principal.")
+        event.accept()  # Acepta el evento de cierre de la ventana
+        os._exit(0)     # Fuerza la salida del script    # Fuerza la salida del script
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
