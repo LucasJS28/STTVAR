@@ -32,7 +32,11 @@ class ConfiguracionIA(QWidget):
 
         self._setup_ui()
         self._connect_signals()
-        self.load_models_async()
+        
+        # --- CAMBIO CLAVE PARA CARGA INSTANTÁNEA ---
+        # En lugar de llamar a la función de red aquí, la programamos para que
+        # se ejecute justo después de que la ventana se haya mostrado.
+        QTimer.singleShot(50, self.load_models_async)
 
         # --- Mostrar y centrar la ventana ---
         self.show()
@@ -40,7 +44,7 @@ class ConfiguracionIA(QWidget):
 
     def _setup_ui(self):
         """Configura la interfaz gráfica con un marco y título personalizados."""
-        self.setMinimumWidth(480)
+        self.setMinimumWidth(520) # Aumentado para que quepa el texto nuevo
         
         # Sombra para dar profundidad a la ventana
         shadow = QGraphicsDropShadowEffect()
@@ -124,8 +128,15 @@ class ConfiguracionIA(QWidget):
                 background-color: #e06c75;
                 color: #ffffff;
             }
-            #statusLabel { font-size: 12px; color: #98c379; }
-            #statusLabel.error { color: #e06c75; }
+            #statusLabel { 
+                font-size: 12px; 
+                color: #9098a5; /* Color neutral */
+                font-style: italic;
+            }
+            #statusLabel.error { 
+                color: #e06c75; /* Rojo para errores */
+                font-style: normal;
+            }
         """)
 
         # Layout del widget de fondo
@@ -178,7 +189,7 @@ class ConfiguracionIA(QWidget):
 
         self.model_combo = QComboBox()
         self.model_combo.setToolTip("Los modelos de IA instalados en tu instancia local de Ollama.")
-        self.model_combo.addItem("Cargando modelos...")
+        self.model_combo.addItem("Buscando modelos...")
         self.model_combo.setEnabled(False)
         content_layout.addWidget(self.model_combo)
 
@@ -195,6 +206,8 @@ class ConfiguracionIA(QWidget):
         footer_layout.setContentsMargins(0, 5, 0, 0)
         self.status_label = QLabel("Contactando a Ollama...")
         self.status_label.setObjectName("statusLabel")
+        self.status_label.setWordWrap(True)
+        
         self.save_button = QPushButton("✔️ Guardar")
         self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.setEnabled(False)
@@ -239,9 +252,11 @@ class ConfiguracionIA(QWidget):
                     self.status_label.setText("Ollama funciona, pero no hay modelos instalados.")
                     self.status_label.setProperty("class", "error")
                     self.model_combo.addItem("Instala un modelo con 'ollama pull <nombre>'")
+                    self.model_combo.setEnabled(False)
+                    self.save_button.setEnabled(False)
                 else:
-                    self.status_label.setText(f"Conectado. {len(models)} modelos encontrados.")
-                    self.status_label.setProperty("class", "")
+                    self.status_label.setText(f"Estos son los modelos de IA disponibles. Recuerda que si usas Ollama, debes ejecutar ollama.exe.")
+                    self.status_label.setProperty("class", "") # Quita la clase de error si la tenía
                     for model in models:
                         self.model_combo.addItem(model["name"])
                     
@@ -254,12 +269,13 @@ class ConfiguracionIA(QWidget):
                 raise requests.exceptions.RequestException(f"Error de la API: {response.status_code}")
         
         except requests.exceptions.RequestException:
-            self.status_label.setText("Error: No se pudo conectar a Ollama.")
+            self.status_label.setText("Asegúrate de que Ollama esté ejecutándose (ollama.exe).")
             self.status_label.setProperty("class", "error")
             self.model_combo.addItem("Verifica que Ollama esté en ejecución.")
             self.model_combo.setEnabled(False)
             self.save_button.setEnabled(False)
 
+        # Estas dos líneas refrescan el estilo del QLabel para que el color cambie correctamente
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)
 
@@ -298,7 +314,14 @@ class ConfiguracionIA(QWidget):
     def center_on_screen(self):
         """Centra la ventana en el medio de la pantalla."""
         screen = QApplication.primaryScreen()
-        rect = screen.availableGeometry()
-        x = (rect.width() - self.width()) // 2
-        y = (rect.height() - self.height()) // 2
-        self.move(x, y)
+        if screen:
+            rect = screen.availableGeometry()
+            x = (rect.width() - self.width()) // 2
+            y = (rect.height() - self.height()) // 2
+            self.move(x, y)
+
+# Bloque para probar la ventana de forma independiente
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    window = ConfiguracionIA()
+    sys.exit(app.exec_())

@@ -560,10 +560,22 @@ input:checked + .slider:before { transform: translateX(20px); }
       </div>
 
       <div class="setting-title"><i class="fas fa-language"></i> Idiomas</div>
-      <label for="idioma">Idioma de Subtítulos</label>
-      <div class="select-wrapper"><select id="idioma"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div>
-      <label for="idiomaAcumulado" style="margin-top: 1rem;">Idioma de Transcripción</label>
-      <div class="select-wrapper"><select id="idiomaAcumulado"><option value="es">Español</option><option value="en">Inglés</option><option value="fr">Francés</option><option value="de">Alemán</option></select></div>
+<label for="idioma">Idioma de Subtítulos</label>
+<div class="select-wrapper">
+    <select id="idioma">
+        <option value="es">Español</option>
+        <option value="en">Inglés</option>
+        <option value="pt">Portugués</option>
+    </select>
+</div>
+<label for="idiomaAcumulado" style="margin-top: 1rem;">Idioma de Transcripción</label>
+<div class="select-wrapper">
+    <select id="idiomaAcumulado">
+        <option value="es">Español</option>
+        <option value="en">Inglés</option>
+        <option value="pt">Portugués</option>
+    </select>
+</div>
 
       <div class="setting-title"><i class="fas fa-file-export"></i> Exportar</div>
       <button id="exportBtn" class="action-button"><i class="fas fa-download"></i> Exportar Contenido</button>

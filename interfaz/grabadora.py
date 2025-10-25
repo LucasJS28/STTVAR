@@ -416,7 +416,7 @@ class OptionsMenu(QWidget):
         lang_icon = QLabel()
         lang_icon.setPixmap(create_icon_from_svg(icon_data["language"], "white").pixmap(16, 16))
         self.language_selector = QComboBox()
-        self.language_selector.addItems(["Español", "English", "Français", "Deutsch"])
+        self.language_selector.addItems(["Español", "Inglés", "Portugués"])
         self.language_selector.setFixedWidth(80)
         lang_layout.addWidget(lang_icon)
         lang_layout.addWidget(self.language_selector)
@@ -1036,7 +1036,7 @@ class TranscriptionWindow(QWidget):
             self.options_menu.show_menu()
             
     def change_language(self, lang_text):
-        lang_map = {"Español": "es", "English": "en", "Français": "fr", "Deutsch": "de"}
+        lang_map = {"Español": "es", "Inglés": "en", "Portugués": "pt"}
         self.selected_language = lang_map.get(lang_text, "es")
         print(f"Idioma de la UI local cambiado a: {self.selected_language}")
         if self.transcription_active and qtextedit_buffer.strip():

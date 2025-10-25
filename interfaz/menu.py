@@ -17,7 +17,8 @@ from PyQt5.QtWidgets import (
     QLineEdit, QInputDialog, QMenu, QSizePolicy, QHeaderView, QFrame, QStyle,
     QSlider
 )
-from PyQt5.QtCore import Qt, QUrl, QThread, pyqtSignal, QSize
+# MODIFICADO: Se añade QTimer para la carga optimizada
+from PyQt5.QtCore import Qt, QUrl, QThread, pyqtSignal, QSize, QTimer
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 
@@ -271,10 +272,9 @@ class NuevaVentana(QWidget):
         self.setWindowTitle("Explorador de Transcripciones")
         self.setMinimumSize(1300, 700)
         
+        # --- INICIALIZACIÓN RÁPIDA DE VARIABLES ---
         self.ollama_available = False
-        self.ollama_model_name = "No disponible"
-        self._load_ollama_config()
-
+        self.ollama_model_name = "Cargando..." # Texto inicial mientras se verifica
         self.folder_path = "stt_guardados"
         self.audio_folder_path = "sttaudio_guardados"
         self.current_file = None
@@ -282,12 +282,11 @@ class NuevaVentana(QWidget):
         self.is_dark_theme = False
         self.original_text = ""
         self.highlighter = None
-
         self.tts_worker = None
         self.tts_temp_file = None
         self.current_recorded_file = None
         self.tts_voices = None
-        self._cache_tts_voices()
+        self.installed_languages = []
 
         if not os.path.exists(self.folder_path): os.makedirs(self.folder_path)
         if not os.path.exists(self.audio_folder_path): os.makedirs(self.audio_folder_path)
@@ -317,28 +316,16 @@ class NuevaVentana(QWidget):
             QFrame#container { background-color: #fdfdfd; border: 1px solid #dcdcdc; border-radius: 8px; }
             QLineEdit#searchBar { padding-left: 30px; }
             AudioPlayerWidget QPushButton#playerButton, AudioPlayerWidget QPushButton#volumeButton {
-                background-color: #e6f1f9;
-                border: none;
-                border-radius: 14px;
-                min-width: 28px;
-                max-width: 28px;
-                min-height: 28px;
-                max-height: 28px;
+                background-color: #e6f1f9; border: none; border-radius: 14px; min-width: 28px;
+                max-width: 28px; min-height: 28px; max-height: 28px;
             }
             AudioPlayerWidget QPushButton#playerButton:hover, AudioPlayerWidget QPushButton#volumeButton:hover { background-color: #d1e3f4; }
             AudioPlayerWidget QSlider::groove:horizontal {
-                border: 1px solid #bbb;
-                background: #e0e0e0;
-                height: 8px;
-                border-radius: 4px;
+                border: 1px solid #bbb; background: #e0e0e0; height: 8px; border-radius: 4px;
             }
             AudioPlayerWidget QSlider::handle:horizontal {
-                background: #0078d7;
-                border: 1px solid #0078d7;
-                width: 14px;
-                height: 14px;
-                margin: -4px 0;
-                border-radius: 7px;
+                background: #0078d7; border: 1px solid #0078d7; width: 14px; height: 14px;
+                margin: -4px 0; border-radius: 7px;
             }
             AudioPlayerWidget QLabel#timeLabel { font-weight: bold; }
         """
@@ -368,36 +355,23 @@ class NuevaVentana(QWidget):
             QFrame#container { background-color: #252525; border: 1px solid #444; border-radius: 8px; }
             QLineEdit#searchBar { padding-left: 30px; }
             AudioPlayerWidget QPushButton#playerButton, AudioPlayerWidget QPushButton#volumeButton {
-                background-color: #3a3a3a;
-                color: #e0e0e0;
-                border: none;
-                border-radius: 14px;
-                min-width: 28px;
-                max-width: 28px;
-                min-height: 28px;
-                max-height: 28px;
+                background-color: #3a3a3a; color: #e0e0e0; border: none; border-radius: 14px;
+                min-width: 28px; max-width: 28px; min-height: 28px; max-height: 28px;
             }
             AudioPlayerWidget QPushButton#playerButton:hover, AudioPlayerWidget QPushButton#volumeButton:hover { background-color: #4f4f4f; }
             AudioPlayerWidget QSlider::groove:horizontal {
-                background: #555;
-                border: 1px solid #444;
-                height: 8px;
-                border-radius: 4px;
+                background: #555; border: 1px solid #444; height: 8px; border-radius: 4px;
             }
             AudioPlayerWidget QSlider::handle:horizontal {
-                background: #0090ff;
-                border: 1px solid #0090ff;
-                width: 14px;
-                height: 14px;
-                margin: -4px 0;
-                border-radius: 7px;
+                background: #0090ff; border: 1px solid #0090ff; width: 14px; height: 14px;
+                margin: -4px 0; border-radius: 7px;
             }
             AudioPlayerWidget QLabel#timeLabel { font-weight: bold; }
         """
 
         self.setStyleSheet(self.light_theme)
 
-        # --- LAYOUT PRINCIPAL ---
+        # --- LAYOUT PRINCIPAL (RÁPIDO) ---
         main_layout = QVBoxLayout(self); main_layout.setContentsMargins(15, 15, 15, 15); main_layout.setSpacing(10)
         header_layout = QHBoxLayout()
         title_label = QLabel("🎙️ STTVAR - Explorador"); title_label.setObjectName("titleLabel")
@@ -408,10 +382,10 @@ class NuevaVentana(QWidget):
         self.theme_button.clicked.connect(self.toggle_theme); header_layout.addWidget(self.theme_button)
         main_layout.addLayout(header_layout)
 
-        # --- LAYOUT CENTRAL (COLUMNAS) ---
+        # --- LAYOUT CENTRAL (COLUMNAS) (RÁPIDO) ---
         central_layout = QHBoxLayout(); main_layout.addLayout(central_layout, 1)
         left_column = QVBoxLayout(); central_layout.addLayout(left_column, 2)
-        self.textbox = QTextEdit(); self.textbox.setPlaceholderText("Selecciona un archivo para ver y editar su contenido...")
+        self.textbox = QTextEdit(); self.textbox.setPlaceholderText("Cargando archivos...")
         self.textbox.textChanged.connect(self.check_text_changes); left_column.addWidget(self.textbox, 1)
         edit_buttons_layout = QHBoxLayout()
         self.undo_button = QPushButton("↶ Deshacer"); self.undo_button.clicked.connect(self.textbox.undo)
@@ -451,8 +425,11 @@ class NuevaVentana(QWidget):
         tools_layout.addLayout(ia_query_layout)
         self.ia_model_label = QLabel(f"Modelo: {self.ollama_model_name}"); self.ia_model_label.setAlignment(Qt.AlignRight)
         tools_layout.addWidget(self.ia_model_label)
-        ia_widgets = [self.summarize_button, self.keywords_button, self.correct_button, self.ia_query_input, self.ia_query_button, self.ia_model_label]
-        for widget in ia_widgets: widget.setVisible(self.ollama_available)
+        
+        # Ocultar widgets de IA por defecto, se mostrarán después de la carga si están disponibles
+        self.ia_widgets = [self.summarize_button, self.keywords_button, self.correct_button, self.ia_query_input, self.ia_query_button, self.ia_model_label]
+        for widget in self.ia_widgets: widget.setVisible(False)
+        
         bottom_actions_layout = QHBoxLayout()
         self.save_button = QPushButton("💾 Guardar Cambios"); self.save_button.clicked.connect(self.save_file); self.save_button.hide()
         bottom_actions_layout.addWidget(self.save_button); bottom_actions_layout.addStretch()
@@ -462,25 +439,50 @@ class NuevaVentana(QWidget):
         self.download_button.clicked.connect(self.export_selected_format); bottom_actions_layout.addWidget(self.download_button)
         left_column.addLayout(bottom_actions_layout)
 
-        # --- COLUMNA DERECHA ---
+        # --- COLUMNA DERECHA (RÁPIDO) ---
         right_column = QVBoxLayout(); central_layout.addLayout(right_column, 1)
         file_list_controls_layout = QHBoxLayout()
         self.search_bar = QLineEdit(); self.search_bar.setObjectName("searchBar"); self.search_bar.setPlaceholderText("🔍 Buscar...")
-        self.search_bar.textChanged.connect(self.load_file_list); file_list_controls_layout.addWidget(self.search_bar, 1)
         self.sort_combo = QComboBox(); self.sort_combo.addItems(["Fecha reciente", "Fecha antigua", "Nombre (A-Z)", "Nombre (Z-A)"])
-        self.sort_combo.currentIndexChanged.connect(self.load_file_list); file_list_controls_layout.addWidget(self.sort_combo)
+        file_list_controls_layout.addWidget(self.search_bar, 1)
+        file_list_controls_layout.addWidget(self.sort_combo)
         right_column.addLayout(file_list_controls_layout)
         self.file_list = QTableWidget(); self.file_list.setColumnCount(2); self.file_list.setHorizontalHeaderLabels(["Archivo", "Audio"])
         self.file_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch); self.file_list.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
         self.file_list.verticalHeader().setVisible(False); self.file_list.setSelectionMode(QTableWidget.SingleSelection)
-        self.file_list.setSelectionBehavior(QTableWidget.SelectRows); self.file_list.cellClicked.connect(self.load_file_content)
-        self.file_list.setContextMenuPolicy(Qt.CustomContextMenu); self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+        self.file_list.setSelectionBehavior(QTableWidget.SelectRows)
+        self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.file_list.setShowGrid(False); right_column.addWidget(self.file_list, 1)
         self.recorded_audio_player = AudioPlayerWidget(); self.recorded_audio_player.hide()
-        self.recorded_audio_player.player.stateChanged.connect(self.update_recorded_audio_icons); right_column.addWidget(self.recorded_audio_player)
+        right_column.addWidget(self.recorded_audio_player)
+        
+        # Conectar señales ahora que los widgets existen
+        self.search_bar.textChanged.connect(self.load_file_list)
+        self.sort_combo.currentIndexChanged.connect(self.load_file_list)
+        self.file_list.cellClicked.connect(self.load_file_content)
+        self.file_list.customContextMenuRequested.connect(self.show_context_menu)
+        self.recorded_audio_player.player.stateChanged.connect(self.update_recorded_audio_icons)
 
-        self.load_file_list()
+        # --- CAMBIO CLAVE: DIFERIR LA CARGA LENTA ---
+        # Programar las operaciones de carga para que se ejecuten después de que la ventana se haya mostrado
+        QTimer.singleShot(50, self._post_init_load)
+
+    def _post_init_load(self):
+        """
+        Ejecuta todas las operaciones de carga lentas después de que la interfaz de usuario
+        sea visible para evitar que la aplicación se congele al abrirse.
+        """
+        # 1. Realizar todas las operaciones lentas
+        self._load_ollama_config()
+        self._cache_tts_voices()
         self.installed_languages = translate.get_installed_languages()
+        self.load_file_list()
+
+        # 2. Actualizar la interfaz de usuario con la información obtenida
+        for widget in self.ia_widgets:
+            widget.setVisible(self.ollama_available)
+        self.ia_model_label.setText(f"Modelo: {self.ollama_model_name}")
+        self.textbox.setPlaceholderText("Selecciona un archivo para ver y editar su contenido...")
 
     def _cache_tts_voices(self):
         if self.tts_voices is not None: return
@@ -489,7 +491,7 @@ class NuevaVentana(QWidget):
             self.tts_voices = engine.getProperty('voices')
             engine.stop()
         except Exception as e:
-            print(f"Could not cache TTS voices: {e}")
+            print(f"No se pudieron precargar las voces de TTS: {e}")
             self.tts_voices = []
             
     def _load_ollama_config(self):
@@ -530,13 +532,22 @@ class NuevaVentana(QWidget):
     def load_file_list(self):
         self.file_list.clearContents(); self.file_list.setRowCount(0)
         if not os.path.exists(self.folder_path): return
-        files = [f for f in os.listdir(self.folder_path) if f.endswith(".txt")]
+        try:
+            files = [f for f in os.listdir(self.folder_path) if f.endswith(".txt")]
+        except OSError:
+            QMessageBox.critical(self, "Error", f"No se pudo acceder a la carpeta: {self.folder_path}")
+            return
+            
         search_term = self.search_bar.text().lower()
         if search_term: files = [f for f in files if search_term in f.lower()]
         sort_option = self.sort_combo.currentText()
-        sort_key = lambda f: os.path.getmtime(os.path.join(self.folder_path, f)); reverse = "reciente" in sort_option
-        if "Nombre" in sort_option: sort_key = str.lower; reverse = "Z-A" in sort_option
-        files.sort(key=sort_key, reverse=reverse)
+        try:
+            sort_key = lambda f: os.path.getmtime(os.path.join(self.folder_path, f)); reverse = "reciente" in sort_option
+            if "Nombre" in sort_option: sort_key = str.lower; reverse = "Z-A" in sort_option
+            files.sort(key=sort_key, reverse=reverse)
+        except Exception as e:
+            print(f"Error al ordenar archivos: {e}")
+
         self.file_list.setRowCount(len(files))
         for row, filename in enumerate(files):
             text_item = QTableWidgetItem(os.path.splitext(filename)[0]); text_item.setData(Qt.UserRole, filename)
