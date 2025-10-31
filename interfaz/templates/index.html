@@ -34,6 +34,8 @@
     --status-disconnected: #dc3545;
     --sticky-top-offset: 1rem;
   }
+
+  
   .dark-theme {
     --bg-color: #121212;
     --text-color: #e9ecef;
@@ -306,6 +308,70 @@ body.zen-active.zen-view-acumulado #zen-acumulado { display: block; }
   align-items: center;
   gap: 0.5rem;
 }
+
+/* --- INICIO: ESTILOS MEJORADOS PARA EL PROMPT DE NOMBRE DE USUARIO --- */
+
+/* Contenedor que agrupa el campo de texto y el botón */
+#chat-name-prompt {
+  display: flex;
+  flex-direction: column; /* Apilado en vertical por defecto para móviles */
+  gap: 0.75rem; /* Espacio entre el input y el botón */
+}
+
+/* Estilo principal para el campo de texto del nombre */
+#chat-username-input {
+  /* Dimensiones y espaciado */
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  
+  /* Apariencia */
+  border-radius: 8px; /* Bordes suavemente redondeados */
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  
+  /* Comportamiento */
+  outline: none; /* Quita el borde azul por defecto al hacer clic */
+  transition: all 0.2s ease-in-out;
+  width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  margin: 0 !important; /* Anula el estilo en línea que tenía */
+}
+
+/* Estilo del texto de placeholder */
+#chat-username-input::placeholder {
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+/* Efecto visual al hacer clic en el campo de texto */
+#chat-username-input:focus {
+  border-color: var(--accent-color);
+  background-color: var(--container-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+/* Asegura que el botón ocupe todo el ancho para que coincida con el input */
+#chat-save-name-btn {
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* Para pantallas un poco más grandes, ponemos los elementos en horizontal */
+@media (min-width: 420px) {
+  #chat-name-prompt {
+    flex-direction: row; /* Vuelve a la vista horizontal */
+  }
+  
+  #chat-username-input {
+    flex-grow: 1; /* El input crece para ocupar el espacio */
+  }
+  
+  #chat-save-name-btn {
+    flex-shrink: 0; /* El botón no se encoge */
+  }
+}
+
+/* --- FIN: ESTILOS MEJORADOS PARA EL PROMPT DE NOMBRE DE USUARIO --- */
 .setting-title:first-child { margin-top: 0; }
 .setting-item {
   display: grid;
@@ -363,6 +429,8 @@ input:checked + .slider:before { transform: translateX(20px); }
 .chat-message.own { background: var(--accent-color); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
 .chat-message.own strong { color: rgba(255,255,255,.8); }
 #chat-message-area { display: flex; align-items: center; gap: 0.75rem; }
+
+
 </style>
 </head>
 <body>
@@ -986,9 +1054,8 @@ input:checked + .slider:before { transform: translateX(20px); }
       if (!elements.saveSettingsToggle.checked) return;
       const settings = {
           theme: document.body.classList.contains('dark-theme') ? 'dark' : 'light',
-          autoScroll: elements.autoScrollToggle.checked,
-          subLanguage: elements.idiomaSelect.value,
-          transcriptLanguage: elements.idiomaAcumuladoSelect.value
+          autoScroll: elements.autoScrollToggle.checked
+          // Las líneas de idioma han sido eliminadas
       };
       localStorage.setItem('stttvar_settings', JSON.stringify(settings));
   }
@@ -1003,8 +1070,8 @@ input:checked + .slider:before { transform: translateX(20px); }
           }
           elements.autoScrollToggle.checked = settings.autoScroll;
           clientState.isAutoScrollActive = settings.autoScroll;
-          elements.idiomaSelect.value = settings.subLanguage;
-          elements.idiomaAcumuladoSelect.value = settings.transcriptLanguage;
+          // Las líneas que cargaban el idioma han sido eliminadas.
+          // Los selects ahora mantendrán su valor por defecto ('es').
           elements.saveSettingsToggle.checked = true;
       }
   }
