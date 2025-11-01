@@ -178,16 +178,20 @@ class Launcher:
         """)
 
     def _start_ollama(self):
-        ruta_ollama = r"C:\Users\LucasJs28\AppData\Local\Programs\Ollama\ollama.exe"
-        if not os.path.exists(ruta_ollama):
-            raise Exception("No se encontró el ejecutable de Ollama.")
+        # La ruta ya no está fija. Simplemente usamos el nombre del comando.
+        executable_name = "ollama"
         try:
+            # Popen buscará 'ollama' en el PATH del sistema.
             self.ollama_process = subprocess.Popen(
-                [ruta_ollama, 'serve'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                [executable_name, 'serve'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 text=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW
             )
-            time.sleep(3)
+            time.sleep(3) # Damos tiempo a que el servidor inicie
+            # Aquí podrías añadir una verificación más robusta para ver si el servidor respondió.
             return True
+        # FileNotFoundError ocurre si el comando 'ollama' no se encuentra en el PATH.
+        except FileNotFoundError:
+            raise Exception("No se encontró el ejecutable de Ollama en el PATH del sistema. Asegúrate de que Ollama esté instalado correctamente.")
         except Exception as e:
             raise Exception(f"Error al iniciar Ollama: {str(e)}")
 
