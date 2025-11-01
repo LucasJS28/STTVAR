@@ -819,7 +819,7 @@ class TranscriptionWindow(QWidget):
         device_index = self.mic_selector.currentData()
         if device_index is None:
             QMessageBox.warning(self, "Dispositivo no seleccionado", "Por favor, selecciona un dispositivo de micrófono.")
-            self.options_menu.rec_btn.setChecked(False) # Revertir estado del botón
+            self.options_menu.rec_btn.setChecked(False)
             return
 
         # Limpiar variables globales para una nueva sesión
@@ -846,10 +846,14 @@ class TranscriptionWindow(QWidget):
         progress.show()
         QApplication.processEvents()
         
-        output_dir = "stt_guardados"
-        audio_output_dir = "sttaudio_guardados"
+        # MODIFICADO: Usar la nueva función para obtener ambas rutas
+        config = self._load_app_config()
+        output_dir = config.get('transcript_path', 'stt_guardados')
+        audio_output_dir = config.get('audio_path', 'sttaudio_guardados')
+        
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(audio_output_dir, exist_ok=True)
+        
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.current_transcription_filepath = os.path.join(output_dir, f"{timestamp}.txt")
         self.current_audio_filepath = os.path.join(audio_output_dir, f"{timestamp}.wav")
@@ -890,6 +894,21 @@ class TranscriptionWindow(QWidget):
         
         QTimer.singleShot(1500, self.go_to_initial_screen)
 
+    def _load_app_config(self):
+        """Lee el archivo JSON completo y devuelve un diccionario con valores por defecto."""
+        defaults = {
+            'transcript_path': 'stt_guardados',
+            'audio_path': 'sttaudio_guardados'
+        }
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    config = json.load(f)
+                    defaults.update(config)
+        except (IOError, json.JSONDecodeError):
+            pass # Si hay error, simplemente usamos los defaults
+        return defaults
+    
     def _on_transcription_finished(self):
         if self.transcription_active:
             print("El hilo de transcripción terminó inesperadamente.")
@@ -1210,9 +1229,14 @@ class TranscriptionWindow(QWidget):
     def _open_main_menu(self):
         try:
             if not self.main_menu_window or not self.main_menu_window.isVisible():
-                self.main_menu_window = NuevaVentana(self)
+                # MODIFICADO: Cargar la configuración actual para pasarla al menú
+                config = self._load_app_config()
+                transcript_path = config.get('transcript_path', 'stt_guardados')
+                audio_path = config.get('audio_path', 'sttaudio_guardados')
+
+                # Pasar las rutas al constructor de NuevaVentana
+                self.main_menu_window = NuevaVentana(self, transcript_path=transcript_path, audio_path=audio_path)
                 self.main_menu_window.show()
-                # self.hide()  # <--- ELIMINA O COMENTA ESTA LÍNEA
         except NameError:
             QMessageBox.critical(self, "Error", "La ventana 'NuevaVentana' no está disponible. Revisa las importaciones.")
 
@@ -1250,20 +1274,65 @@ class TranscriptionWindow(QWidget):
             return False
 
     def _on_qr_button_clicked(self):
-        if self.ngrok_tunnel: self._show_qr_window(); return
+        if self.ngrok_tunnel:
+            self._show_qr_window()
+            return
+            
         if not self._setup_ngrok_authtoken():
             QMessageBox.warning(self, "Cancelado", "Se necesita el Authtoken de Ngrok para compartir la sesión.")
             return
+
+        # --- INICIO DE LA MODIFICACIÓN ---
+        
+        # 1. Crear el QProgressDialog
         progress = QProgressDialog("Creando enlace público...", None, 0, 0, self)
-        progress.setWindowModality(Qt.WindowModal); progress.setCancelButton(None); progress.show(); QApplication.processEvents()
+        
+        # 2. Hacerlo sin bordes y con fondo translúcido (como las otras ventanas)
+        progress.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        progress.setAttribute(Qt.WA_TranslucentBackground)
+        progress.setCancelButton(None) # Ocultar el botón de cancelar
+        progress.setFixedSize(350, 150) # Darle un tamaño fijo
+
+        # 3. Aplicar el stylesheet para que coincida con tu tema
+        progress.setStyleSheet("""
+            QProgressDialog {
+                background-color: #2c2c2c;
+                border: 2px solid #E74C3C;
+                border-radius: 22px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+            QLabel {
+                color: #f0f0f0;
+                font-size: 16px;
+                font-weight: 600;
+                background-color: transparent; /* Importante para que no tape el fondo */
+            }
+            QProgressBar {
+                border: 1px solid #4a4a4a;
+                border-radius: 9px;
+                background-color: #212121;
+                height: 18px;
+                text-align: center; /* Aunque no es visible, es buena práctica */
+            }
+            QProgressBar::chunk {
+                background-color: #E74C3C;
+                border-radius: 8px;
+            }
+        """)
+        
+        progress.show()
+        QApplication.processEvents() # Asegurarse de que se muestre y actualice
+        
+        # --- FIN DE LA MODIFICACIÓN ---
+
         try:
             ngrok.kill()
             self.ngrok_tunnel = ngrok.connect(5000)
             self.public_url = self.ngrok_tunnel.public_url
-            progress.close()
-            self._show_qr_window()
+            progress.close() # Cerrar la ventana de progreso
+            self._show_qr_window() # Mostrar la ventana del QR
         except Exception as e:
-            progress.close()
+            progress.close() # Asegurarse de cerrarla también si hay un error
             QMessageBox.critical(self, "Error de Ngrok", f"No se pudo crear el túnel: {e}")
 
     def _show_qr_window(self):

@@ -263,7 +263,7 @@ class TranslationWorker(QThread):
 
 
 class NuevaVentana(QWidget):
-    def __init__(self, parent_transcription_window):
+    def __init__(self, parent_transcription_window, transcript_path="stt_guardados", audio_path="sttaudio_guardados"):
         super().__init__(parent_transcription_window)
         self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint)
 
@@ -274,9 +274,12 @@ class NuevaVentana(QWidget):
         
         # --- INICIALIZACIÓN RÁPIDA DE VARIABLES ---
         self.ollama_available = False
-        self.ollama_model_name = "Cargando..." # Texto inicial mientras se verifica
-        self.folder_path = "stt_guardados"
-        self.audio_folder_path = "sttaudio_guardados"
+        self.ollama_model_name = "Cargando..."
+        
+        # MODIFICADO: Usar las rutas pasadas como argumento en lugar de valores fijos
+        self.folder_path = transcript_path
+        self.audio_folder_path = audio_path
+        
         self.current_file = None
         self.texto_original = ""
         self.is_dark_theme = False

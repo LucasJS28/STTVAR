@@ -7,7 +7,7 @@ import requests
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
     QPushButton, QMessageBox, QApplication, QSpacerItem, QSizePolicy, QFrame,
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QFileDialog, QLineEdit
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QColor
@@ -22,43 +22,35 @@ class ConfiguracionIA(QWidget):
     def __init__(self, parent=None, config_file='config.json'):
         super().__init__(parent)
         
-        # --- Configuración de la ventana sin bordes ---
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         
         self.config_file = config_file
-        self.current_model = self._load_current_config()
+        self.current_config = self._load_current_config()
         self.old_pos = None
 
         self._setup_ui()
         self._connect_signals()
         
-        # --- CAMBIO CLAVE PARA CARGA INSTANTÁNEA ---
-        # En lugar de llamar a la función de red aquí, la programamos para que
-        # se ejecute justo después de que la ventana se haya mostrado.
         QTimer.singleShot(50, self.load_models_async)
 
-        # --- Mostrar y centrar la ventana ---
         self.show()
         self.center_on_screen()
 
     def _setup_ui(self):
-        """Configura la interfaz gráfica con un marco y título personalizados."""
-        self.setMinimumWidth(520) # Aumentado para que quepa el texto nuevo
+        """Configura la interfaz gráfica completa."""
+        self.setMinimumWidth(580)
         
-        # Sombra para dar profundidad a la ventana
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(25)
         shadow.setXOffset(0)
         shadow.setYOffset(0)
         shadow.setColor(QColor(0, 0, 0, 150))
 
-        # Widget de fondo que tendrá los bordes redondeados y el color
         self.background_widget = QFrame(self)
         self.background_widget.setObjectName("backgroundWidget")
         self.background_widget.setGraphicsEffect(shadow)
         
-        # --- Hoja de estilos principal ---
         self.setStyleSheet("""
             #backgroundWidget {
                 background-color: #282c34;
@@ -84,10 +76,10 @@ class ConfiguracionIA(QWidget):
             }
             #descriptionLabel {
                 font-size: 13px;
-                padding-bottom: 15px;
+                padding-bottom: 10px;
                 color: #eceff4;
             }
-            QComboBox {
+            QComboBox, QLineEdit {
                 border: 1px solid #3e4451;
                 border-radius: 5px;
                 padding: 8px;
@@ -130,16 +122,18 @@ class ConfiguracionIA(QWidget):
             }
             #statusLabel { 
                 font-size: 12px; 
-                color: #9098a5; /* Color neutral */
+                color: #9098a5;
                 font-style: italic;
             }
             #statusLabel.error { 
-                color: #e06c75; /* Rojo para errores */
+                color: #e06c75;
                 font-style: normal;
+            }
+            #browseButton {
+                padding: 8px 15px;
             }
         """)
 
-        # Layout del widget de fondo
         bg_layout = QVBoxLayout(self.background_widget)
         bg_layout.setContentsMargins(0, 0, 0, 15)
         bg_layout.setSpacing(10)
@@ -148,70 +142,102 @@ class ConfiguracionIA(QWidget):
         self.title_bar = QFrame()
         title_bar_layout = QHBoxLayout(self.title_bar)
         title_bar_layout.setContentsMargins(10, 5, 5, 5)
-        
         app_title_label = QLabel("STTVAR")
         app_title_label.setObjectName("appTitleLabel")
-        
         self.close_button = QPushButton("✕")
         self.close_button.setObjectName("closeButton")
         self.close_button.setCursor(Qt.PointingHandCursor)
         self.close_button.setFixedSize(30, 30)
-
         title_bar_layout.addWidget(app_title_label)
         title_bar_layout.addStretch()
         title_bar_layout.addWidget(self.close_button)
-        
         bg_layout.addWidget(self.title_bar)
-
+        
         # --- Contenido principal ---
         content_frame = QFrame()
         content_layout = QVBoxLayout(content_frame)
         content_layout.setContentsMargins(25, 10, 25, 0)
         content_layout.setSpacing(10)
 
-        title_layout = QHBoxLayout()
-        title_layout.setSpacing(10)
+        # --- SECCIÓN MODELO IA ---
         title_icon = QLabel("🧠")
         title_icon.setStyleSheet("font-size: 22px; margin-top: -4px;")
-        
         title_label = QLabel("Configuración del Modelo de IA")
         title_label.setObjectName("titleLabel")
-        
+        title_layout = QHBoxLayout()
         title_layout.addWidget(title_icon, 0, Qt.AlignTop)
         title_layout.addWidget(title_label, 0, Qt.AlignVCenter)
         title_layout.addStretch()
         content_layout.addLayout(title_layout)
-
-        description_label = QLabel("Selecciona el modelo de Ollama que la aplicación utilizará para las funciones de inteligencia artificial.")
+        description_label = QLabel("Selecciona el modelo de Ollama que la aplicación utilizará para las funciones de IA.")
         description_label.setObjectName("descriptionLabel")
         description_label.setWordWrap(True)
         content_layout.addWidget(description_label)
-
         self.model_combo = QComboBox()
-        self.model_combo.setToolTip("Los modelos de IA instalados en tu instancia local de Ollama.")
+        self.model_combo.setToolTip("Modelos de IA instalados en tu Ollama local.")
         self.model_combo.addItem("Buscando modelos...")
         self.model_combo.setEnabled(False)
         content_layout.addWidget(self.model_combo)
-
         content_layout.addSpacerItem(QSpacerItem(20, 15, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
+        # --- SECCIÓN: RUTA DE TRANSCRIPCIONES ---
+        path_icon_txt = QLabel("📝")
+        path_icon_txt.setStyleSheet("font-size: 22px; margin-top: -4px;")
+        path_title_txt = QLabel("Carpeta de Transcripciones (.txt)")
+        path_title_txt.setObjectName("titleLabel")
+        path_layout_txt = QHBoxLayout()
+        path_layout_txt.addWidget(path_icon_txt, 0, Qt.AlignTop)
+        path_layout_txt.addWidget(path_title_txt, 0, Qt.AlignVCenter)
+        path_layout_txt.addStretch()
+        content_layout.addLayout(path_layout_txt)
+        
+        path_edit_layout_txt = QHBoxLayout()
+        self.path_edit_txt = QLineEdit()
+        self.path_edit_txt.setReadOnly(True)
+        self.path_edit_txt.setText(self.current_config.get('transcript_path', 'stt_guardados'))
+        self.browse_button_txt = QPushButton("Examinar...")
+        self.browse_button_txt.setObjectName("browseButton")
+        path_edit_layout_txt.addWidget(self.path_edit_txt)
+        path_edit_layout_txt.addWidget(self.browse_button_txt)
+        content_layout.addLayout(path_edit_layout_txt)
+        content_layout.addSpacerItem(QSpacerItem(20, 15, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # --- SECCIÓN: RUTA DE AUDIOS ---
+        path_icon_audio = QLabel("🔊")
+        path_icon_audio.setStyleSheet("font-size: 22px; margin-top: -4px;")
+        path_title_audio = QLabel("Carpeta de Audios (.wav)")
+        path_title_audio.setObjectName("titleLabel")
+        path_layout_audio = QHBoxLayout()
+        path_layout_audio.addWidget(path_icon_audio, 0, Qt.AlignTop)
+        path_layout_audio.addWidget(path_title_audio, 0, Qt.AlignVCenter)
+        path_layout_audio.addStretch()
+        content_layout.addLayout(path_layout_audio)
+
+        path_edit_layout_audio = QHBoxLayout()
+        self.path_edit_audio = QLineEdit()
+        self.path_edit_audio.setReadOnly(True)
+        self.path_edit_audio.setText(self.current_config.get('audio_path', 'sttaudio_guardados'))
+        self.browse_button_audio = QPushButton("Examinar...")
+        self.browse_button_audio.setObjectName("browseButton")
+        path_edit_layout_audio.addWidget(self.path_edit_audio)
+        path_edit_layout_audio.addWidget(self.browse_button_audio)
+        content_layout.addLayout(path_edit_layout_audio)
+        content_layout.addSpacerItem(QSpacerItem(20, 15, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # --- PIE DE PÁGINA ---
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         line.setStyleSheet("border-top: 1px solid #3e4451;")
         content_layout.addWidget(line)
-
-        # --- Pie de página: Status y Botones ---
+        
         footer_layout = QHBoxLayout()
-        footer_layout.setContentsMargins(0, 5, 0, 0)
         self.status_label = QLabel("Contactando a Ollama...")
         self.status_label.setObjectName("statusLabel")
         self.status_label.setWordWrap(True)
-        
         self.save_button = QPushButton("✔️ Guardar")
         self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.setEnabled(False)
-
         footer_layout.addWidget(self.status_label)
         footer_layout.addStretch()
         footer_layout.addWidget(self.save_button)
@@ -219,12 +245,10 @@ class ConfiguracionIA(QWidget):
         
         bg_layout.addWidget(content_frame)
 
-        # Layout principal de la ventana que contiene el widget de fondo
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.background_widget)
 
-    # --- Funciones para mover la ventana sin bordes ---
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and self.title_bar.underMouse():
             self.old_pos = event.globalPos()
@@ -241,9 +265,28 @@ class ConfiguracionIA(QWidget):
     def _connect_signals(self):
         self.save_button.clicked.connect(self._save_config)
         self.close_button.clicked.connect(self.close)
+        self.browse_button_txt.clicked.connect(lambda: self._browse_for_folder("txt"))
+        self.browse_button_audio.clicked.connect(lambda: self._browse_for_folder("audio"))
+
+    def _browse_for_folder(self, folder_type):
+        if folder_type == "txt":
+            current_path = self.path_edit_txt.text()
+            title = "Seleccionar Carpeta para Transcripciones"
+            directory = QFileDialog.getExistingDirectory(self, title, current_path)
+            if directory:
+                self.path_edit_txt.setText(directory)
+        elif folder_type == "audio":
+            current_path = self.path_edit_audio.text()
+            title = "Seleccionar Carpeta para Audios"
+            directory = QFileDialog.getExistingDirectory(self, title, current_path)
+            if directory:
+                self.path_edit_audio.setText(directory)
+        
+        self.save_button.setEnabled(True)
 
     def load_models_async(self):
         self.model_combo.clear()
+        current_model_name = self.current_config.get('ollama_model', '')
         try:
             response = requests.get(OLLAMA_API_TAGS_URL, timeout=3)
             if response.status_code == 200:
@@ -253,55 +296,60 @@ class ConfiguracionIA(QWidget):
                     self.status_label.setProperty("class", "error")
                     self.model_combo.addItem("Instala un modelo con 'ollama pull <nombre>'")
                     self.model_combo.setEnabled(False)
-                    self.save_button.setEnabled(False)
                 else:
-                    self.status_label.setText(f"Estos son los modelos de IA disponibles. Recuerda que si usas Ollama, debes ejecutar ollama.exe.")
-                    self.status_label.setProperty("class", "") # Quita la clase de error si la tenía
+                    self.status_label.setText("Configuración cargada. Puedes guardar los cambios.")
+                    self.status_label.setProperty("class", "")
                     for model in models:
                         self.model_combo.addItem(model["name"])
                     
-                    if self.current_model and (index := self.model_combo.findText(self.current_model)) != -1:
+                    if current_model_name and (index := self.model_combo.findText(current_model_name)) != -1:
                         self.model_combo.setCurrentIndex(index)
                     
                     self.model_combo.setEnabled(True)
-                    self.save_button.setEnabled(True)
+                self.save_button.setEnabled(True)
             else:
                 raise requests.exceptions.RequestException(f"Error de la API: {response.status_code}")
         
         except requests.exceptions.RequestException:
-            self.status_label.setText("Asegúrate de que Ollama esté ejecutándose (ollama.exe).")
+            self.status_label.setText("Asegúrate de que Ollama esté ejecutándose.")
             self.status_label.setProperty("class", "error")
             self.model_combo.addItem("Verifica que Ollama esté en ejecución.")
             self.model_combo.setEnabled(False)
             self.save_button.setEnabled(False)
 
-        # Estas dos líneas refrescan el estilo del QLabel para que el color cambie correctamente
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)
 
     def _load_current_config(self):
+        defaults = {
+            'ollama_model': 'phi3:latest',
+            'transcript_path': 'stt_guardados',
+            'audio_path': 'sttaudio_guardados'
+        }
         try:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
-                    return json.load(f).get('ollama_model', "phi3.5:latest")
+                    config = json.load(f)
+                    # Actualiza los valores por defecto con los que estén en el archivo
+                    defaults.update(config)
+                    return defaults
         except (IOError, json.JSONDecodeError):
             pass
-        return "phi3.5:latest"
+        return defaults
 
     def _save_config(self):
-        selected_model = self.model_combo.currentText()
+        # Empezar con la configuración existente para no perder otras claves
+        config_data = self._load_current_config()
         
-        config_data = {}
-        if os.path.exists(self.config_file):
-            try:
-                with open(self.config_file, 'r') as f: config_data = json.load(f)
-            except (IOError, json.JSONDecodeError): pass
-        
-        config_data['ollama_model'] = selected_model
+        # Actualizar con los nuevos valores de la UI
+        config_data['ollama_model'] = self.model_combo.currentText()
+        config_data['transcript_path'] = self.path_edit_txt.text()
+        config_data['audio_path'] = self.path_edit_audio.text()
 
         try:
-            with open(self.config_file, 'w') as f: json.dump(config_data, f, indent=4)
-            self.status_label.setText(f"¡Modelo '{selected_model}' guardado!")
+            with open(self.config_file, 'w') as f:
+                json.dump(config_data, f, indent=4)
+            self.status_label.setText("¡Configuración guardada!")
             self.status_label.setProperty("class", "")
             self.status_label.style().unpolish(self.status_label)
             self.status_label.style().polish(self.status_label)
@@ -310,7 +358,6 @@ class ConfiguracionIA(QWidget):
         except IOError:
             QMessageBox.critical(self, "Error", "No se pudo escribir en el archivo de configuración.")
 
-    # --- Método para centrar la ventana ---
     def center_on_screen(self):
         """Centra la ventana en el medio de la pantalla."""
         screen = QApplication.primaryScreen()
