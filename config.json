@@ -1,5 +1,5 @@
 {
-    "ollama_model": "phi3:latest",
+    "ollama_model": "phi3.5:latest",
     "transcript_path": "C:/Users/LucasJs28/Desktop/testtstt",
     "audio_path": "C:/Users/LucasJs28/Desktop/testtstt",
     "ngrok_authtoken": "32kGch2ux6akfqGh31F7axGT001_4S52risFuVWSjXDpUQoYu",

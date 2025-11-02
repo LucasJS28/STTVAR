@@ -132,6 +132,15 @@ class ConfiguracionIA(QWidget):
             #browseButton {
                 padding: 8px 15px;
             }
+            #restoreButton {
+                background-color: #4a505c;
+                color: #abb2bf;
+                padding: 10px 15px;
+                font-weight: normal;
+            }
+            #restoreButton:hover {
+                background-color: #565c68;
+            }
         """)
 
         bg_layout = QVBoxLayout(self.background_widget)
@@ -232,12 +241,20 @@ class ConfiguracionIA(QWidget):
         content_layout.addWidget(line)
         
         footer_layout = QHBoxLayout()
+        self.restore_button = QPushButton("Restaurar")
+        self.restore_button.setObjectName("restoreButton")
+        self.restore_button.setCursor(Qt.PointingHandCursor)
+        self.restore_button.setToolTip("Restaura las carpetas a sus valores por defecto.")
+        
         self.status_label = QLabel("Contactando a Ollama...")
         self.status_label.setObjectName("statusLabel")
         self.status_label.setWordWrap(True)
+        
         self.save_button = QPushButton("✔️ Guardar")
         self.save_button.setCursor(Qt.PointingHandCursor)
         self.save_button.setEnabled(False)
+        
+        footer_layout.addWidget(self.restore_button)
         footer_layout.addWidget(self.status_label)
         footer_layout.addStretch()
         footer_layout.addWidget(self.save_button)
@@ -267,6 +284,7 @@ class ConfiguracionIA(QWidget):
         self.close_button.clicked.connect(self.close)
         self.browse_button_txt.clicked.connect(lambda: self._browse_for_folder("txt"))
         self.browse_button_audio.clicked.connect(lambda: self._browse_for_folder("audio"))
+        self.restore_button.clicked.connect(self._restore_defaults)
 
     def _browse_for_folder(self, folder_type):
         if folder_type == "txt":
@@ -283,6 +301,20 @@ class ConfiguracionIA(QWidget):
                 self.path_edit_audio.setText(directory)
         
         self.save_button.setEnabled(True)
+
+    def _restore_defaults(self):
+        """Restaura los campos de las rutas a sus valores predeterminados."""
+        default_transcript_path = 'stt_guardados'
+        default_audio_path = 'sttaudio_guardados'
+
+        self.path_edit_txt.setText(default_transcript_path)
+        self.path_edit_audio.setText(default_audio_path)
+
+        self.save_button.setEnabled(True)
+        self.status_label.setText("Rutas restauradas. Haz clic en Guardar para aplicar.")
+        self.status_label.setProperty("class", "")
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
 
     def load_models_async(self):
         self.model_combo.clear()
@@ -330,18 +362,14 @@ class ConfiguracionIA(QWidget):
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
                     config = json.load(f)
-                    # Actualiza los valores por defecto con los que estén en el archivo
                     defaults.update(config)
-                    return defaults
         except (IOError, json.JSONDecodeError):
             pass
         return defaults
 
     def _save_config(self):
-        # Empezar con la configuración existente para no perder otras claves
         config_data = self._load_current_config()
         
-        # Actualizar con los nuevos valores de la UI
         config_data['ollama_model'] = self.model_combo.currentText()
         config_data['transcript_path'] = self.path_edit_txt.text()
         config_data['audio_path'] = self.path_edit_audio.text()
